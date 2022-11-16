@@ -1,5 +1,5 @@
-#include "../include/aux.h"
-#include "../include/fsp_gen.h"
+#include "../c_headers/aux.h"
+#include "../c_headers/fsp_gen.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>

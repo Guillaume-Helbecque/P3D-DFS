@@ -1,13 +1,13 @@
-use fsp_simple_m_bound_single_node;
+/* use fsp_simple_m_bound_single_node;
 use fsp_simple_mn_bound_single_node;
-use fsp_johnson_bound_single_node;
+use fsp_johnson_bound_single_node; */
 
 use fsp_simple_m_bound_multi_node;
 use fsp_simple_mn_bound_multi_node;
 use fsp_johnson_bound_multi_node;
 
-/* use uts_multi_node; */
-use uts_single_node;
+use uts_multi_node;
+/* use uts_single_node; */
 
 use aux;
 
@@ -52,17 +52,17 @@ proc main(args: [] string): int
         when "single" {
           select lb {
             when "simple_mn" {
-              fsp_simple_mn_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
-                printExploredTree, printExploredSol, printMakespan, lb, saveTime);
+              /* fsp_simple_mn_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
+                printExploredTree, printExploredSol, printMakespan, lb, saveTime); */
             }
-            when "simple_m" {
+            /* when "simple_m" {
               fsp_simple_m_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
                 printExploredTree, printExploredSol, printMakespan, lb, saveTime);
             }
             when "johnson" {
               fsp_johnson_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
                 printExploredTree, printExploredSol, printMakespan, lb, saveTime);
-            }
+            } */
             otherwise {
               halt("ERROR - Unknown lower bound");
             }
@@ -95,10 +95,10 @@ proc main(args: [] string): int
     when "uts" {
       select mode {
         when "single" {
-          uts_single_node(dbgProfiler, dbgDiagnostics);
+          /* uts_single_node(dbgProfiler, dbgDiagnostics); */
         }
         when "multi" {
-          /* uts_multi_node(dbgProfiler, dbgDiagnostics); */
+          uts_multi_node(dbgProfiler, dbgDiagnostics);
         }
         otherwise {
           halt("ERROR - Unknown mode");

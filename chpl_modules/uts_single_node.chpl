@@ -5,7 +5,7 @@ module uts_single_node
   use CTypes;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block;
+  use DistributedBag_DFS;
 
   use aux;
   use uts_aux;
@@ -64,7 +64,7 @@ module uts_single_node
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag(Node, targetLocales = Locales);
+    var bag = new DistBag_DFS(Node, targetLocales = Locales);
     var root: Node;
     uts_initRoot(root, 0:c_int); // BIN
 

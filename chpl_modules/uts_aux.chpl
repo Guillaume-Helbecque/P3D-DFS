@@ -2,7 +2,7 @@ module uts_aux
 {
   use Time;
 
-  require "../src/uts.c", "../include/uts.h";
+  require "../c_sources/uts.c", "../c_headers/uts.h";
   extern proc uts_printParams(): void;
 
   proc print_settings(): void

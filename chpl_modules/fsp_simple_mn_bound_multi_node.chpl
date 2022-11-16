@@ -6,7 +6,7 @@ module fsp_simple_mn_bound_multi_node
   use PrivateDist;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block;
+  use DistributedBag_DFS;
   use AllLocalesBarriers;
 
   use aux;
@@ -98,7 +98,7 @@ module fsp_simple_mn_bound_multi_node
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag(Node, targetLocales = Locales);
+    var bag = new DistBag_DFS(Node, targetLocales = Locales);
     var root = new Node();
 
     if activeSet {
@@ -200,9 +200,6 @@ module fsp_simple_mn_bound_multi_node
             }
           }
           terminationTimer.stop();
-
-          writeln("ok");
-          writeln(bag.bag!.segments.nElems);
 
           // Try to remove an element
           removeTimer.start();

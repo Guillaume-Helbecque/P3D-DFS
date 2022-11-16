@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#include "../src/rng/rng.h"
+#include "../c_sources/rng/rng.h"
 
 #define UTS_VERSION "2.1"
 

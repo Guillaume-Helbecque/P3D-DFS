@@ -6,7 +6,7 @@ module fsp_simple_m_bound_single_node
   use PrivateDist;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block;
+  use DistributedBag_DFS;
   use AllLocalesBarriers;
 
   use aux;
@@ -113,7 +113,7 @@ module fsp_simple_m_bound_single_node
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag(Node, targetLocales = Locales);
+    var bag = new DistBag_DFS(Node, targetLocales = Locales);
     var root = new Node();
 
     if activeSet {

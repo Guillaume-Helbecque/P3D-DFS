@@ -1,6 +1,6 @@
 // "opt: ?T = none" to declare optional argument
 
-module DistributedBag_one_block
+module DistributedBag_DFS
 {
   public use Collection;
   use BlockDist;
@@ -112,7 +112,7 @@ module DistributedBag_one_block
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag
+  record DistBag_DFS
   {
     type eltType;
 

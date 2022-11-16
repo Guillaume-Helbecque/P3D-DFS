@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../include/c_taillard.h"
+#include "../c_headers/c_taillard.h"
 
 long time_seeds[] =
 {   873654221 /*ta001*/,    379008056 /*ta002*/,  1866992158 /*ta003*/, 216771124 /*ta004*/,  495070989 /*ta005*/,

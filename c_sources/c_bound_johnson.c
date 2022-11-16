@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../include/c_bound_simple.h"
-#include "../include/c_bound_johnson.h"
+#include "../c_headers/c_bound_simple.h"
+#include "../c_headers/c_bound_johnson.h"
 
 johnson_bd_data* new_johnson_bd_data(const bound_data *const data/*, enum lb2_variant lb2_type*/)
 {

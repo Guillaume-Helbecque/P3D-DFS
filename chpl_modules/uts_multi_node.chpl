@@ -6,7 +6,7 @@ module uts_multi_node
   use PrivateDist;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block;
+  use DistributedBag_DFS;
   use AllLocalesBarriers;
 
   use aux;
@@ -73,7 +73,7 @@ module uts_multi_node
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag(Node, targetLocales = Locales);
+    var bag = new DistBag_DFS(Node, targetLocales = Locales);
     var root: Node;
     uts_initRoot(root, 0:c_int); // BIN
 
@@ -115,7 +115,7 @@ module uts_multi_node
 
           // Try to remove an element
           removeTimer.start();
-          var (hasWork, parent): (bool, Node) = bag.remove(tid);
+          var (hasWork, parent): (int, Node) = bag.remove(tid);
           removeTimer.stop();
 
           /*
@@ -126,13 +126,13 @@ module uts_multi_node
           */
 
           terminationTimer.start();
-          if (hasWork != true) then eachThreadTermination[tid].write(true);
+          if (hasWork != 1) then eachThreadTermination[tid].write(true);
           else {
             eachThreadTermination[tid].write(false);
             eachLocaleTermination[here.id].write(false);
           }
 
-          if (hasWork == false) {
+          if (hasWork == -1) {
             if allThreadsEmpty(eachThreadTermination, allThreadsEmptyFlag) { // local check
               eachLocaleTermination[here.id].write(true);
 
@@ -147,10 +147,10 @@ module uts_multi_node
           terminationTimer.stop();
           continue;
           }
-          /* else if (hasWork == 0) {
+          else if (hasWork == 0) {
             terminationTimer.stop();
             continue;
-          } */
+          }
           terminationTimer.stop();
 
           // Decompose an element

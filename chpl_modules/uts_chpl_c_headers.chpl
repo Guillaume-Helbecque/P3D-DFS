@@ -2,8 +2,8 @@ module uts_chpl_c_headers
 {
 	use CTypes;
 
-	require "../src/uts.c", "../include/uts.h";
-	require "../src/aux.c", "../include/aux.h";
+	require "../c_sources/uts.c", "../c_headers/uts.h";
+	require "../c_sources/aux.c", "../c_headers/aux.h";
 	//require "../src/rng/brg_sha1.c", "../src/rng/brg_sha1.h";
 	//require "../src/rng/alfg.c", "../src/rng/alfg.h";
 

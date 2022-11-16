@@ -1,4 +1,4 @@
-#include "../include/fill_times.h"
+#include "../c_headers/fill_times.h"
 
 void taillard_get_processing_times_d(bound_data *d, const int id)
 {

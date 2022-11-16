@@ -9,7 +9,7 @@ ifndef RNG
 RNG=BRG
 endif
 
-RNG_PATH = ./src/rng
+RNG_PATH = ./c_sources/rng
 
 # ifeq ($(RNG), Devine)
 # RNG_SRC = $(RNG_PATH)/devine_sha1.c
@@ -33,8 +33,9 @@ endif
 
 COMPILER = chpl
 
-CHPL_MODULES_DIR = ./chplModules
-CHPL_OPTS = --fast -M $(CHPL_MODULES_DIR) --ccflags $(RNG_DEF)
+CHPL_MODULES_DIR = ./chpl_modules
+CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
+CHPL_OPTS = --fast -M $(CHPL_MODULES_DIR) -M $(CHPL_DATA_STRUCT_DIR) --ccflags $(RNG_DEF)
 C_FILES = $(RNG_SRC) $(RNG_INCL)
 
 COMPILE = $(COMPILER) $(CHPL_OPTS) $(C_FILES)

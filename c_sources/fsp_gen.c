@@ -2,7 +2,7 @@
 #define VERIFY 0     /* 1:   produce the verification file */
 #define FIRMACIND 0  /* 0,1: first machine index           */
 
-#include "../include/fsp_gen.h"
+#include "../c_headers/fsp_gen.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

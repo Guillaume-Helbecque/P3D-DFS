@@ -6,7 +6,7 @@ module fsp_johnson_bound_single_node
   use PrivateDist;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block;
+  use DistributedBag_DFS;
 
   use aux;
   use fsp_node;
@@ -95,7 +95,7 @@ module fsp_johnson_bound_single_node
     // exploration of the tree is done in parallel.
 
     // Creation and initialization of the distributed bag
-    var bag = new DistBag(Node, targetLocales=Locales);
+    var bag = new DistBag_DFS(Node, targetLocales=Locales);
     var root = new Node();
     bag.add(root, 0);
 

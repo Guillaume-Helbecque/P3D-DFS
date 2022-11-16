@@ -30,7 +30,7 @@
 #include <machine/runtime.h>
 #endif /* __MTA__ */
 
-#include "../include/uts.h"
+#include "../c_headers/uts.h"
 
 /***********************************************************
  *  tree generation and search parameters                  *
