@@ -6,7 +6,7 @@ module uts_multi_node
   use PrivateDist;
   use VisualDebug;
   use CommDiagnostics;
-  use DistributedBag_one_block_locked;
+  use DistributedBag_one_block;
   use AllLocalesBarriers;
 
   use aux;
