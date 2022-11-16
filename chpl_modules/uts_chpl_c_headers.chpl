@@ -37,5 +37,5 @@ module uts_chpl_c_headers
 	extern proc castTo_tree_t(const a: c_int): tree_t;
 	extern proc castTo_geoshape_t(const a: c_int): geoshape_t;
 
-	extern proc save_time(numThreads: c_int, time: c_double, path: c_string): void;
+	extern proc save_time(numTasks: c_int, time: c_double, path: c_string): void;
 }

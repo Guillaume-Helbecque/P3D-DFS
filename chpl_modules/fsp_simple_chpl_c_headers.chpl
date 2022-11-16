@@ -26,5 +26,5 @@ module fsp_simple_chpl_c_headers
 
 	require "../c_sources/aux.c", "../c_headers/aux.h";
 
-	extern proc save_time(numThreads: c_int, time: c_double, path: c_string): void;
+	extern proc save_time(numTasks: c_int, time: c_double, path: c_string): void;
 }

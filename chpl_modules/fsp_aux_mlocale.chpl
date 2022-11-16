@@ -21,24 +21,6 @@ module fsp_aux_mlocale
     forall a in array_upper_bound do a.write(upper_bound);
   }
 
-	proc fsp_all_locales_print_minTempsArr(machines: c_int)
-	{
-    for loc in Locales do on loc { //but locale one -- let's put it
-      writeln("MinTempsArr on Locale #", here.id);
-      for i in 0..#machines do writeln(minTempsArr[i]);
-      writeln("\n\n\n");
-    }
-	}
-
-	proc fsp_all_locales_print_minTempsDep(machines: c_int)
-	{
-    for loc in Locales do on loc {//but locale one -- let's put it
-      writeln("MinTempsDep on Locale #", here.id);
-      for i in 0..#machines do writeln(minTempsDep[i]);
-      writeln("\n\n\n");
-    }
-	}
-
   proc fsp_mlocale_print_metrics(instance: c_short, machines: c_int, jobs: c_int, ref metrics: (uint(64),uint(64)),
     ref initial: Timer, ref inialization: Timer, ref distribution: Timer, ref final: Timer, initial_tree_size: uint(64),
     maximum_num_prefixes: uint(64),initial_num_prefixes: uint(64), initial_ub:c_int, final_ub: c_int, initial_depth: c_int,

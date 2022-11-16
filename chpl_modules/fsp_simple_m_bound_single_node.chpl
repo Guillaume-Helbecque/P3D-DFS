@@ -7,7 +7,6 @@ module fsp_simple_m_bound_single_node
   use VisualDebug;
   use CommDiagnostics;
   use DistributedBag_DFS;
-  use AllLocalesBarriers;
 
   use aux;
   use fsp_aux;
@@ -17,7 +16,7 @@ module fsp_simple_m_bound_single_node
 
   // Decompose a parent node and return the list of its feasible child nodes (SIMPLE O(M))
   proc decompose(const parent: Node, ref tree_loc: int, ref num_sol: int, const jobs: c_int, const machines: c_int,
-    side: int, best: atomic int, ref best_locale: int, ref best_thread: int, const lb1_data: c_ptr(bound_data)): list
+    side: int, best: atomic int, ref best_task: int, const lb1_data: c_ptr(bound_data)): list
   {
     var childList: list(Node); // list containing the child nodes
 
@@ -38,12 +37,12 @@ module fsp_simple_m_bound_single_node
       if (parent.depth + 1 == jobs){ // if child leaf
         num_sol += 1;
 
-        if (lb_begin[parent.prmu[i]] < best_thread){ // if child feasible
-          best_locale = best_thread;
+        if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
+          best_task = lb_begin[parent.prmu[i]];
           best.write(lb_begin[parent.prmu[i]]);
         }
       } else { // if not leaf
-        if (lb_begin[parent.prmu[i]] < best_thread){ // if child feasible
+        if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
           var child = new Node(parent);
           child.depth += 1;
 
@@ -60,14 +59,13 @@ module fsp_simple_m_bound_single_node
         }
       }
 
-    } // for childs
+    }
 
     c_free(lb_begin);
 
     return childList;
   }
 
-  // Explore a tree
   proc fsp_simple_m_search_single_node(const instance: int(8), const side: int,
     const dbgProfiler: bool, const dbgDiagnostics: bool, const printExploredTree: bool,
     const printExploredSol: bool, const printMakespan: bool, const lb: string,
@@ -83,15 +81,14 @@ module fsp_simple_m_bound_single_node
 
     // Global variables (best solution found and termination)
     var best: atomic int = setOptimal(instance);
-    const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
-    var eachLocaleTermination: [PrivateSpace] atomic bool = false;
-    allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
+    var allTasksEmptyFlag: atomic bool = false;
+    var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = false;
 
     // Counters and timers (for analysis)
-    var eachExploredTree: [PrivateSpace] int = 0;
-    var eachExploredSol: [PrivateSpace] int = 0;
+    var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
+    var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
     var counter_termination: atomic int = 0;
-    var timers: [0..#numLocales, 0..#here.maxTaskPar, 0..5] real;
+    var timers: [0..#here.maxTaskPar, 0..4] real;
     var globalTimer: Timer;
 
     // Debugging options
@@ -119,21 +116,21 @@ module fsp_simple_m_bound_single_node
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least 2 nodes per thread.
+        We require at least 2 nodes per task.
       */
       var initSize: int = 2 * here.maxTaskPar * numLocales;
       var initList: list(Node);
       initList.append(root);
 
-      var best_thread, best_locale: int = best.read();
+      var best_task: int = best.read();
 
       // Computation of the initial set
       while (initList.size < initSize) {
         var parent: Node = initList.pop();
 
         {
-          var childList: list(Node) = decompose(parent, eachExploredTree[0], eachExploredSol[0],
-            jobs, machines, side, best, best_thread, best_locale, lb1_data);
+          var childList: list(Node) = decompose(parent, eachLocalExploredTree[0], eachLocalExploredSol[0],
+            jobs, machines, side, best, best_task, lb1_data);
 
           for elt in childList do initList.insert(0, elt);
         }
@@ -156,12 +153,12 @@ module fsp_simple_m_bound_single_node
     }
     else {
       /*
-        In that case, there is only one node in the bag (thread 0 of locale 0).
+        In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
     }
 
-    writeln("\nInitial state of the bag (locale x thread):");
+    writeln("\nInitial state of the bag (locale x task):");
     for loc in Locales do on loc {
       writeln(bag.bag!.segments.nElems);
     }
@@ -172,26 +169,14 @@ module fsp_simple_m_bound_single_node
     // PARALLEL EXPLORATION
     // =====================
 
-    var allThreadsEmptyFlag: atomic bool = false;
-    var eachThreadTermination: [0..#here.maxTaskPar] atomic bool = false;
-
-    // Counters and timers (for analysis)
-    var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
-    var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
-    var localTimer: Timer;
-
-    localTimer.start();
-
     coforall tid in 0..#here.maxTaskPar {
 
-      // Thread variables (best solution found)
-      var best_thread: int = best_locale;
+      // Task variables (best solution found)
+      var best_task: int = best.read();
 
       // Counters and timers (for analysis)
       var count, counter: int = 0;
       var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
-
-      allLocalesBarrier.barrier(); // synchronization of threads
 
       // Exploration of the tree
       while true do {
@@ -200,8 +185,7 @@ module fsp_simple_m_bound_single_node
         // Check if the global termination flag is set or not
         terminationTimer.start();
         if (counter % 10000 == 0) {
-          if globalTerminationFlag.read() {
-            //writeln("loc/thread ", here.id, " ", tid, " breaks");
+          if allTasksEmptyFlag.read() {
             terminationTimer.stop();
             break;
           }
@@ -221,13 +205,13 @@ module fsp_simple_m_bound_single_node
         */
 
         terminationTimer.start();
-        if (hasWork != 1) then eachThreadTermination[tid].write(true);
+        if (hasWork != 1) then eachTaskTermination[tid].write(true);
         else {
-          eachThreadTermination[tid].write(false);
+          eachTaskTermination[tid].write(false);
         }
 
         if (hasWork == -1) {
-          if allThreadsEmpty(eachThreadTermination, allThreadsEmptyFlag) { // local check
+          if allTasksEmpty(eachTaskTermination, allTasksEmptyFlag) { // local check
             terminationTimer.stop();
             break;
           }
@@ -244,7 +228,7 @@ module fsp_simple_m_bound_single_node
         decomposeTimer.start();
         {
           var childList: list(Node) = decompose(parent, eachLocalExploredTree[tid], eachLocalExploredSol[tid],
-            jobs, machines, side, best, best_locale, best_thread, lb1_data);
+            jobs, machines, side, best, best_task, lb1_data);
 
           bag.addBulk(childList, tid);
         }
@@ -254,31 +238,29 @@ module fsp_simple_m_bound_single_node
         readTimer.start();
         if (tid == 0) {
           count += 1;
-          if (count % 10000 == 0) then best_locale = best.read();
+          if (count % 10000 == 0) then best_task = best.read();
         }
 
-        best_thread = best_locale;
         readTimer.stop();
       }
 
-      timers[loc.id, tid, 0] = loc.id;
-      timers[loc.id, tid, 1] = tid;
-      timers[loc.id, tid, 3] = decomposeTimer.elapsed(TimeUnits.seconds);
-      timers[loc.id, tid, 4] = terminationTimer.elapsed(TimeUnits.seconds);
-      timers[loc.id, tid, 2] = removeTimer.elapsed(TimeUnits.seconds);
-      timers[loc.id, tid, 5] = readTimer.elapsed(TimeUnits.seconds);
+      timers[tid, 0] = tid;
+      timers[tid, 1] = removeTimer.elapsed(TimeUnits.seconds);
+      timers[tid, 2] = decomposeTimer.elapsed(TimeUnits.seconds);
+      timers[tid, 3] = terminationTimer.elapsed(TimeUnits.seconds);
+      timers[tid, 4] = readTimer.elapsed(TimeUnits.seconds);
     }
-
-    free_bound_data(lb1_data);
-
-    writeln("Exploration terminated.\n");
-
-    exploredTree = (+ reduce eachExploredTree);
-    num_sol = (+ reduce eachExploredSol);
 
     globalTimer.stop();
 
-    bag.clear();
+    free_bound_data(lb1_data);
+    /* bag.clear(); */
+
+    // ========
+    // OUTPUTS
+    // ========
+
+    writeln("Exploration terminated.\n");
 
     if dbgProfiler {
       stopVdebug();
@@ -291,20 +273,21 @@ module fsp_simple_m_bound_single_node
       writeln("\n ### Communication results ### \n", getCommDiagnostics());
     }
 
-    // OUTPUTS
-    writeln("==========================");
-    if printExploredTree then writeln("Size of the explored tree: ", exploredTree);
-    if printExploredTree then writeln("Size of the explored tree per thread: ", eachExploredTree);
-    if printExploredSol then writeln("Number of explored solutions: ", num_sol);
-    if printMakespan then writeln("Best makespan: ", incumbent_g);
-    writeln("Elapsed time: ", globalTimer.elapsed(TimeUnits.seconds), "s");
-
     if saveTime {
-      var tup = ("./ta",instance:string,"_",lb,"_",side:string,".txt");
+      var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,".txt");
       var path = "".join(tup);
+      /* save_time(numLocales:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str()); */
       save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
     }
-    writeln("==========================");
+
+    if saveTime {
+      var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
+      var path = "".join(tup);
+      save_subtimes(path, timers);
+    }
+
+    //writeln("\nNumber of global termination detection: ", counter_termination.read());
+    print_results(eachLocalExploredTree, eachLocalExploredSol, globalTimer, best.read());
   }
 
 }

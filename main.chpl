@@ -1,6 +1,6 @@
-/* use fsp_simple_m_bound_single_node;
+use fsp_simple_m_bound_single_node;
 use fsp_simple_mn_bound_single_node;
-use fsp_johnson_bound_single_node; */
+use fsp_johnson_bound_single_node;
 
 use fsp_simple_m_bound_multi_node;
 use fsp_simple_mn_bound_multi_node;
@@ -52,17 +52,17 @@ proc main(args: [] string): int
         when "single" {
           select lb {
             when "simple_mn" {
-              /* fsp_simple_mn_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
-                printExploredTree, printExploredSol, printMakespan, lb, saveTime); */
+              fsp_simple_mn_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
+                printExploredTree, printExploredSol, printMakespan, lb, saveTime, activeSet);
             }
-            /* when "simple_m" {
+            when "simple_m" {
               fsp_simple_m_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
-                printExploredTree, printExploredSol, printMakespan, lb, saveTime);
+                printExploredTree, printExploredSol, printMakespan, lb, saveTime, activeSet);
             }
             when "johnson" {
               fsp_johnson_search_single_node(instance, side, dbgProfiler, dbgDiagnostics,
-                printExploredTree, printExploredSol, printMakespan, lb, saveTime);
-            } */
+                printExploredTree, printExploredSol, printMakespan, lb, saveTime, activeSet);
+            }
             otherwise {
               halt("ERROR - Unknown lower bound");
             }
@@ -95,10 +95,10 @@ proc main(args: [] string): int
     when "uts" {
       select mode {
         when "single" {
-          /* uts_single_node(dbgProfiler, dbgDiagnostics); */
+          /* uts_single_node(dbgProfiler, dbgDiagnostics, saveTime); */
         }
         when "multi" {
-          uts_multi_node(dbgProfiler, dbgDiagnostics);
+          uts_multi_node(dbgProfiler, dbgDiagnostics, saveTime);
         }
         otherwise {
           halt("ERROR - Unknown mode");

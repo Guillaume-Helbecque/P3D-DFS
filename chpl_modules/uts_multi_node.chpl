@@ -39,7 +39,7 @@ module uts_multi_node
     }
   }
 
-  proc uts_multi_node(const dbgProfiler: bool, const dbgDiagnostics: bool): void
+  proc uts_multi_node(const dbgProfiler: bool, const dbgDiagnostics: bool, const saveTime: bool): void
   {
     // Global variables (termination)
     const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
@@ -80,7 +80,7 @@ module uts_multi_node
     bag.add(root, 0);
     eachExploredTree[0] += 1;
 
-    writeln("\nInitial state of the bag (locale x thread):");
+    writeln("\nInitial state of the bag (locale x task):");
     for loc in Locales do on loc {
       writeln(bag.bag!.segments.nElems);
     }
@@ -95,9 +95,9 @@ module uts_multi_node
     coforall loc in Locales do on loc {
 
       // Local variables (termination)
-      var allThreadsEmptyFlag: atomic bool = false;
+      var allTasksEmptyFlag: atomic bool = false;
       var globalTerminationFlag: atomic bool = false;
-      var eachThreadTermination: [0..#here.maxTaskPar] atomic bool = false;
+      var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = false;
 
       // Counters and timers (for analysis)
       var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
@@ -109,7 +109,7 @@ module uts_multi_node
         // Counters and timers (for analysis)
         var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
 
-        allLocalesBarrier.barrier(); // synchronization of threads
+        allLocalesBarrier.barrier(); // synchronization of tasks
 
         while true do {
 
@@ -126,14 +126,14 @@ module uts_multi_node
           */
 
           terminationTimer.start();
-          if (hasWork != 1) then eachThreadTermination[tid].write(true);
+          if (hasWork != 1) then eachTaskTermination[tid].write(true);
           else {
-            eachThreadTermination[tid].write(false);
+            eachTaskTermination[tid].write(false);
             eachLocaleTermination[here.id].write(false);
           }
 
           if (hasWork == -1) {
-            if allThreadsEmpty(eachThreadTermination, allThreadsEmptyFlag) { // local check
+            if allTasksEmpty(eachTaskTermination, allTasksEmptyFlag) { // local check
               eachLocaleTermination[here.id].write(true);
 
                 if allLocalesEmpty(eachLocaleTermination, globalTerminationFlag, counter_termination) { // global check
@@ -176,7 +176,7 @@ module uts_multi_node
         timers[loc.id, tid, 3] = decomposeTimer.elapsed(TimeUnits.seconds);
         timers[loc.id, tid, 4] = terminationTimer.elapsed(TimeUnits.seconds);
         timers[loc.id, tid, 2] = removeTimer.elapsed(TimeUnits.seconds);
-      } // end coforall threads
+      } // end coforall tasks
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
       eachExploredLeaf[here.id] += (+ reduce eachLocalExploredLeaf);
@@ -193,15 +193,15 @@ module uts_multi_node
 
     writeln("\nExploration terminated.");
 
-    /* if saveTime { */
-      var tup = ("./uts_chpl_", (+ reduce eachExploredTree):string, "_", computeGranularity:string, "_dist_locked.txt");
+    if saveTime {
+      var tup = ("./uts_chpl_", (+ reduce eachExploredTree):string, "_", computeGranularity:string, "_dist.txt");
       var path = "".join(tup);
-      save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
-    /* } */
+      save_time(numLocales:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
+    }
 
-    {
+    if saveTime {
       var tup = ("./uts_chpl_", (+ reduce eachExploredTree):string, "_", computeGranularity:string, "_",
-        numLocales:string,"n_subtimes_locked.txt");
+        numLocales:string,"n_subtimes.txt");
       var path = "".join(tup);
       save_subtimes(path, timers);
     }
@@ -218,18 +218,7 @@ module uts_multi_node
       writeln("\n ### Communication results ### \n", getCommDiagnostics());
     }
 
-    /* for loc in Locales do on loc {
-      writeln("\nON ", loc, " :");
-      writeln("Intra-node nSteal ", bag.bag!.segments.nSteal1);
-      writeln("Intra-node nSSteal on ", bag.bag!.segments.nSSteal1);
-      writeln("Intra-node timer on ", bag.bag!.segments.timer1.elapsed(TimeUnits.seconds));
-      writeln("");
-      writeln("Inter-node nSteal on ", bag.bag!.segments.nSteal2);
-      writeln("Inter-node nSSteal on ", bag.bag!.segments.nSSteal2);
-      writeln("Inter-node timer on ", bag.bag!.segments.timer2.elapsed(TimeUnits.seconds));
-    } */
-
-    writeln("\nNumber of global termination detection: ", counter_termination.read());
+    /* writeln("\nNumber of global termination detection: ", counter_termination.read()); */
     print_results(eachExploredTree, eachExploredLeaf, globalTimer, eachMaxDepth);
   }
 

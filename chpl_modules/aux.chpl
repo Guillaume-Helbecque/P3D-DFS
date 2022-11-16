@@ -41,7 +41,7 @@ module aux
   */
   proc check_and_set(const arr: [] atomic bool, flag: atomic bool): bool
   {
-    // if all threads are empty...
+    // if all tasks are empty...
     if all_true(arr) {
       // set the flag
       flag.write(true);
@@ -54,7 +54,7 @@ module aux
 
   proc check_and_set_b(const arr: [] atomic bool, ref flag: bool): bool
   {
-    // if all threads are empty...
+    // if all tasks are empty...
     if all_true(arr) {
       flag = true;
     }
@@ -64,7 +64,7 @@ module aux
     return flag;
   }
 
-  proc allThreadsEmpty(const arr: [] atomic bool, flag: atomic bool): bool
+  proc allTasksEmpty(const arr: [] atomic bool, flag: atomic bool): bool
   {
     // fast exit
     if flag.read() {

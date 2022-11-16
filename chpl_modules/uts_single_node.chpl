@@ -35,7 +35,7 @@ module uts_single_node
     if (g != -1)    then computeGranularity = g;
   }
 
-  proc uts_single_node(const dbgProfiler: bool, const dbgDiagnostics: bool): void
+  proc uts_single_node(const dbgProfiler: bool, const dbgDiagnostics: bool, const saveTime: bool): void
   {
     // Counters and timers (for analysis)
     var ExploredTree: int = 0;
@@ -71,7 +71,7 @@ module uts_single_node
     bag.add(root, 0);
     ExploredTree += 1;
 
-    writeln("\nInitial state of the bag (locale x thread):");
+    writeln("\nInitial state of the bag (locale x task):");
     for loc in Locales do on loc {
       writeln(bag.bag!.segments.nElems);
     }
@@ -84,8 +84,8 @@ module uts_single_node
     // =====================
 
     // Local variables (termination)
-    var allThreadsEmptyFlag: atomic bool = false;
-    var ThreadTermination: [0..#here.maxTaskPar] atomic bool = false;
+    var allTasksEmptyFlag: atomic bool = false;
+    var TaskTermination: [0..#here.maxTaskPar] atomic bool = false;
 
     // Counters and timers (for analysis)
     var LocalExploredTree: [0..#here.maxTaskPar] int = 0;
@@ -112,13 +112,13 @@ module uts_single_node
         */
 
         terminationTimer.start();
-        if (hasWork != 1) then ThreadTermination[tid].write(true);
+        if (hasWork != 1) then TaskTermination[tid].write(true);
         else {
-          ThreadTermination[tid].write(false);
+          TaskTermination[tid].write(false);
         }
 
         if (hasWork == -1) {
-          if allThreadsEmpty(ThreadTermination, allThreadsEmptyFlag) { // local check
+          if allTasksEmpty(TaskTermination, allTasksEmptyFlag) { // local check
             terminationTimer.stop();
             break;
           }
@@ -154,7 +154,7 @@ module uts_single_node
       timers[tid, 2] = decomposeTimer.elapsed(TimeUnits.seconds);
       timers[tid, 3] = terminationTimer.elapsed(TimeUnits.seconds);
 
-    } // end coforall threads
+    } // end coforall tasks
 
     ExploredTree += (+ reduce LocalExploredTree);
     ExploredLeaf += (+ reduce LocalExploredLeaf);
@@ -169,15 +169,15 @@ module uts_single_node
 
     writeln("\nExploration terminated.");
 
-    /* if saveTime { */
-      var tup = ("./uts_chpl_", ExploredTree:string, "_", computeGranularity:string, "_dist_locked.txt");
+    if saveTime {
+      var tup = ("./uts_chpl_", ExploredTree:string, "_", computeGranularity:string, ".txt");
       var path = "".join(tup);
       save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
-    /* } */
+    }
 
-    {
+    if saveTime {
       var tup = ("./uts_chpl_", ExploredTree:string, "_", computeGranularity:string, "_",
-        here.maxTaskPar:string,"t_subtimes_locked.txt");
+        here.maxTaskPar:string,"t_subtimes.txt");
       var path = "".join(tup);
       save_subtimes(path, timers);
     }
@@ -194,31 +194,8 @@ module uts_single_node
       writeln("\n ### Communication results ### \n", getCommDiagnostics());
     }
 
-    /* for loc in Locales do on loc {
-      writeln("\nON ", loc, " :");
-      writeln("Intra-node nSteal ", bag.bag!.segments.nSteal1);
-      writeln("Intra-node nSSteal on ", bag.bag!.segments.nSSteal1);
-      writeln("Intra-node timer on ", bag.bag!.segments.timer1.elapsed(TimeUnits.seconds));
-      writeln("");
-      writeln("Inter-node nSteal on ", bag.bag!.segments.nSteal2);
-      writeln("Inter-node nSSteal on ", bag.bag!.segments.nSSteal2);
-      writeln("Inter-node timer on ", bag.bag!.segments.timer2.elapsed(TimeUnits.seconds));
-    } */
-
-    writeln("\nNumber of global termination detection: ", counter_termination.read());
-
-    /* print_results(ExploredTree, ExploredLeaf, globalTimer, MaxDepth); */
-
-
-    writeln("\n=================================");
-    writeln("Size of the explored tree: ", ExploredTree);
-    /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-    /* writeln("% of the explored tree per locale: ", 100 * ExploredTree:real / ExploredTree:real); */
-    /* writeln("Number of explored solutions: ", numSol); */
-    /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
-    /* writeln("Optimal makespan: ", best); */
-    writeln("Elapsed time: ", globalTimer.elapsed(TimeUnits.seconds), " [s]");
-    writeln("=================================\n");
+    /* writeln("\nNumber of global termination detection: ", counter_termination.read()); */
+    print_results(LocalExploredTree, LocalExploredLeaf, globalTimer, LocalMaxDepth);
   }
 
 }

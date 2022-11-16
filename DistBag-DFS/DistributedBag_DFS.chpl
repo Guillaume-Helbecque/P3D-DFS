@@ -1229,13 +1229,13 @@ module DistributedBag_DFS
               return (REMOVE_FAIL, default);
             }
             else {
-              writeln(stolenElts.size);
+              /* writeln(stolenElts.size); */
               for elt in stolenElts do segments[threadId].addElement(elt);
               //segments[threadId].split.add((3*stolenElts.size/4):int);
               segments[threadId].nSSteal2 += 1;
 
-              writeln("loc/thread ", here.id, " ", threadId, ", steals in ", timer.elapsed(TimeUnits.seconds));
-              writeln("loc/thread ", here.id, " ", threadId, ", selection in ", subtimer.elapsed(TimeUnits.seconds));
+              /* writeln("loc/thread ", here.id, " ", threadId, ", steals in ", timer.elapsed(TimeUnits.seconds));
+              writeln("loc/thread ", here.id, " ", threadId, ", selection in ", subtimer.elapsed(TimeUnits.seconds)); */
 
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);

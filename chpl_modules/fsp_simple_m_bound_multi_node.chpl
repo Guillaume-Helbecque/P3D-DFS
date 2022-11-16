@@ -13,12 +13,11 @@ module fsp_simple_m_bound_multi_node
   use fsp_aux;
   use fsp_node;
   use statistics;
-  use fsp_aux_mlocale;
   use fsp_simple_chpl_c_headers;
 
   // Decompose a parent node and return the list of its feasible child nodes
   proc decompose(const parent: Node, ref tree_loc: int, ref num_sol: int, const jobs: c_int, const machines: c_int,
-    side: int, best: atomic int, ref best_locale: int, ref best_thread: int, const lb1_data: c_ptr(bound_data)): list
+    side: int, best: atomic int, ref best_locale: int, ref best_task: int, const lb1_data: c_ptr(bound_data)): list
   {
     var childList: list(Node); // list containing the child nodes
 
@@ -39,12 +38,12 @@ module fsp_simple_m_bound_multi_node
       if (parent.depth + 1 == jobs){ // if child leaf
         num_sol += 1;
 
-        if (lb_begin[parent.prmu[i]] < best_thread){ // if child feasible
-          best_locale = best_thread;
+        if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
+          best_locale = best_task;
           best.write(lb_begin[parent.prmu[i]]);
         }
       } else { // if not leaf
-        if (lb_begin[parent.prmu[i]] < best_thread){ // if child feasible
+        if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
           var child = new Node(parent);
           child.depth += 1;
 
@@ -119,13 +118,13 @@ module fsp_simple_m_bound_multi_node
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least 2 nodes per thread.
+        We require at least 2 nodes per task.
       */
       var initSize: int = 2 * here.maxTaskPar * numLocales;
       var initList: list(Node);
       initList.append(root);
 
-      var best_thread, best_locale: int = best.read();
+      var best_task, best_locale: int = best.read();
 
       // Computation of the initial set
       while (initList.size < initSize) {
@@ -133,7 +132,7 @@ module fsp_simple_m_bound_multi_node
 
         {
           var childList: list(Node) = decompose(parent, eachExploredTree[0], eachExploredSol[0],
-            jobs, machines, side, best, best_thread, best_locale, lb1_data);
+            jobs, machines, side, best, best_task, best_locale, lb1_data);
 
           for elt in childList do initList.insert(0, elt);
         }
@@ -156,12 +155,12 @@ module fsp_simple_m_bound_multi_node
     }
     else {
       /*
-        In that case, there is only one node in the bag (thread 0 of locale 0).
+        In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
     }
 
-    writeln("\nInitial state of the bag (locale x thread):");
+    writeln("\nInitial state of the bag (locale x task):");
     for loc in Locales do on loc {
       writeln(bag.bag!.segments.nElems);
     }
@@ -180,9 +179,9 @@ module fsp_simple_m_bound_multi_node
 
       // Local variables (best solution found and termination)
       var best_locale: int = setOptimal(instance);
-      var allThreadsEmptyFlag: atomic bool = false;
+      var allTasksEmptyFlag: atomic bool = false;
       var globalTerminationFlag: atomic bool = false;
-      var eachThreadTermination: [0..#here.maxTaskPar] atomic bool = false;
+      var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = false;
 
       // Counters and timers (for analysis)
       var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
@@ -193,14 +192,14 @@ module fsp_simple_m_bound_multi_node
 
       coforall tid in 0..#here.maxTaskPar with (ref best_locale, ref timers) {
 
-        // Thread variables (best solution found)
-        var best_thread: int = best_locale;
+        // Task variables (best solution found)
+        var best_task: int = best_locale;
 
         // Counters and timers (for analysis)
         var count, counter: int = 0;
         var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
 
-        allLocalesBarrier.barrier(); // synchronization of threads
+        allLocalesBarrier.barrier(); // synchronization of tasks
 
         while true do {
           counter += 1;
@@ -209,7 +208,7 @@ module fsp_simple_m_bound_multi_node
           terminationTimer.start();
           if (counter % 10000 == 0) {
             if globalTerminationFlag.read() {
-              //writeln("loc/thread ", here.id, " ", tid, " breaks");
+              //writeln("loc/task ", here.id, " ", tid, " breaks");
               terminationTimer.stop();
               break;
             }
@@ -229,14 +228,14 @@ module fsp_simple_m_bound_multi_node
           */
 
           terminationTimer.start();
-          if (hasWork != 1) then eachThreadTermination[tid].write(true);
+          if (hasWork != 1) then eachTaskTermination[tid].write(true);
           else {
-            eachThreadTermination[tid].write(false);
+            eachTaskTermination[tid].write(false);
             eachLocaleTermination[here.id].write(false);
           }
 
           if (hasWork == -1) {
-            if allThreadsEmpty(eachThreadTermination, allThreadsEmptyFlag) { // local check
+            if allTasksEmpty(eachTaskTermination, allTasksEmptyFlag) { // local check
               eachLocaleTermination[here.id].write(true);
 
                 if allLocalesEmpty(eachLocaleTermination, globalTerminationFlag, counter_termination) { // global check
@@ -260,7 +259,7 @@ module fsp_simple_m_bound_multi_node
           decomposeTimer.start();
           {
             var childList: list(Node) = decompose(parent, eachLocalExploredTree[tid], eachLocalExploredSol[tid],
-              jobs, machines, side, best, best_locale, best_thread, lb1_data);
+              jobs, machines, side, best, best_locale, best_task, lb1_data);
 
             bag.addBulk(childList, tid);
           }
@@ -273,7 +272,7 @@ module fsp_simple_m_bound_multi_node
             if (count % 10000 == 0) then best_locale = best.read();
           }
 
-          best_thread = best_locale;
+          best_task = best_locale;
           readTimer.stop();
         }
 
@@ -283,7 +282,7 @@ module fsp_simple_m_bound_multi_node
         timers[loc.id, tid, 4] = terminationTimer.elapsed(TimeUnits.seconds);
         timers[loc.id, tid, 2] = removeTimer.elapsed(TimeUnits.seconds);
         timers[loc.id, tid, 5] = readTimer.elapsed(TimeUnits.seconds);
-      } // end coforall threads
+      } 
 
       localTimer.stop();
 
@@ -314,40 +313,18 @@ module fsp_simple_m_bound_multi_node
       writeln("\n ### Communication results ### \n", getCommDiagnostics());
     }
 
-    /* if saveTime { */
-    {
+    if saveTime {
       var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachExploredTree):string,"_",lb,"_dist.txt");
       var path = "".join(tup);
       save_time(numLocales:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
       /* save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str()); */
     }
-    /* } */
 
-    {
+    if saveTime {
       var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
       var path = "".join(tup);
       save_subtimes(path, timers);
     }
-
-    /* for loc in Locales do on loc {
-      writeln("\nON ", loc, " :");
-      writeln("Intra-node nSteal ", bag.bag!.segments.nSteal1);
-      writeln("Intra-node nSSteal on ", bag.bag!.segments.nSSteal1);
-      writeln("Intra-node timer on ", bag.bag!.segments.timer1.elapsed(TimeUnits.seconds));
-      writeln("");
-      writeln("Inter-node nSteal on ", bag.bag!.segments.nSteal2);
-      writeln("Inter-node nSSteal on ", bag.bag!.segments.nSSteal2);
-      writeln("Inter-node timer on ", bag.bag!.segments.timer2.elapsed(TimeUnits.seconds));
-    } */
-
-    /* writeln("\nlocale\tthread\t(remove, decompose, termination, read):");
-    writeln("=====");
-    for loc in 0..#numLocales {
-      for tid in 0..#here.maxTaskPar {
-        writeln(loc, "\t", tid, "\t", timers[loc, tid, ..]);
-      }
-      writeln("=====");
-    } */
 
     //writeln("\nNumber of global termination detection: ", counter_termination.read());
     print_results(eachExploredTree, eachExploredSol, globalTimer, best.read());
