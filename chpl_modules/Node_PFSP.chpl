@@ -1,10 +1,10 @@
-module fsp_node
+module Node_PFSP
 {
   // Compilation constant: size of the problem
   config param JOBS: int = 20;
 
   // Node record
-  record Node
+  record Node_PFSP
   {
     // var size: int;       // size of the problem (= JOBS, can be removed ?)
     var depth: int;         // depth
@@ -25,7 +25,7 @@ module fsp_node
     }
 
     // copy initializer
-    proc init(from: Node)
+    proc init(from: Node_PFSP)
     {
       // this.size = from.size;
       this.depth  = from.depth;

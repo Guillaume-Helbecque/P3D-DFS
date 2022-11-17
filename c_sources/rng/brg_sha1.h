@@ -74,9 +74,10 @@ int    rng_showtype(char *strBuf, int ind);
 /* type to hold the SHA256 context  */
 
 struct sha1_ctx_s
-{   uint_32t count[2];
-    uint_32t hash[5];
-    uint_32t wbuf[16];
+{
+  uint_32t count[2];
+  uint_32t hash[5];
+  uint_32t wbuf[16];
 };
 
 typedef struct sha1_ctx_s sha1_ctx;

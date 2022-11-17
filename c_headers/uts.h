@@ -22,8 +22,6 @@ extern "C" {
 
 #include "../c_sources/rng/rng.h"
 
-#define UTS_VERSION "2.1"
-
 /***********************************************************
  *  Tree node descriptor and statistics                    *
  ***********************************************************/
@@ -49,7 +47,7 @@ struct node_t {
   struct state_t state;
 };
 
-typedef struct node_t Node;
+typedef struct node_t Node_UTS;
 
 /* Tree type
  *   Trees are generated using a Galton-Watson process, in
@@ -68,60 +66,32 @@ typedef enum uts_trees_e    tree_t;
 typedef enum uts_geoshape_e geoshape_t;
 
 /* Strings for the above enums */
-extern char * uts_trees_str[];
-extern char * uts_geoshapes_str[];
+extern char* uts_trees_str[];
+extern char* uts_geoshapes_str[];
 
-
-/* Tree  parameters */
-extern tree_t     treeType;
-extern double     b_0;
-extern int        rootId;
-extern int        nonLeafBF;
-extern double     nonLeafProb;
-extern int        gen_mx;
-extern geoshape_t shape_fn;
-extern double     shiftDepth;
-
-/* Benchmark parameters */
-extern int    computeGranularity;
-extern int    debug;
-extern int    verbose;
-
-/* For stats generation: */
+/* For stats generation */
 typedef unsigned long long counter_t;
 
 /* Utility Functions */
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MIN(a,b) (((a) < (b)) ? (a) : (b)) // not used
 
-void   uts_error(char *str);
-void   uts_parseParams(int argc, char **argv);
-int    uts_paramsToStr(char *strBuf, int ind);
-void   uts_printParams();
-void   uts_helpMessage();
-
-void   uts_showStats(int nPes, int chunkSize, double walltime, counter_t nNodes, counter_t nLeaves, counter_t maxDepth);
+// void   uts_showStats(int nPes, int chunkSize, double walltime, counter_t nNodes, counter_t nLeaves, counter_t maxDepth);
 double uts_wctime();
 
 double rng_toProb(int n);
 
 /* Common tree routines */
-void   uts_initRoot(Node * root, int treeType);
-int    uts_numChildren(Node *parent);
-int    uts_numChildren_bin(Node * parent);
-int    uts_numChildren_geo(Node * parent);
-int    uts_childType(Node *parent);
+void  uts_initRoot(Node_UTS * root, tree_t treeType, int rootId);
+int   uts_numChildren(Node_UTS *parent, tree_t treeType, int nonLeafBF, double nonLeafProb,
+  double b_0, geoshape_t shape_fn, int gen_mx, double shiftDepth);
+int   uts_numChildren_bin(Node_UTS * parent, int nonLeafBF, double nonLeafProb);
+int   uts_numChildren_geo(Node_UTS * parent, double b_0, geoshape_t shape_fn, int gen_mx);
+int   uts_childType(Node_UTS *parent, tree_t treeType, double shiftDepth, int gen_mx);
 
-/* Implementation Specific Functions */
-char * impl_getName();
-int    impl_paramsToStr(char *strBuf, int ind);
-int    impl_parseParam(char *param, char *value);
-void   impl_helpMessage();
-void   impl_abort(int err);
-
-void decompose(Node *parent, Node children[], int computeGranularity, int *treeSize, int *nbLeaf, int *maxDepth);
-tree_t castTo_tree_t(int a);
-tree_t castTo_geoshape_t(int a);
+void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int nonLeafBF,
+  double nonLeafProb, double b_0, geoshape_t shape_fn, int gen_mx, double shiftDepth,
+  int computeGranularity, int *treeSize, int *nbLeaf, int *maxDepth, int rootId);
 
 #ifdef __cplusplus
 }

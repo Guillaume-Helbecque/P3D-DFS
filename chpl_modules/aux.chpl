@@ -1,35 +1,19 @@
 module aux
 {
-  use Time;
   use CTypes;
-  use fsp_node;
   use IO;
 
-  use fsp_aux;
-  use uts_aux;
+  const BUSY: bool = false;
+  const IDLE: bool = true;
 
-  // Runtime constant: are the leaves printed ?
-  config const display: bool = false;
-
-  // Convert a Chapel tuple to a C array
-  proc tupleToCptr(t: JOBS*int): c_ptr(c_int)
-  {
-    var p: c_ptr(c_int) = c_malloc(c_int, JOBS);
-    for i in 0..#JOBS do p[i] = t[i]:c_int;
-    return p;
-  }
-
-  // Print a leaf
-  /* proc printLeaf(n: Node): void
-  {
-    if display then writeln(n.depth, " -- ", JOBS, ", ", n.prmu);
-  } */
+  require "../c_sources/aux.c", "../c_headers/aux.h";
+	extern proc save_time(numTasks: c_int, time: c_double, path: c_string): void;
 
   // Take a boolean array and return false if it contains at least one "true", "true" if not
-  inline proc all_true(const arr: [] atomic bool): bool
+  inline proc all_idle(const arr: [] atomic bool): bool
   {
     for elt in arr {
-      if (elt.read() == false) then return false;
+      if (elt.read() == BUSY) then return false;
     }
 
     return true;
@@ -42,7 +26,7 @@ module aux
   proc check_and_set(const arr: [] atomic bool, flag: atomic bool): bool
   {
     // if all tasks are empty...
-    if all_true(arr) {
+    if all_idle(arr) {
       // set the flag
       flag.write(true);
       return true;
@@ -50,18 +34,6 @@ module aux
     else {
       return false;
     }
-  }
-
-  proc check_and_set_b(const arr: [] atomic bool, ref flag: bool): bool
-  {
-    // if all tasks are empty...
-    if all_true(arr) {
-      flag = true;
-    }
-    else {
-      flag = false;
-    }
-    return flag;
   }
 
   proc allTasksEmpty(const arr: [] atomic bool, flag: atomic bool): bool
@@ -98,21 +70,18 @@ module aux
     }
   }
 
-  proc helpMessage(): void
+  proc common_help_message(): void
   {
     writeln("\n    usage:  main.o [parameter value] ...");
     writeln("\n  General Parameters:\n");
-    writeln("   --problem             str   benchmark to be used (fsp, uts)");
-    writeln("   --mode                str   parallel execution mode (multi, single)");
-    writeln("   --printExploredTree   bool  print explored sub-trees");
+    writeln("   --mode                str   parallel execution mode (multicore, distributed)");
+    /* writeln("   --printExploredTree   bool  print explored sub-trees");
     writeln("   --printExploredSol    bool  print explored solutions");
-    writeln("   --printMakespan       bool  print optimal makespan");
+    writeln("   --printMakespan       bool  print optimal makespan"); */
     writeln("   --dbgProfiler         bool  debugging profiler");
     writeln("   --dbgDiagnostics      bool  debugging diagnostics");
-    writeln("   --activeSet           bool  compute and distribute an initial set of elements");
-    writeln("   --saveTime            bool  save computational time in a file");
+    writeln("   --activeSet           bool  computes and distributes an initial set of elements");
+    writeln("   --saveTime            bool  save processing time in a file");
     writeln("   --help (or -h)              this message");
-    fsp_helpMessage();
-    uts_helpMessage();
   }
 }

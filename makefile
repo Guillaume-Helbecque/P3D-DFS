@@ -11,11 +11,6 @@ endif
 
 RNG_PATH = ./c_sources/rng
 
-# ifeq ($(RNG), Devine)
-# RNG_SRC = $(RNG_PATH)/devine_sha1.c
-# RNG_INCL= $(RNG_PATH)/devine_sha1.h
-# RNG_DEF = -DDEVINE_RNG
-# endif
 ifeq ($(RNG), BRG)
 RNG_SRC = $(RNG_PATH)/brg_sha1.c
 RNG_INCL= $(RNG_PATH)/brg_sha1.h
@@ -35,19 +30,23 @@ COMPILER = chpl
 
 CHPL_MODULES_DIR = ./chpl_modules
 CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
-CHPL_OPTS = --fast -M $(CHPL_MODULES_DIR) -M $(CHPL_DATA_STRUCT_DIR) --ccflags $(RNG_DEF)
+CHPL_OPTS = --fast -M $(CHPL_MODULES_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 C_FILES = $(RNG_SRC) $(RNG_INCL)
-
-COMPILE = $(COMPILER) $(CHPL_OPTS) $(C_FILES)
+C_OPTS = --ccflags $(RNG_DEF)
 
 # ==================
 # Build Chapel code
 # ==================
 
-chapel: main.chpl
-	$(COMPILE) main.chpl -o main.o
+all: main_pfsp.o main_uts.o
+
+main_pfsp.o: main_pfsp.chpl
+	$(COMPILER) $(CHPL_OPTS) main_pfsp.chpl -o main_pfsp.o
+
+main_uts.o: main_uts.chpl
+	$(COMPILER) $(CHPL_OPTS) $(C_OPTS) $(C_FILES) main_uts.chpl -o main_uts.o
 
 .PHONY: clean
 clean:
-	rm main.o
-	rm main.o_real
+	rm main_*.o
+	rm main_*.o_real

@@ -1,4 +1,4 @@
-module fsp_johnson_bound_single_node
+module search_multicore
 {
   use List;
   use Time;
@@ -9,76 +9,26 @@ module fsp_johnson_bound_single_node
   use DistributedBag_DFS;
 
   use aux;
-  use fsp_aux;
-  use fsp_node;
   use statistics;
-  use fsp_johnson_chpl_c_headers;
 
-  // Decompose a parent node and return the list of its feasible child nodes
-  proc decompose(parent: Node, ref local_tree: int, ref num_sol: int, const jobs: c_int, const machines: c_int,
-    best: atomic int, ref best_task: int, const lb1_data: c_ptr(bound_data),
-    const lb2_data: c_ptr(johnson_bd_data)): list
-  {
-    var childList: list(Node); // list containing the child nodes
+  use Problem;
 
-    for i in parent.limit1+1..parent.limit2-1 {
-      var child = new Node(parent);
-      child.prmu[child.depth] <=> child.prmu[i]; // Chapel swap operator
-      child.depth  += 1;
-      child.limit1 += 1;
+  const BUSY: bool = false;
+  const IDLE: bool = true;
 
-      var c_prmu: c_ptr(c_int) = tupleToCptr(child.prmu);
-
-      var lowerbound: c_int = lb2_bound(lb1_data, lb2_data, c_prmu, child.limit1:c_int, jobs, best_task:c_int);
-
-      c_free(c_prmu);
-
-      if (child.depth == jobs) { // if child leaf
-        num_sol += 1;
-
-        if (lowerbound < best_task) { // if child feasible
-          best_task = lowerbound;
-          best.write(lowerbound);
-        }
-      } else { // if not leaf
-        if (lowerbound < best_task) { // if child feasible
-          local_tree += 1;
-          childList.append(child);
-        }
-      }
-
-    }
-
-    return childList;
-  }
-
-  proc fsp_johnson_search_single_node(const instance: int(8), const side: int,
-    const dbgProfiler: bool, const dbgDiagnostics: bool, const printExploredTree: bool,
-    const printExploredSol: bool, const printMakespan: bool, const lb: string,
+  proc search_multicore(type Node, const problem: Problem,
+    const dbgProfiler: bool, const dbgDiagnostics: bool,
     const saveTime: bool, const activeSet: bool): void
   {
-    // FSP data
-    var jobs: c_int = taillard_get_nb_jobs(instance);
-    var machines: c_int = taillard_get_nb_machines(instance);
-
-    var lb1_data: c_ptr(bound_data) = new_bound_data(jobs, machines);
-    taillard_get_processing_times_d(lb1_data, instance);
-    fill_min_heads_tails(lb1_data);
-
-    var lb2_data: c_ptr(johnson_bd_data) = new_johnson_bd_data(lb1_data/*, LB2_FULL*/);
-
-    fill_machine_pairs(lb2_data/*, LB2_FULL*/);
-    fill_lags(lb1_data, lb2_data);
-    fill_johnson_schedules(lb1_data, lb2_data);
-
     // Global variables (best solution found and termination)
-    var best: atomic int = setOptimal(instance);
+    var best: atomic int = problem.setInitUB();
     var allTasksEmptyFlag: atomic bool = false;
-    var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = false;
+    var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = BUSY;
 
     // Counters and timers (for analysis)
     var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
     var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
+    var eachMaxDepth: [0..#here.maxTaskPar] int = 0;
     var counter_termination: atomic int = 0;
     var timers: [0..#here.maxTaskPar, 0..4] real;
     var globalTimer: Timer;
@@ -95,14 +45,13 @@ module fsp_johnson_bound_single_node
       startCommDiagnostics();
     }
 
-    //print_instance(machines, jobs, times);
-    print_settings(instance, best.read(), lb, side);
+    problem.print_settings();
 
     // ===============
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node, targetLocales=Locales);
+    var bag = new DistBag_DFS(Node, targetLocales = Locales);
     var root = new Node();
 
     if activeSet {
@@ -114,15 +63,17 @@ module fsp_johnson_bound_single_node
       var initList: list(Node);
       initList.append(root);
 
-      var best_t: int = best.read();
+      var best_task: int = best.read();
+      ref tree_loc = eachLocalExploredTree[0];
+      ref num_sol = eachLocalExploredSol[0];
 
       // Computation of the initial set
       while (initList.size < initSize) {
         var parent: Node = initList.pop();
 
         {
-          var childList: list(Node) = decompose(parent, eachLocalExploredTree[0], eachLocalExploredSol[0],
-            jobs, machines, best, best_t, lb1_data, lb2_data);
+          var childList: list(Node) = problem.decompose(Node, parent, tree_loc, num_sol,
+            best, best_task);
 
           for elt in childList do initList.insert(0, elt);
         }
@@ -165,13 +116,15 @@ module fsp_johnson_bound_single_node
 
       // Task variables (best solution found)
       var best_task: int = best.read();
+      ref tree_loc = eachLocalExploredTree[tid];
+      ref num_sol = eachLocalExploredSol[tid];
 
       // Counters and timers (for analysis)
       var count, counter: int = 0;
       var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
 
       // Exploration of the tree
-      while true {
+      while true do {
         counter += 1;
 
         // Check if the global termination flag is set or not
@@ -197,9 +150,9 @@ module fsp_johnson_bound_single_node
         */
 
         terminationTimer.start();
-        if (hasWork != 1) then eachTaskTermination[tid].write(true);
+        if (hasWork != 1) then eachTaskTermination[tid].write(IDLE);
         else {
-          eachTaskTermination[tid].write(false);
+          eachTaskTermination[tid].write(BUSY);
         }
 
         if (hasWork == -1) {
@@ -219,8 +172,7 @@ module fsp_johnson_bound_single_node
         // Decompose an element
         decomposeTimer.start();
         {
-          var childList: list(Node) = decompose(parent, eachLocalExploredTree[tid], eachLocalExploredSol[tid],
-            jobs, machines, best, best_task, lb1_data, lb2_data);
+          var childList: list(Node) = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
 
           bag.addBulk(childList, tid);
         }
@@ -245,7 +197,6 @@ module fsp_johnson_bound_single_node
 
     globalTimer.stop();
 
-    free_bound_data(lb1_data);
     /* bag.clear(); */
 
     // ========
@@ -266,19 +217,18 @@ module fsp_johnson_bound_single_node
     }
 
     if saveTime {
-      var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,".txt");
-      var path = "".join(tup);
-      /* save_time(numLocales:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str()); */
+      var path = problem.output_filepath();
       save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
     }
 
-    if saveTime {
-      var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
+    /* if saveTime {
+      var tup = ("./ta",pfsp.Ta_inst:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
       var path = "".join(tup);
       save_subtimes(path, timers);
-    }
+    } */
 
     //writeln("\nNumber of global termination detection: ", counter_termination.read());
-    print_results(eachLocalExploredTree, eachLocalExploredSol, globalTimer, best.read());
+    problem.print_results(eachLocalExploredTree, eachLocalExploredSol, eachMaxDepth, best.read(), globalTimer);
   }
+
 }
