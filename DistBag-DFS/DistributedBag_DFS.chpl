@@ -47,7 +47,7 @@ module DistributedBag_DFS
   private param REMOVE_STEAL_REQUEST  = 5;
 
   private param REMOVE_SUCCESS   =  1;
-  private param REMOVE_FAST_EXIT =  0; // 0
+  private param REMOVE_FAST_EXIT =  0;
   private param REMOVE_FAIL      = -1;
 
   /*
@@ -56,7 +56,7 @@ module DistributedBag_DFS
     there are larger numbers of elements. The better the locality, the better raw
     performance and easier it is to redistribute work.
   */
-  config const distributedBagInitialBlockSize: int = 102400;
+  config const distributedBagInitialBlockSize: int = 500000;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
     (hence creating an artificial load imbalance), if the other node's segment has
@@ -88,7 +88,7 @@ module DistributedBag_DFS
   config const distributedBagMaxBlockSize: int = 1024 * 1024;
 
   /*
-    Reference coun ter for DistributedBag
+    Reference counter for DistributedBag_DFS
   */
   class DistributedBagRC
   {
@@ -138,15 +138,15 @@ module DistributedBag_DFS
 
     inline proc _value
     {
-      if (_pid == -1) then halt("DistBag is uninitialized.");
+      if (_pid == -1) then halt("DistBag_DFS is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     proc readThis(f) throws {
-      compilerError("Reading a DistBag is not supported");
+      compilerError("Reading a DistBag_DFS is not supported");
     }
 
-    // Write the contents of DistBag to a channel.
+    // Write the contents of DistBag_DFS to a channel.
     proc writeThis(ch) throws {
       ch.write("[");
       var size = this.getSize();
@@ -240,16 +240,16 @@ module DistributedBag_DFS
       If the node's bag rejects an element, we cease to offer more. We return the
       number of elements successfully added to this data structure.
     */
-    proc addBulk(elts, tid: int): int
+    proc addBulk(elts, taskId: int): int
     {
-      var successful: int;
+      var success: int;
       for elt in elts {
-        if !add(elt, tid) then break;
+        if !add(elt, taskId) then break;
 
-        successful += 1;
+        success += 1;
       }
 
-      return successful;
+      return success;
     }
 
     /*
@@ -504,7 +504,7 @@ module DistributedBag_DFS
 
             while (block != nil) {
               if (bufferOffset + block!.size > bufferSz) {
-                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
+                halt("DistributedBag_DFS Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
               }
               __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
               bufferOffset += block!.size;
@@ -549,21 +549,6 @@ module DistributedBag_DFS
     */
     var startIdxEnq: atomic uint;
     var startIdxDeq: atomic uint;
-
-    var steal_request: atomic bool = false;
-    var steal_status: atomic bool = false;
-    var stealer_locId: atomic int;
-    var stealer_segId: atomic int;
-
-    var end_exploration: atomic bool = false;
-
-    var request_status$: sync bool = true; // full
-
-    /*
-      This vector stores the locale indices, from the last visited to the most.
-      It is usefull to optimize the global WS mechanism.
-    */
-    var visited_loc: [0..#numLocales] int = 0..#numLocales;
 
     /*
       If a task makes 2 complete passes (1 best-case, 1 average-case) and has not
@@ -616,10 +601,10 @@ module DistributedBag_DFS
         max_victim = here.maxTaskPar;
       } else if (T == "locale") {
         max_victim = numLocales;
-      } else halt("DistributedBag internal error: Wrong victim's type");
+      } else halt("DistributedBag_DFS internal error: Wrong victim's type");
 
       select mode {
-        // In the 'ring' strategy, threads/locales are selected in a round-robin fashion.
+        // In the 'ring' strategy, tasks/locales are selected in a round-robin fashion.
         when "ring" {
           var id = (callerId + 1) % max_victim;
 
@@ -632,7 +617,7 @@ module DistributedBag_DFS
             id = (id + 1) % max_victim;
           }
         }
-        // In the 'rand' strategy, threads/locales are randomly selected.
+        // In the 'rand' strategy, tasks/locales are randomly selected.
         when "rand" {
           var id: int = 0;
           var victims: [0..#max_victim] int;
@@ -646,7 +631,7 @@ module DistributedBag_DFS
             id += 1;
           }
         }
-        otherwise halt("DistributedBag internal error: Wrong victim choice policy");
+        otherwise halt("DistributedBag_DFS internal error: Wrong victim choice policy");
       }
     }
 
@@ -700,15 +685,15 @@ module DistributedBag_DFS
         }
       }
 
-      halt("DistributedBag Internal Error: DEADCODE.");
+      halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
 
     /*
       Insertion operation.
     */
-    proc add(elt: eltType, const threadId: int): bool
+    proc add(elt: eltType, const taskId: int): bool
     {
-      segments[threadId].addElement(elt);
+      segments[taskId].addElement(elt);
 
       return true;
     }
@@ -923,7 +908,7 @@ module DistributedBag_DFS
             }
           }
 
-          otherwise do halt("DistributedBag Internal Error: Invalid phase #", phase);
+          otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
         }
 
         // Reset variables...
@@ -932,7 +917,7 @@ module DistributedBag_DFS
         backoff = 0;
       }
 
-      halt("DistributedBag Internal Error: DEADCODE.");
+      halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
 
     /*
@@ -942,91 +927,22 @@ module DistributedBag_DFS
       In WORST CASE, the caller try to steal another segment of another bag instance.
       The operation fails if all cases failed.
     */
-    proc remove(const threadId: int): (int, eltType)
+    proc remove(const taskId: int): (int, eltType)
     {
-      var phase = REMOVE_STEAL_REQUEST;
+      var phase = REMOVE_SIMPLE;
       var locId: int = here.id;
 
       while true {
         select phase {
           /*
-            STEAL REQUEST:
-            We first check if there is a pending external steal request. If yes,
-            we take the lead and perform a local steal (as usual), before sending
-            the resulting buffer to the stealer.
-          */
-          when REMOVE_STEAL_REQUEST {
-
-            // if segment 'threadId' detects an external stealing request, it takes
-            // the lead, and indicates it to the other segments by setting 'false'
-            /* if steal_request.compareAndSwap(true, false) {
-              var default: eltType;
-
-              const parentPid = parentHandle.pid;
-              var stolenElts: list(eltType);
-
-              // selection of the victim segments
-              for idx in 0..#here.maxTaskPar {
-                ref targetSegment = segments[idx];
-
-                //var sharedElts: int = targetSegment.nElems_shared.read();
-                // if the shared region contains enough elements to be stolen...
-                if (2 <= targetSegment.nElems_shared.read()) {
-
-                  for i in 0..#(targetSegment.nElems_shared.read()/2):int {
-                    // attempt to steal an element
-                    var (hasElem, elem): (bool, eltType) = targetSegment.steal();
-
-                    // if the steal succeeds...
-                    if hasElem {
-                      stolenElts.insert(0, elem);
-                    }
-                  }
-
-                }
-                // otherwise, if the private region has elements, we request for a split shifting
-                else if (targetSegment.nElems_private > 1) {
-                  targetSegment.split_request.write(true);
-                }
-              } // for idx
-
-              writeln("loc/thread ", here.id, " ", threadId, " prepares :", stolenElts.size);
-
-              on Locales[stealer_locId.read()] {
-                var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
-
-                // if the steal fails...
-                if (stolenElts.size == 0) {
-                  targetBag!.steal_status.write(false);
-                }
-                else {
-                  ref targetSegment = targetBag!.segments[stealer_segId.read()];
-
-                  for i in 0..#stolenElts.size {
-                    targetSegment.addElement(stolenElts[i]);
-                  }
-                  targetBag!.steal_status.write(true);
-//                  targetSegment.split_request.write(true);
-                }
-
-                // set to empty
-                targetBag!.request_status$.reset();
-              }
-
-            } // if steal */
-
-            phase = REMOVE_SIMPLE;
-          }
-
-          /*
             SIMPLE:
-            We try to retrieve an element in segment 'threadId'. Retrieval is done
+            We try to retrieve an element in segment 'taskId'. Retrieval is done
             at the tail of the segment's block. This try fails if the private region
             is empty.
           */
           when REMOVE_SIMPLE {
 
-            ref segment = segments[threadId];
+            ref segment = segments[taskId];
 
             // if the private region contains at least one element to be removed...
             if (segment.nElems_private >= 1) {
@@ -1043,13 +959,12 @@ module DistributedBag_DFS
 
           /*
             LOCAL STEAL: intra-node work stealing
-            It seems that segment 'threadId' is empty so we try to steal another one.
+            It seems that segment 'taskId' is empty so we try to steal another one.
             The victim selection is set in the 'victim' iterator, and defaults to random.
             The work stealing fails when all segments don't satisfied the condition to be
             a victim, or when a shared region becomes empty due to a concurrent operation.
           */
           when REMOVE_LOCAL_STEAL {
-
             var default: eltType;
             var splitreq: bool = false;
 
@@ -1061,11 +976,11 @@ module DistributedBag_DFS
               return (REMOVE_FAST_EXIT, default);
             }
 
-            segments[threadId].nSteal1 += 1;
-            segments[threadId].timer1.start();
+            segments[taskId].nSteal1 += 1;
+            segments[taskId].timer1.start();
 
             // selection of the victim segment
-            for idx in victim("thread", threadId, "rand", here.maxTaskPar) {
+            for idx in victim("thread", taskId, "rand", here.maxTaskPar) {
               ref targetSegment = segments[idx];
 
               if !targetSegment.globalSteal.read() {
@@ -1076,8 +991,8 @@ module DistributedBag_DFS
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElem {
-                    segments[threadId].timer1.stop();
-                    segments[threadId].nSSteal1 += 1;
+                    segments[taskId].timer1.stop();
+                    segments[taskId].nSSteal1 += 1;
                     return (REMOVE_SUCCESS, elem);
                   }
                 }
@@ -1089,7 +1004,7 @@ module DistributedBag_DFS
               }
             }
 
-            segments[threadId].timer1.stop();
+            segments[taskId].timer1.stop();
 
             if splitreq then return (REMOVE_FAST_EXIT, default);
 
@@ -1117,71 +1032,12 @@ module DistributedBag_DFS
               return (REMOVE_FAST_EXIT, default);
             }
 
-            /* const parentPid = parentHandle.pid;
-            var timer, subtimer: Timer;
-            var status: int = 0;
-            //timer.start();
-
-            // profiling
-            writeln("loc/thread ", here.id, " ", threadId, " request a steal: ", segments.nElems);
-            segments[threadId].nSteal2 += 1;
-            segments[threadId].timer2.start();
-
-            // selection of the victim locale
-            for idx in victim("locale", here.id, "rand", 1) {
-              on Locales[idx] {
-                var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
-
-                if targetBag!.end_exploration.read() {
-                  // if the target bag has detected the end of the exploration, we
-                  // set the 'end_exploration' flag and break the stealing operation
-                  // via 'status'.
-                  end_exploration.write(true);
-                  status = -1;
-                }
-                else {
-                  // if the target bag has not detected the end of the exploration,
-                  // we request a steal via the 'steal_request' flag. Then, we break
-                  // the stealing operation.
-                  targetBag!.stealer_locId.write(locId);
-                  targetBag!.stealer_segId.write(threadId);
-                  targetBag!.steal_request.write(true);
-                  status = 1;
-                }
-              }
-            }
-            if (status == -1) {
-              // if the end of the exploration is detected, we return.
-              return (REMOVE_FAIL, default);
-            }
-
-            // wait until the steal request in accomplished by a thread.
-            request_status$.writeEF(true);
-
-            // profiling
-            writeln("loc/thread ", here.id, " ", threadId, " is released: ", segments.nElems);
-
-            // return according to the end status of the stealing operation.
-            if steal_status.read() {
-              globalStealInProgress.write(false);
-              segments[threadId].nSSteal2 += 1;
-              segments[threadId].timer2.stop();
-              return (REMOVE_SUCCESS, segments[threadId].takeElement()[1]);
-            }
-            else {
-              globalStealInProgress.write(false);
-              segments[threadId].timer2.stop();
-              return (REMOVE_FAIL, default);
-            } */
-
             const parentPid = parentHandle.pid;
             var stolenElts: list(eltType);
             var timer, subtimer: Timer;
 
-            //writeln("loc/thread ", here.id, " ", threadId, ", state of bag ", segments.nElems);
-
-            segments[threadId].nSteal2 += 1;
-            segments[threadId].timer2.start();
+            segments[taskId].nSteal2 += 1;
+            segments[taskId].timer2.start();
 
             timer.start();
 
@@ -1190,7 +1046,7 @@ module DistributedBag_DFS
               on Locales[idx] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // selection of the victim segment
-                for seg in victim("thread", threadId, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
+                for seg in victim("thread", taskId, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
                   ref targetSegment = targetBag!.segments[seg];
 
                   targetSegment.globalSteal.write(true);
@@ -1225,32 +1081,29 @@ module DistributedBag_DFS
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
               timer.stop();
-              segments[threadId].timer2.stop();
+              segments[taskId].timer2.stop();
               return (REMOVE_FAIL, default);
             }
             else {
               /* writeln(stolenElts.size); */
-              for elt in stolenElts do segments[threadId].addElement(elt);
-              //segments[threadId].split.add((3*stolenElts.size/4):int);
-              segments[threadId].nSSteal2 += 1;
-
-              /* writeln("loc/thread ", here.id, " ", threadId, ", steals in ", timer.elapsed(TimeUnits.seconds));
-              writeln("loc/thread ", here.id, " ", threadId, ", selection in ", subtimer.elapsed(TimeUnits.seconds)); */
+              for elt in stolenElts do segments[taskId].addElement(elt);
+              //segments[taskId].split.add((3*stolenElts.size/4):int);
+              segments[taskId].nSSteal2 += 1;
 
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
               timer.stop();
-              segments[threadId].timer2.stop();
-              return (REMOVE_SUCCESS, segments[threadId].takeElement()[1]);
+              segments[taskId].timer2.stop();
+              return (REMOVE_SUCCESS, segments[taskId].takeElement()[1]);
             }
           }
 
-          otherwise do halt("DistributedBag Internal Error: Invalid phase #", phase);
+          otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
         }
         chpl_task_yield();
       }
 
-      halt("DistributedBag Internal Error: DEADCODE.");
+      halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
   } // end 'Bag' class
 
@@ -1385,7 +1238,7 @@ module DistributedBag_DFS
       var srcOffset = 0;
       while (destOffset < n) {
         if ((block == nil) || isEmpty) {
-          halt(here, ": DistributedBag Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
+          halt(here, ": DistributedBag_DFS Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
         }
 
         var len = block!.size;
@@ -1470,8 +1323,8 @@ module DistributedBag_DFS
       var arrIdx = 0;
 
       for 1..n : int {
-        if isEmpty then halt("DistributedBag Internal Error: Attempted to take ", n, " elements when insufficient");
-        if headBlock!.isEmpty then halt("DistributedBag Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
+        if isEmpty then halt("DistributedBag_DFS Internal Error: Attempted to take ", n, " elements when insufficient");
+        if headBlock!.isEmpty then halt("DistributedBag_DFS Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
 
         arr[arrIdx] = headBlock.pop();
         arrIdx += 1;
@@ -1506,7 +1359,7 @@ module DistributedBag_DFS
         lock$.writeEF(true); // set unlocked (full)
         return false;
       }
-      halt("DistributedBag Internal Error: DEADCODE");
+      halt("DistributedBag_DFS Internal Error: DEADCODE");
     }
 
     /*
@@ -1558,7 +1411,7 @@ module DistributedBag_DFS
         return (false, default);
       }
 
-      if block!.isEmpty then halt("DistributedBag Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
+      if block!.isEmpty then halt("DistributedBag_DFS Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
 
       if (side == 't') { // remove at the 't'ail
         var elem = block!.popTail();
@@ -1582,7 +1435,7 @@ module DistributedBag_DFS
 
         return (true, elem);
       }
-      else halt("DistributedBag Internal Error: Wrong 'side' choice in takeElement().");
+      else halt("DistributedBag_DFS Internal Error: Wrong 'side' choice in takeElement().");
     } */
 
     /*
@@ -1635,7 +1488,7 @@ module DistributedBag_DFS
 
       // 'block' full ? Create a new one double the previous size
       if block!.isFull {
-        halt("DistributedBag Internal Error: 'block' full.");
+        halt("DistributedBag_DFS Internal Error: 'block' full.");
       }
 
       block!.pushTail(elt);
@@ -1778,7 +1631,7 @@ module DistributedBag_DFS
     // ISSUE: Cannot insert Chapel array due to "c_malloc".
     proc init(type eltType, capacity)
     {
-      if (capacity == 0) then halt("DistributedBag Internal Error: Capacity is 0.");
+      if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0.");
       this.eltType = eltType;
       this.elems = c_malloc(eltType, capacity);
       this.cap = capacity;
@@ -1804,9 +1657,8 @@ module DistributedBag_DFS
 
     inline proc pushTail(elt: eltType): void
     {
-      // security check
-      if (elems == nil) then halt("DistributedBag Internal Error in 'pushTail': 'elems' is nil.");
-      /* if isFull then halt("DistributedBag Internal Error in 'pushTail': Block is Full."); */
+      if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'pushTail': 'elems' is nil.");
+      /* if isFull then halt("DistributedBag_DFS Internal Error in 'pushTail': Block is Full."); */
 
       elems[tailIdx] = elt;
       tailIdx +=1;
@@ -1816,11 +1668,10 @@ module DistributedBag_DFS
       return;
     }
 
-    // UNUSED (pushHead)
     /* inline proc pushHead(elt: eltType): void
     {
-      if (elems == nil) then halt("DistributedBag Internal Error in 'pushHead': 'elems' is nil.");
-      if isFull then halt("DistributedBag Internal Error in 'pushHead': Block is Full.");
+      if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'pushHead': 'elems' is nil.");
+      if isFull then halt("DistributedBag_DFS Internal Error in 'pushHead': Block is Full.");
 
       headIdx -= 1;
       if (headIdx == -1) then headIdx = cap - 1;
@@ -1832,9 +1683,8 @@ module DistributedBag_DFS
 
     inline proc popTail(): eltType
     {
-      // security check
-      if (elems == nil) then halt("DistributedBag Internal Error in 'popTail': 'elems' is nil.");
-      /* if isEmpty then halt("DistributedBag Internal Error in 'popTail': Block is Empty."); */
+      if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popTail': 'elems' is nil.");
+      /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popTail': Block is Empty."); */
 
       tailIdx -= 1;
       if (tailIdx < 0) then tailIdx = cap - 1;
@@ -1846,8 +1696,8 @@ module DistributedBag_DFS
     inline proc popHead(): eltType
     {
       // security check
-      if (elems == nil) then halt("DistributedBag Internal Error in 'popHead': 'elems' is nil.");
-      /* if isEmpty then halt("DistributedBag Internal Error in 'popHead': Block is Empty."); */
+      if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popHead': 'elems' is nil.");
+      /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popHead': Block is Empty."); */
 
       var elt = elems[headIdx];
       headIdx += 1;
