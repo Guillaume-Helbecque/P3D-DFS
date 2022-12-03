@@ -38,13 +38,16 @@ C_OPTS = --ccflags $(RNG_DEF)
 # Build Chapel code
 # ==================
 
-all: main_pfsp.o main_uts.o
+all: main_pfsp.o main_uts.o main_nqueens.o
 
 main_pfsp.o: main_pfsp.chpl
 	$(COMPILER) $(CHPL_OPTS) main_pfsp.chpl -o main_pfsp.o
 
 main_uts.o: main_uts.chpl
 	$(COMPILER) $(CHPL_OPTS) $(C_OPTS) $(C_FILES) main_uts.chpl -o main_uts.o
+
+main_nqueens.o: main_nqueens.chpl
+	$(COMPILER) $(CHPL_OPTS) main_nqueens.chpl -o main_nqueens.o
 
 .PHONY: clean
 clean:
