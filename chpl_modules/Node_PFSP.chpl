@@ -1,37 +1,41 @@
 module Node_PFSP
 {
-  // Compilation constant: size of the problem
-  config param JOBS: int = 20;
+  use CTypes;
 
-  // Node record
+  // Maximum number of jobs in PFSP Taillard's instances.
+  config param JobsMax: int = 500;
+
   record Node_PFSP
   {
-    // var size: int;       // size of the problem (= JOBS, can be removed ?)
-    var depth: int;         // depth
-    var limit1: int;        // right limit
-    var limit2: int;        // left limit
-    var prmu: (JOBS*int);   // permutation
+    var depth: int;
+    var limit1: int; // right limit
+    var limit2: int; // left limit
+    var prmu: c_array(c_int, JobsMax);
 
-    // default initializer
+    // default-initializer
     proc init()
+    {}
+
+    // root-initializer
+    proc init(problem)
     {
-      // this.size = JOBS;
       this.depth  = 0;
       this.limit1 = -1;
-      this.limit2 = JOBS;
-      var tmp: JOBS*int;
-      for i in 0..#JOBS do tmp(i) = i;
-      this.prmu = tmp;
+      this.limit2 = problem.jobs;
+      this.complete();
+      for i in 0..#problem.jobs do this.prmu(i) = i:c_int;
     }
 
-    // copy initializer
-    proc init(from: Node_PFSP)
+    // copy-initializer
+    proc init(other: Node_PFSP)
     {
-      // this.size = from.size;
-      this.depth  = from.depth;
-      this.limit1 = from.limit1;
-      this.limit2 = from.limit2;
-      this.prmu   = from.prmu;
+      this.depth  = other.depth;
+      this.limit1 = other.limit1;
+      this.limit2 = other.limit2;
+      this.prmu   = other.prmu;
     }
+
+    proc deinit()
+    {}
   }
 }

@@ -1,21 +1,38 @@
 module Node_NQueens
 {
-	// Maximum size of the problem
-  config param NMax: int = 25;
+  /*
+    Maximum size of the problem. The exact number of N-Queens solutions is only
+    known for N < 28.
+  */
+  config param NMax: int = 27;
+
+  use CTypes;
 
   record Node_NQueens
   {
-    var board: NMax * int;
-		var depth: int;
+    var board: c_array(c_int, NMax);
+    var depth: int;
 
-		proc init(){}
+    // default-initializer
+    proc init()
+    {}
 
-		// copy-initializer
-		proc init(other: Node_NQueens)
+    // root-initializer
+    proc init(problem)
+    {
+      this.complete();
+      for i in 0..#problem.N do this.board[i] = i:c_int;
+    }
+
+    // copy-initializer
+    proc init(other: Node_NQueens)
     {
       this.board = other.board;
-			this.depth = other.depth;
+      this.depth = other.depth;
     }
-  };
+
+    proc deinit()
+    {}
+  }
 
 }

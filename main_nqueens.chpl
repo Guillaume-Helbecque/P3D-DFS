@@ -22,13 +22,13 @@ module main_queens
   config const printExploredSol: bool = true; // number of explored solutions
   config const printMakespan: bool = true; // best makespan */
 
-  // NQueens-specific options
-  config const N: int = 8;
+  // NQueens-specific option(s)
+  config const N: int = 13;
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var nqueens: Problem = new NQueens(N);
+    var nqueens = new Problem_NQueens(N);
 
     // Helper
     for a in args[1..] {

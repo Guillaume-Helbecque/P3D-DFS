@@ -36,7 +36,7 @@ module main_uts
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var uts: Problem = new UTS(t, b, r, m, q, d, a, f, g);
+    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
 
     // Helper
     for a in args[1..] {

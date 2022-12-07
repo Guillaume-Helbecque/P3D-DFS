@@ -1,13 +1,17 @@
-module Problem_PFSP {
+module Problem_PFSP
+{
   use List;
   use Time;
   use CTypes;
 
   use Problem;
-  use Node_PFSP;
   use Header_chpl_c_PFSP;
 
-  class PFSP : Problem {
+  require "../c_sources/aux.c", "../c_headers/aux.h";
+  extern proc swap(ref a: c_int, ref b: c_int): void;
+
+  class Problem_PFSP : Problem
+  {
     var Ta_inst: c_int;
     var machines: c_int;
     var jobs: c_int;
@@ -63,26 +67,22 @@ module Problem_PFSP {
 
     override proc copy(): Problem
     {
-      return new PFSP(Ta_inst, lb_name, branching, ub_init);
+      return new Problem_PFSP(Ta_inst, lb_name, branching, ub_init);
     }
 
-    proc decompose_lb1(const parent: Node_PFSP, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+    proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node_PFSP); // list containing the child nodes
+      var childList: list(Node); // list containing the child nodes
 
       // Treatment of childs
       for i in parent.limit1+1..parent.limit2-1 {
-        var child = new Node_PFSP(parent);
-        child.prmu[child.depth] <=> child.prmu[i]; // Chapel swap operator
+        var child = new Node(parent);
+        swap(child.prmu[child.depth], child.prmu[i]);
         child.depth  += 1;
         child.limit1 += 1;
 
-        var c_prmu: c_ptr(c_int) = tupleToCptr(child.prmu);
-
-        var lowerbound: c_int = lb1_bound(lbound1, c_prmu, child.limit1:c_int, jobs);
-
-        c_free(c_prmu);
+        var lowerbound: c_int = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -102,27 +102,16 @@ module Problem_PFSP {
       return childList;
     }
 
-    // for debugging
-    override proc print_thing(): void
+    proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      best: atomic int, ref best_task: int): list
     {
+      var childList: list(Node); // list containing the child nodes
 
-    }
-
-    proc decompose_lb1_d(const parent: Node_PFSP, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
-    {
-      var childList: list(Node_PFSP); // list containing the child nodes
-
-      // Computation of lowerbounds
-      var c_prmu: c_ptr(c_int) = tupleToCptr(parent.prmu);
-
-      var lb_begin = c_malloc(c_int, JOBS);
+      var lb_begin = c_malloc(c_int, jobs);
       var BEGINEND: c_int = -1;
 
-      lb1_children_bounds(this.lbound1, c_prmu, parent.limit1:c_int, parent.limit2:c_int,
+      lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
         lb_begin, c_nil, c_nil, c_nil, BEGINEND);
-
-      c_free(c_prmu);
 
       // Treatment of childs
       for i in parent.limit1+1..parent.limit2-1 {
@@ -136,15 +125,15 @@ module Problem_PFSP {
           }
         } else { // if not leaf
           if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
-            var child = new Node_PFSP(parent);
+            var child = new Node(parent);
             child.depth += 1;
 
             if (branching == 0){ // if forward
               child.limit1 += 1;
-              child.prmu[child.limit1] <=> child.prmu[i];
+              swap(child.prmu[child.limit1], child.prmu[i]);
             } else if (branching == 1){ // if backward
               child.limit2 -= 1;
-              child.prmu[child.limit2] <=> child.prmu[i];
+              swap(child.prmu[child.limit2], child.prmu[i]);
             }
 
             childList.append(child);
@@ -159,22 +148,18 @@ module Problem_PFSP {
       return childList;
     }
 
-    proc decompose_lb2(const parent: Node_PFSP, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+    proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node_PFSP); // list containing the child nodes
+      var childList: list(Node); // list containing the child nodes
 
       for i in parent.limit1+1..parent.limit2-1 {
-        var child = new Node_PFSP(parent);
-        child.prmu[child.depth] <=> child.prmu[i]; // Chapel swap operator
+        var child = new Node(parent);
+        swap(child.prmu[child.depth], child.prmu[i]);
         child.depth  += 1;
         child.limit1 += 1;
 
-        var c_prmu: c_ptr(c_int) = tupleToCptr(child.prmu);
-
-        var lowerbound: c_int = lb2_bound(lbound1, lbound2, c_prmu, child.limit1:c_int, jobs, best_task:c_int);
-
-        c_free(c_prmu);
+        var lowerbound: c_int = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -200,14 +185,13 @@ module Problem_PFSP {
     {
       select lb_name {
         when "lb1" {
-          return decompose_lb1(parent, tree_loc, num_sol, best, best_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, best, best_task);
         }
         when "lb1_d" {
-          return decompose_lb1_d(parent, tree_loc, num_sol, best, best_task);
-          if (here.id == 1) then writeln("hello after decompose_lb1_d from ", here.id);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, best, best_task);
         }
         when "lb2" {
-          return decompose_lb2(parent, tree_loc, num_sol, best, best_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, best, best_task);
         }
         otherwise {
           halt("Error - Unknown lower bound");
@@ -307,13 +291,5 @@ module Problem_PFSP {
     }
 
   } // end class
-
-  // Convert a Chapel tuple to a C array
-  proc tupleToCptr(t: JOBS*int): c_ptr(c_int)
-  {
-    var p: c_ptr(c_int) = c_malloc(c_int, JOBS);
-    for i in 0..#JOBS do p[i] = t[i]:c_int;
-    return p;
-  }
 
 } // end module

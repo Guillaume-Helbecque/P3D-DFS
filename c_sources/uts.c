@@ -70,7 +70,7 @@ void uts_initRoot(Node_UTS* root, tree_t treeType, int rootId)
 {
   root->dist = treeType;
   root->height = 0;
-  root->numChildren = -1;      // means not yet determined
+  root->numChildren = -1; // not yet determined
   rng_init(root->state.state, rootId);
 }
 
@@ -105,8 +105,7 @@ int uts_numChildren_geo(Node_UTS* parent, double b_0, geoshape_t shape_fn, int g
         b_i = 0.0;
         break;
       }
-      b_i = pow(b_0,
-                sin(2.0*3.141592653589793*(double) depth / (double) gen_mx));
+      b_i = pow(b_0, sin(2.0*3.141592653589793*(double) depth / (double) gen_mx));
       break;
 
       // identical distribution at all nodes up to max depth
@@ -117,7 +116,7 @@ int uts_numChildren_geo(Node_UTS* parent, double b_0, geoshape_t shape_fn, int g
       // linear decrease in b_i
     case LINEAR:
     default:
-      b_i =  b_0 * (1.0 - (double)depth / (double) gen_mx);
+      b_i =  b_0 * (1.0 - (double) depth / (double) gen_mx);
       break;
     }
   }
@@ -244,11 +243,6 @@ void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int non
 {
   int parentHeight = parent->height;
   int numChildren, childType;
-
-  // tour de passe-passe pour eviter initialisation problem-specific
-  if (parentHeight == 0) {
-    uts_initRoot(parent, treeType, rootId);
-  }
 
   numChildren = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb, b_0, shape_fn, gen_mx, shiftDepth);
   childType   = uts_childType(parent, treeType, shiftDepth, gen_mx);

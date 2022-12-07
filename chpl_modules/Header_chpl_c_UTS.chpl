@@ -8,7 +8,6 @@ module Header_chpl_c_UTS
 	extern const uts_trees_str: c_ptr(c_string);
 	extern const uts_geoshapes_str: c_ptr(c_string);
 
-	/* extern proc uts_initRoot(ref root: Node_UTS, treeType: c_int, rootId: c_int): void; */
 	extern proc uts_numChildren(const ref parent: Node_UTS, treeType: c_int, nonLeafBF: c_int,
 		nonLeafProb: c_double, b_0: c_double, shape_fn: c_int, gen_mx: c_int, shiftDepth: c_double): c_int;
 

@@ -23,7 +23,7 @@ module main_pfsp
   config const printMakespan: bool = true; // best makespan */
 
   // PFSP-specific options
-  config const inst: c_int = 3;     // between 1 and 120
+  config const inst: c_int = 14;     // between 1 and 120
   config const lb: string = "lb1";  // lb1, lb1_d, lb2
   config const br: int = 0;         // forward (0), backward (1)
   config const ub: string = "opt";  // opt, inf
@@ -31,7 +31,7 @@ module main_pfsp
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var pfsp: Problem = new PFSP(inst, lb, br, ub);
+    var pfsp = new Problem_PFSP(inst, lb, br, ub);
 
     // Helper
     for a in args[1..] {

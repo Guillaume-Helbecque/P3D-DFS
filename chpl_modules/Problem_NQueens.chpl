@@ -2,13 +2,16 @@ module Problem_NQueens
 {
   use List;
   use Time;
+  use CTypes;
 
   use Problem;
-  use Node_NQueens;
 
-  class NQueens : Problem {
-    // Size of the problem (number of queens)
-    var N: int;
+  require "../c_sources/aux.c", "../c_headers/aux.h";
+  extern proc swap(ref a: c_int, ref b: c_int): void;
+
+  class Problem_NQueens : Problem
+  {
+    var N: int; // size of the problem (number of queens)
 
     proc init(const n: int): void
     {
@@ -17,41 +20,39 @@ module Problem_NQueens
 
     override proc copy(): Problem
     {
-      return new NQueens(N);
+      return new Problem_NQueens(this.N);
     }
 
-    proc isSafe(const board, const queen_num: int, const row_pos: int): bool
+    proc isSafe(const board: c_ptr(c_int), const queen_num: int, const row_pos: c_int): bool
     {
       // For each queen before this one
       for i in 0..#queen_num {
         // Get the row position
-        const other_row_pos: int = board[i];
+        const other_row_pos: c_int = board[i];
 
-        // Check if it is in the same row or diagonals
-        if (other_row_pos == row_pos ||                 // Same row
-          other_row_pos == row_pos - (queen_num - i) || // Same diagonal
-          other_row_pos == row_pos + (queen_num - i))   // Same diagonal
-          {
-            return false;
-          }
+        // Check diagonals
+        if (other_row_pos == row_pos - (queen_num - i) ||
+            other_row_pos == row_pos + (queen_num - i)) {
+          return false;
         }
+      }
       return true;
     }
 
-    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      best: atomic int, ref best_task: int): list
     {
       var childList: list(Node);
 
-      const firstEmptyRow: int = parent.depth;
+      const depth: int = parent.depth;
 
-      if (firstEmptyRow == N) { // All queens are placed
+      if (depth == this.N) { // All queens are placed
         num_sol += 1;
       }
-      for j in 0..#N {
-        if isSafe(parent.board, firstEmptyRow, j) {
+      for j in depth..this.N-1 {
+        if isSafe(parent.board, depth, parent.board[j]) {
           var child = new Node(parent);
-          child.board[firstEmptyRow] = j;
+          swap(child.board[depth], child.board[j]);
           child.depth += 1;
           childList.append(child);
           tree_loc += 1;
@@ -67,11 +68,6 @@ module Problem_NQueens
       return 0;
     }
 
-    proc free(): void
-    {
-
-    }
-
     // =======================
     // Utility functions
     // =======================
@@ -79,7 +75,7 @@ module Problem_NQueens
     override proc print_settings(): void
     {
       writeln("\n=================================================");
-      writeln("Resolution of the ", N, "-Queens instance");
+      writeln("Resolution of the ", this.N, "-Queens instance");
       writeln("=================================================");
     }
 
@@ -102,7 +98,7 @@ module Problem_NQueens
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_nqueens_", N:string, ".txt");
+      var tup = ("./chpl_nqueens_", this.N:string, ".txt");
       return "".join(tup);
     }
 

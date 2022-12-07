@@ -1,10 +1,10 @@
-module Problem_UTS {
+module Problem_UTS
+{
   use List;
   use Time;
   use CTypes;
 
   use Problem;
-  use Node_UTS;
   use Header_chpl_c_UTS;
 
   const BIN: c_int      = 0;
@@ -12,7 +12,8 @@ module Problem_UTS {
   const HYBRID: c_int   = 2;
   const BALANCED: c_int = 3;
 
-  class UTS : Problem {
+  class Problem_UTS : Problem
+  {
     /* Tree type
      *   Trees are generated using a Galton-Watson process, in
      *   which the branching factor of each node is a random
@@ -78,12 +79,12 @@ module Problem_UTS {
 
     override proc copy(): Problem
     {
-      return new UTS(treeType, b_0, rootId, nonLeafBF, nonLeafProb, gen_mx,
+      return new Problem_UTS(treeType, b_0, rootId, nonLeafBF, nonLeafProb, gen_mx,
         shape_fn, shiftDepth, computeGranularity);
     }
 
-    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      best: atomic int, ref best_task: int): list
     {
       var childList: list(Node);
       var numChildren: c_int = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb,
@@ -108,18 +109,12 @@ module Problem_UTS {
       return 0;
     }
 
-    proc free(): void
-    {
-
-    }
-
     // =======================
     // Utility functions
     // =======================
 
     override proc print_settings(): void
     {
-      //uts_printParams();
       writeln("\n=================================================");
       writeln("UTS - Unbalanced Tree Search");
       writeln("Tree type: ", treeType, " (", uts_trees_str[treeType]:string, ")");

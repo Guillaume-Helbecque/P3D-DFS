@@ -16,7 +16,7 @@ module search_multicore
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  proc search_multicore(type Node, const problem: Problem,
+  proc search_multicore(type Node, problem,
     const dbgProfiler: bool, const dbgDiagnostics: bool,
     const saveTime: bool, const activeSet: bool): void
   {
@@ -52,7 +52,7 @@ module search_multicore
     // ===============
 
     var bag = new DistBag_DFS(Node, targetLocales = Locales);
-    var root = new Node();
+    var root = new Node(problem);
 
     if activeSet {
       /*
