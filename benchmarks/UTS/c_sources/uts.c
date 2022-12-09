@@ -237,40 +237,30 @@ int uts_childType(Node_UTS* parent, tree_t treeType, double shiftDepth, int gen_
 //   }
 // }
 
-void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int nonLeafBF,
-  double nonLeafProb, double b_0, geoshape_t shape_fn, int gen_mx, double shiftDepth,
-  int computeGranularity, int *treeSize, int *nbLeaf, int *maxDepth, int rootId)
+void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int numChildren,
+  int gen_mx, double shiftDepth, int computeGranularity, int *treeSize, int *maxDepth)
 {
   int parentHeight = parent->height;
-  int numChildren, childType;
+  int childType;
 
-  numChildren = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb, b_0, shape_fn, gen_mx, shiftDepth);
   childType   = uts_childType(parent, treeType, shiftDepth, gen_mx);
 
-  // record number of children in parent
-  parent->numChildren = numChildren;
-
   // construct children and push onto stack
-  if (numChildren > 0) {
-    int i, j;
-    Node_UTS child;
+  int i, j;
+  Node_UTS child;
 
-    child.dist = childType;
-    child.height = parentHeight + 1;
+  child.dist = childType;
+  child.height = parentHeight + 1;
 
-    for (i = 0; i < numChildren; i++) {
-      for (j = 0; j < computeGranularity; j++) {
-        // computeGranularity controls number of rng_spawn calls per node
-        rng_spawn(parent->state.state, child.state.state, i);
-      }
-       children[i] = child;
+  for (i = 0; i < numChildren; i++) {
+    for (j = 0; j < computeGranularity; j++) {
+      // computeGranularity controls number of rng_spawn calls per node
+      rng_spawn(parent->state.state, child.state.state, i);
     }
-    *treeSize += numChildren;
-    *maxDepth = MAX(*maxDepth, parentHeight + 1);
+     children[i] = child;
   }
-  else {
-    *nbLeaf += 1;
-  }
+  *treeSize += numChildren;
+  *maxDepth = MAX(*maxDepth, parentHeight + 1);
 
   return;
 }

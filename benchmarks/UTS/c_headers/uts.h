@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#include "../c_sources/rng/rng.h"
+#include "rng.h"
 
 /***********************************************************
  *  Tree node descriptor and statistics                    *
@@ -59,8 +59,8 @@ typedef struct node_t Node_UTS;
  *   generated with geometric distributions near the
  *   root and binomial distributions towards the leaves.
  */
-enum   uts_trees_e    { BIN = 0, GEO, HYBRID, BALANCED };
-enum   uts_geoshape_e { LINEAR = 0, EXPDEC, CYCLIC, FIXED };
+enum uts_trees_e    { BIN = 0, GEO, HYBRID, BALANCED };
+enum uts_geoshape_e { LINEAR = 0, EXPDEC, CYCLIC, FIXED };
 
 typedef enum uts_trees_e    tree_t;
 typedef enum uts_geoshape_e geoshape_t;
@@ -82,16 +82,15 @@ double uts_wctime();
 double rng_toProb(int n);
 
 /* Common tree routines */
-void  uts_initRoot(Node_UTS * root, tree_t treeType, int rootId);
+void  uts_initRoot(Node_UTS *root, tree_t treeType, int rootId);
 int   uts_numChildren(Node_UTS *parent, tree_t treeType, int nonLeafBF, double nonLeafProb,
   double b_0, geoshape_t shape_fn, int gen_mx, double shiftDepth);
-int   uts_numChildren_bin(Node_UTS * parent, int nonLeafBF, double nonLeafProb);
-int   uts_numChildren_geo(Node_UTS * parent, double b_0, geoshape_t shape_fn, int gen_mx);
+int   uts_numChildren_bin(Node_UTS *parent, int nonLeafBF, double nonLeafProb);
+int   uts_numChildren_geo(Node_UTS *parent, double b_0, geoshape_t shape_fn, int gen_mx);
 int   uts_childType(Node_UTS *parent, tree_t treeType, double shiftDepth, int gen_mx);
 
-void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int nonLeafBF,
-  double nonLeafProb, double b_0, geoshape_t shape_fn, int gen_mx, double shiftDepth,
-  int computeGranularity, int *treeSize, int *nbLeaf, int *maxDepth, int rootId);
+void c_decompose(Node_UTS *parent, Node_UTS children[], tree_t treeType, int numChildren,
+  int gen_mx, double shiftDepth, int computeGranularity, int *treeSize, int *maxDepth);
 
 #ifdef __cplusplus
 }

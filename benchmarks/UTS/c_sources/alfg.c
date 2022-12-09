@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "alfg.h"
+#include "../c_headers/alfg.h"
 
 
 void rng_init(RNG_state *mystate, int seed)

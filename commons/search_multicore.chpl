@@ -72,10 +72,10 @@ module search_multicore
         var parent: Node = initList.pop();
 
         {
-          var childList: list(Node) = problem.decompose(Node, parent, tree_loc, num_sol,
+          var children = problem.decompose(Node, parent, tree_loc, num_sol,
             best, best_task);
 
-          for elt in childList do initList.insert(0, elt);
+          for elt in children do initList.insert(0, elt);
         }
       }
 
@@ -172,9 +172,9 @@ module search_multicore
         // Decompose an element
         decomposeTimer.start();
         {
-          var childList: list(Node) = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
+          var children = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
 
-          bag.addBulk(childList, tid);
+          bag.addBulk(children, tid);
         }
         decomposeTimer.stop();
 

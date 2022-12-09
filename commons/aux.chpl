@@ -6,7 +6,8 @@ module aux
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  require "../c_sources/aux.c", "../c_headers/aux.h";
+  require "c_sources/aux.c", "c_headers/aux.h";
+  extern proc swap(ref a: c_int, ref b: c_int): void;
 	extern proc save_time(numTasks: c_int, time: c_double, path: c_string): void;
 
   // Take a boolean array and return false if it contains at least one "true", "true" if not

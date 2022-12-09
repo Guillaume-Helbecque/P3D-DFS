@@ -1,22 +1,18 @@
 module Problem
 {
-  use List;
   use Time;
 
   class Problem
   {
-    proc copy(): Problem
+    proc copy()
     {
       halt("Error - copy() not implemented");
-      return new Problem();
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+      ref best_task: int)
     {
       halt("Error - decompose() not implemented");
-      var l: list(Node);
-      return l;
     }
 
     // for debugging

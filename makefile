@@ -1,55 +1,80 @@
 SHELL := /bin/bash
 
-# ============================
-# UTS random number generator
-# ============================
+# ==========================
+# Compiler & common options
+# ==========================
 
-# Default
+COMPILER = chpl
+CHPL_COMMONS_DIR = ./commons
+CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
+
+CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
+
+# ==========================
+# Build Chapel codes
+# ==========================
+
+all: main_pfsp.o main_uts.o main_nqueens.o
+
+# ==========
+# PFSP
+# ==========
+
+CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
+CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR)
+
+main_pfsp.o: main_pfsp.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) main_pfsp.chpl -o main_pfsp.o
+
+# ==========
+# UTS
+# ==========
+
+CHPL_UTS_MODULES_DIR = ./benchmarks/UTS
+
+# Default random number generator (RNG)
 ifndef RNG
 RNG=BRG
 endif
 
-RNG_PATH = ./c_sources/rng
+RNG_SRC_DIR  = $(CHPL_UTS_MODULES_DIR)/c_sources
+RNG_INCL_DIR = $(CHPL_UTS_MODULES_DIR)/c_headers
 
 ifeq ($(RNG), BRG)
-RNG_SRC = $(RNG_PATH)/brg_sha1.c
-RNG_INCL= $(RNG_PATH)/brg_sha1.h
+RNG_SRC = $(RNG_SRC_DIR)/brg_sha1.c
+RNG_INCL= $(RNG_INCL_DIR)/brg_sha1.h
 RNG_DEF = -DBRG_RNG
 endif
 ifeq ($(RNG), ALFG)
-RNG_SRC = $(RNG_PATH)/alfg.c
-RNG_INCL= $(RNG_PATH)/alfg.h
+RNG_SRC = $(RNG_SRC_DIR)/alfg.c
+RNG_INCL= $(RNG_INCL_DIR)/alfg.h
 RNG_DEF = -DUTS_ALFG
 endif
 
-# ===================
-# Compiler & options
-# ===================
-
-COMPILER = chpl
-
-CHPL_MODULES_DIR = ./chpl_modules
-CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
-CHPL_OPTS = --fast -M $(CHPL_MODULES_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 C_FILES = $(RNG_SRC) $(RNG_INCL)
 C_OPTS = --ccflags $(RNG_DEF)
 
-# ==================
-# Build Chapel code
-# ==================
-
-all: main_pfsp.o main_uts.o main_nqueens.o
-
-main_pfsp.o: main_pfsp.chpl
-	$(COMPILER) $(CHPL_OPTS) main_pfsp.chpl -o main_pfsp.o
+CHPL_UTS_OPTS = -M $(CHPL_UTS_MODULES_DIR) $(C_OPTS) $(C_FILES)
 
 main_uts.o: main_uts.chpl
-	$(COMPILER) $(CHPL_OPTS) $(C_OPTS) $(C_FILES) main_uts.chpl -o main_uts.o
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) main_uts.chpl -o main_uts.o
+
+# ==========
+# NQueens
+# ==========
+
+CHPL_NQUEENS_MODULES_DIR = ./benchmarks/NQueens
+CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
 
 main_nqueens.o: main_nqueens.chpl
-	$(COMPILER) $(CHPL_OPTS) main_nqueens.chpl -o main_nqueens.o
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) main_nqueens.chpl -o main_nqueens.o
+
+# ==========================
+# Utilities
+# ==========================
 
 .PHONY: clean
+
 clean:
 	rm main_*.o
 	rm main_*.o_real

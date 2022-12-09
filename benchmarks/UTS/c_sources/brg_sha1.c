@@ -36,8 +36,8 @@
 #include <string.h>     /* for memcpy() etc.        */
 #include <stdio.h>
 
-#include "brg_sha1.h"
-#include "brg_endian.h"
+#include "../c_headers/brg_sha1.h"
+#include "../c_headers/brg_endian.h"
 
 #if defined(__cplusplus)
 extern "C"

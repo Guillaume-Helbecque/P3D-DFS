@@ -2,7 +2,7 @@ module Header_chpl_c_PFSP
 {
 	use CTypes;
 
-	require "../c_sources/c_bound_simple.c", "../c_headers/c_bound_simple.h";
+	require "c_sources/c_bound_simple.c", "c_headers/c_bound_simple.h";
 
 	extern record bound_data {};
 
@@ -14,7 +14,7 @@ module Header_chpl_c_PFSP
 	extern proc lb1_children_bounds(const data: c_ptr(bound_data), const permutation: c_ptr(c_int), const limit1:c_int, const limit2: c_int,
 		const lb_begin: c_ptr(c_int), const lb_end: c_ptr(c_int), const prio_begin: c_ptr(c_int), const prio_end: c_ptr(c_int), const direction: c_int): void;
 
-	require "../c_sources/c_bound_johnson.c", "../c_headers/c_bound_johnson.h";
+	require "c_sources/c_bound_johnson.c", "c_headers/c_bound_johnson.h";
 
 	extern record johnson_bd_data {};
 
@@ -26,13 +26,17 @@ module Header_chpl_c_PFSP
 	extern proc lb2_bound(const lb1: c_ptr(bound_data), const lb2: c_ptr(johnson_bd_data), const permutation: c_ptr(c_int),
 		const limit1:c_int, const limit2:c_int, const best_cmax:c_int): c_int;
 
-	require "../c_sources/c_taillard.c", "../c_headers/c_taillard.h";
+	require "c_sources/c_taillard.c", "c_headers/c_taillard.h";
 
 	extern proc taillard_get_nb_jobs(const inst_id: c_int): c_int;
 	extern proc taillard_get_nb_machines(const inst_id: c_int): c_int;
 	/* extern proc taillard_get_processing_times(b: c_ptr(bound_data), const id: c_int): void; */
 
-	require "../c_sources/fill_times.c", "../c_headers/fill_times.h";
+	require "c_sources/fill_times.c", "c_headers/fill_times.h";
 
 	extern proc taillard_get_processing_times_d(b: c_ptr(bound_data), const id: c_int): void;
+
+	/* require "../../commons/c_sources/aux.c", "../../commons/c_headers/aux.h";
+
+  extern proc swap(ref a: c_int, ref b: c_int): void; */
 }

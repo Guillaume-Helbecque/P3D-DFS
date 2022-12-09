@@ -1,13 +1,11 @@
 module Problem_NQueens
 {
+  use aux;
   use List;
   use Time;
   use CTypes;
 
   use Problem;
-
-  require "../c_sources/aux.c", "../c_headers/aux.h";
-  extern proc swap(ref a: c_int, ref b: c_int): void;
 
   class Problem_NQueens : Problem
   {
@@ -18,7 +16,7 @@ module Problem_NQueens
       this.N = n;
     }
 
-    override proc copy(): Problem
+    override proc copy()
     {
       return new Problem_NQueens(this.N);
     }

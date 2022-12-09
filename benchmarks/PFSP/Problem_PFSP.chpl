@@ -1,14 +1,12 @@
 module Problem_PFSP
 {
+  use aux;
   use List;
   use Time;
   use CTypes;
 
   use Problem;
   use Header_chpl_c_PFSP;
-
-  require "../c_sources/aux.c", "../c_headers/aux.h";
-  extern proc swap(ref a: c_int, ref b: c_int): void;
 
   class Problem_PFSP : Problem
   {
@@ -65,7 +63,7 @@ module Problem_PFSP
       else halt("Error - Unsupported upper bound");
     }
 
-    override proc copy(): Problem
+    override proc copy()
     {
       return new Problem_PFSP(Ta_inst, lb_name, branching, ub_init);
     }

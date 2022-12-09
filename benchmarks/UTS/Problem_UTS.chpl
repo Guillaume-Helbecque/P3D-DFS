@@ -1,6 +1,5 @@
 module Problem_UTS
 {
-  use List;
   use Time;
   use CTypes;
 
@@ -77,30 +76,29 @@ module Problem_UTS
       this.computeGranularity = gran;
     }
 
-    override proc copy(): Problem
+    override proc copy()
     {
       return new Problem_UTS(treeType, b_0, rootId, nonLeafBF, nonLeafProb, gen_mx,
         shape_fn, shiftDepth, computeGranularity);
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      best: atomic int, ref best_task: int): list
+      best: atomic int, ref best_task: int): [] Node
     {
-      var childList: list(Node);
       var numChildren: c_int = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb,
         b_0, shape_fn, gen_mx, shiftDepth);
-      var children = c_malloc(Node, numChildren);
 
-      c_decompose(parent, children, treeType, nonLeafBF, nonLeafProb, b_0, shape_fn, gen_mx,
-        shiftDepth, computeGranularity, tree_loc, num_sol, best_task, rootId);
+      var children: [0..#numChildren] Node;
 
-      for i in 0..#numChildren {
-        childList.append(children[i]);
+      if (numChildren > 0) {
+        c_decompose(parent, c_ptrTo(children), treeType, numChildren, gen_mx,
+        shiftDepth, computeGranularity, tree_loc, best_task);
+      }
+      else {
+        num_sol += 1;
       }
 
-      c_free(children);
-
-      return childList;
+      return children;
     }
 
     // No bounding in UTS
