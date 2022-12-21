@@ -33,7 +33,7 @@ module search_distributed
     var eachMaxDepth: [PrivateSpace] int = 0;
     var counter_termination: atomic int = 0;
     var timers: [0..#numLocales, 0..#here.maxTaskPar, 0..5] real;
-    var globalTimer: Timer;
+    var globalTimer: stopwatch;
 
     // Debugging options
     if dbgProfiler {
@@ -126,7 +126,7 @@ module search_distributed
       // Counters and timers (for analysis)
       var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
       var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
-      var localTimer: Timer;
+      var localTimer: stopwatch;
 
       localTimer.start();
 
@@ -139,7 +139,7 @@ module search_distributed
 
         // Counters and timers (for analysis)
         var count, counter: int = 0;
-        var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
+        var terminationTimer, decomposeTimer, readTimer, removeTimer: stopwatch;
 
         allLocalesBarrier.barrier(); // synchronization of tasks
 
@@ -201,7 +201,7 @@ module search_distributed
           decomposeTimer.start();
           {
             var children = problem_loc.decompose(Node, parent, tree_loc, num_sol, best, best_task);
-            
+
             bag.addBulk(children, tid);
           }
           decomposeTimer.stop();

@@ -31,7 +31,7 @@ module search_multicore
     var eachMaxDepth: [0..#here.maxTaskPar] int = 0;
     var counter_termination: atomic int = 0;
     var timers: [0..#here.maxTaskPar, 0..4] real;
-    var globalTimer: Timer;
+    var globalTimer: stopwatch;
 
     // Debugging options
     if dbgProfiler {
@@ -121,7 +121,7 @@ module search_multicore
 
       // Counters and timers (for analysis)
       var count, counter: int = 0;
-      var terminationTimer, decomposeTimer, readTimer, removeTimer: Timer;
+      var terminationTimer, decomposeTimer, readTimer, removeTimer: stopwatch;
 
       // Exploration of the tree
       while true do {

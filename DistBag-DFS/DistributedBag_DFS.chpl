@@ -5,7 +5,6 @@ module DistributedBag_DFS
   public use Collection;
   use BlockDist;
   private use CTypes;
-  use IO only channel;
 
   use Random;
   use Time;
@@ -1034,7 +1033,7 @@ module DistributedBag_DFS
 
             const parentPid = parentHandle.pid;
             var stolenElts: list(eltType);
-            var timer, subtimer: Timer;
+            var timer, subtimer: stopwatch;
 
             segments[taskId].nSteal2 += 1;
             segments[taskId].timer2.start();
@@ -1140,7 +1139,7 @@ module DistributedBag_DFS
     var nSteal2: int;
     var nSSteal2: int;
 
-    var timer1, timer2: Timer;
+    var timer1, timer2: stopwatch;
 
     // locks (initially unlocked)
     var lock$: sync bool = true;

@@ -255,7 +255,7 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const timer: Timer): void
+      const subDepthReached: [] int, const best: int, const timer: stopwatch): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
