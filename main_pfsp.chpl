@@ -14,8 +14,6 @@ module main_pfsp
 
   // Common options
   config const mode: string = "multicore"; // multicore, distributed
-  config const dbgProfiler: bool = false;
-  config const dbgDiagnostics: bool = false;
   config const activeSet: bool = false;
   config const saveTime: bool = false;
   /* config const printExploredTree: bool = true; // number of explored nodes
@@ -46,10 +44,10 @@ module main_pfsp
     // Parallel search
     select mode {
       when "multicore" {
-        search_multicore(Node_PFSP, pfsp, dbgProfiler, dbgDiagnostics, saveTime, activeSet);
+        search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_PFSP, pfsp, dbgProfiler, dbgDiagnostics, saveTime, activeSet);
+        search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown parallel execution mode");

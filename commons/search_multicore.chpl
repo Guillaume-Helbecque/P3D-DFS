@@ -3,9 +3,6 @@ module search_multicore
   use List;
   use Time;
   use CTypes;
-  use PrivateDist;
-  use VisualDebug;
-  use CommDiagnostics;
   use DistributedBag_DFS;
 
   use aux;
@@ -16,34 +13,18 @@ module search_multicore
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  proc search_multicore(type Node, problem,
-    const dbgProfiler: bool, const dbgDiagnostics: bool,
-    const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    var allTasksEmptyFlag: atomic bool = false;
+    var allTasksIdleFlag: atomic bool = false;
     var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = BUSY;
 
     // Counters and timers (for analysis)
     var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
     var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
     var eachMaxDepth: [0..#here.maxTaskPar] int = 0;
-    var counter_termination: atomic int = 0;
-    var timers: [0..#here.maxTaskPar, 0..4] real;
     var globalTimer: stopwatch;
-
-    // Debugging options
-    if dbgProfiler {
-      startVdebug("test");
-      tagVdebug("init");
-      writeln("Starting profiler");
-    }
-
-    if dbgDiagnostics {
-      writeln("\n### Starting communication counter ###");
-      startCommDiagnostics();
-    }
 
     problem.print_settings();
 
@@ -99,11 +80,7 @@ module search_multicore
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
-    }
-
-    writeln("\nInitial state of the bag (locale x task):");
-    for loc in Locales do on loc {
-      writeln(bag.bag!.segments.nElems);
+      eachLocalExploredTree[0] += 1;
     }
 
     globalTimer.start();
@@ -121,26 +98,20 @@ module search_multicore
 
       // Counters and timers (for analysis)
       var count, counter: int = 0;
-      var terminationTimer, decomposeTimer, readTimer, removeTimer: stopwatch;
 
       // Exploration of the tree
       while true do {
         counter += 1;
 
         // Check if the global termination flag is set or not
-        terminationTimer.start();
         if (counter % 10000 == 0) {
-          if allTasksEmptyFlag.read() {
-            terminationTimer.stop();
+          if allTasksIdleFlag.read() {
             break;
           }
         }
-        terminationTimer.stop();
 
         // Try to remove an element
-        removeTimer.start();
         var (hasWork, parent): (int, Node) = bag.remove(tid);
-        removeTimer.stop();
 
         /*
           Check (or not) the termination condition regarding the value of 'hasWork':
@@ -148,51 +119,35 @@ module search_multicore
             'hasWork' =  0 : remove() prematurely fails  -> continue
             'hasWork' =  1 : remove() succeeds           -> decompose
         */
-
-        terminationTimer.start();
-        if (hasWork != 1) then eachTaskTermination[tid].write(IDLE);
-        else {
+        if (hasWork == 1) {
           eachTaskTermination[tid].write(BUSY);
         }
-
-        if (hasWork == -1) {
-          if allTasksEmpty(eachTaskTermination, allTasksEmptyFlag) { // local check
-            terminationTimer.stop();
-            break;
-          }
-        terminationTimer.stop();
-        continue;
-        }
         else if (hasWork == 0) {
-          terminationTimer.stop();
+          eachTaskTermination[tid].write(IDLE);
           continue;
         }
-        terminationTimer.stop();
+        else {
+          eachTaskTermination[tid].write(IDLE);
+          if allTasksIdle(eachTaskTermination, allTasksIdleFlag) { // local check
+            break;
+          }
+          continue;
+        }
 
         // Decompose an element
-        decomposeTimer.start();
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
 
           bag.addBulk(children, tid);
         }
-        decomposeTimer.stop();
 
         // Read the best solution found so far
-        readTimer.start();
         if (tid == 0) {
           count += 1;
           if (count % 10000 == 0) then best_task = best.read();
         }
 
-        readTimer.stop();
       }
-
-      timers[tid, 0] = tid;
-      timers[tid, 1] = removeTimer.elapsed(TimeUnits.seconds);
-      timers[tid, 2] = decomposeTimer.elapsed(TimeUnits.seconds);
-      timers[tid, 3] = terminationTimer.elapsed(TimeUnits.seconds);
-      timers[tid, 4] = readTimer.elapsed(TimeUnits.seconds);
     }
 
     globalTimer.stop();
@@ -205,29 +160,11 @@ module search_multicore
 
     writeln("Exploration terminated.\n");
 
-    if dbgProfiler {
-      stopVdebug();
-      writeln("### Debuging is done ###");
-    }
-
-    if dbgDiagnostics {
-      writeln("### Stopping communication counter ###");
-      stopCommDiagnostics();
-      writeln("\n ### Communication results ### \n", getCommDiagnostics());
-    }
-
     if saveTime {
       var path = problem.output_filepath();
       save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
     }
 
-    /* if saveTime {
-      var tup = ("./ta",pfsp.Ta_inst:string,"_chpl_",(+ reduce eachLocalExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
-      var path = "".join(tup);
-      save_subtimes(path, timers);
-    } */
-
-    //writeln("\nNumber of global termination detection: ", counter_termination.read());
     problem.print_results(eachLocalExploredTree, eachLocalExploredSol, eachMaxDepth, best.read(), globalTimer);
   }
 

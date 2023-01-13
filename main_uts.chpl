@@ -14,8 +14,6 @@ module main_uts
 
   // Common options
   config const mode: string = "multicore"; // multicore, distributed
-  config const dbgProfiler: bool = false;
-  config const dbgDiagnostics: bool = false;
   config const activeSet: bool = false;
   config const saveTime: bool = false;
   /* config const printExploredTree: bool = true; // number of explored nodes
@@ -51,10 +49,10 @@ module main_uts
     // Parallel search
     select mode {
       when "multicore" {
-        search_multicore(Node_UTS, uts, dbgProfiler, dbgDiagnostics, saveTime, activeSet);
+        search_multicore(Node_UTS, uts, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_UTS, uts, dbgProfiler, dbgDiagnostics, saveTime, activeSet);
+        search_distributed(Node_UTS, uts, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown parallel execution mode");

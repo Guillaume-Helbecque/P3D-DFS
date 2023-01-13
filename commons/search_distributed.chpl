@@ -4,8 +4,6 @@ module search_distributed
   use Time;
   use CTypes;
   use PrivateDist;
-  use VisualDebug;
-  use CommDiagnostics;
   use DistributedBag_DFS;
   use AllLocalesBarriers;
 
@@ -17,9 +15,7 @@ module search_distributed
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  proc search_distributed(type Node, problem,
-    const dbgProfiler: bool, const dbgDiagnostics: bool,
-    const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
@@ -31,21 +27,7 @@ module search_distributed
     var eachExploredTree: [PrivateSpace] int = 0;
     var eachExploredSol: [PrivateSpace] int = 0;
     var eachMaxDepth: [PrivateSpace] int = 0;
-    var counter_termination: atomic int = 0;
-    var timers: [0..#numLocales, 0..#here.maxTaskPar, 0..5] real;
     var globalTimer: stopwatch;
-
-    // Debugging options
-    if dbgProfiler {
-      startVdebug("test");
-      tagVdebug("init");
-      writeln("Starting profiler");
-    }
-
-    if dbgDiagnostics {
-      writeln("\n### Starting communication counter ###");
-      startCommDiagnostics();
-    }
 
     problem.print_settings();
 
@@ -100,11 +82,7 @@ module search_distributed
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
-    }
-
-    writeln("\nInitial state of the bag (locale x task):");
-    for loc in Locales do on loc {
-      writeln(bag.bag!.segments.nElems);
+      eachExploredTree[0] += 1;
     }
 
     globalTimer.start();
@@ -113,13 +91,13 @@ module search_distributed
     // PARALLEL EXPLORATION
     // =====================
 
-    coforall loc in Locales with (ref timers, const ref problem) do on loc {
+    coforall loc in Locales with (const ref problem) do on loc {
 
       var problem_loc = problem.copy();
 
       // Local variables (best solution found and termination)
       var best_locale: int = problem.setInitUB();
-      var allTasksEmptyFlag: atomic bool = false;
+      var allTasksIdleFlag: atomic bool = false;
       var globalTerminationFlag: atomic bool = false;
       var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = BUSY;
 
@@ -130,7 +108,7 @@ module search_distributed
 
       localTimer.start();
 
-      coforall tid in 0..#here.maxTaskPar with (ref best_locale, ref timers) {
+      coforall tid in 0..#here.maxTaskPar with (ref best_locale) {
 
         // Task variables (best solution found)
         var best_task: int = best_locale;
@@ -139,7 +117,6 @@ module search_distributed
 
         // Counters and timers (for analysis)
         var count, counter: int = 0;
-        var terminationTimer, decomposeTimer, readTimer, removeTimer: stopwatch;
 
         allLocalesBarrier.barrier(); // synchronization of tasks
 
@@ -147,20 +124,14 @@ module search_distributed
           counter += 1;
 
           // Check if the global termination flag is set or not
-          terminationTimer.start();
           if (counter % 10000 == 0) {
             if globalTerminationFlag.read() {
-              //writeln("loc/task ", here.id, " ", tid, " breaks");
-              terminationTimer.stop();
               break;
             }
           }
-          terminationTimer.stop();
 
           // Try to remove an element
-          removeTimer.start();
           var (hasWork, parent): (int, Node) = bag.remove(tid);
-          removeTimer.stop();
 
           /*
             Check (or not) the termination condition regarding the value of 'hasWork':
@@ -169,60 +140,42 @@ module search_distributed
               'hasWork' =  1 : remove() succeeds           -> decompose
           */
 
-          terminationTimer.start();
-          if (hasWork != 1) then eachTaskTermination[tid].write(IDLE);
-          else {
+          if (hasWork == 1) {
             eachTaskTermination[tid].write(BUSY);
             eachLocaleTermination[here.id].write(BUSY);
           }
-
-          if (hasWork == -1) {
-            if allTasksEmpty(eachTaskTermination, allTasksEmptyFlag) { // local check
+          else if (hasWork == 0) {
+            eachTaskTermination[tid].write(IDLE);
+            continue;
+          }
+          else {
+            eachTaskTermination[tid].write(IDLE);
+            if allTasksIdle(eachTaskTermination, allTasksIdleFlag) { // local check
               eachLocaleTermination[here.id].write(IDLE);
-
-                if allLocalesEmpty(eachLocaleTermination, globalTerminationFlag, counter_termination) { // global check
-                  terminationTimer.stop();
+                if allLocalesIdle(eachLocaleTermination, globalTerminationFlag) { // global check
                   break;
                 }
-
             } else {
               eachLocaleTermination[here.id].write(BUSY);
             }
-          terminationTimer.stop();
-          continue;
-          }
-          else if (hasWork == 0) {
-            terminationTimer.stop();
             continue;
           }
-          terminationTimer.stop();
 
           // Decompose an element
-          decomposeTimer.start();
           {
             var children = problem_loc.decompose(Node, parent, tree_loc, num_sol, best, best_task);
 
             bag.addBulk(children, tid);
           }
-          decomposeTimer.stop();
 
           // Read the best solution found so far
-          readTimer.start();
           if (tid == 0) {
             count += 1;
             if (count % 10000 == 0) then best_locale = best.read();
           }
 
           best_task = best_locale;
-          readTimer.stop();
         }
-
-        timers[loc.id, tid, 0] = loc.id;
-        timers[loc.id, tid, 1] = tid;
-        timers[loc.id, tid, 2] = removeTimer.elapsed(TimeUnits.seconds);
-        timers[loc.id, tid, 3] = decomposeTimer.elapsed(TimeUnits.seconds);
-        timers[loc.id, tid, 4] = terminationTimer.elapsed(TimeUnits.seconds);
-        timers[loc.id, tid, 5] = readTimer.elapsed(TimeUnits.seconds);
       } // end coforall tasks
 
       localTimer.stop();
@@ -233,7 +186,7 @@ module search_distributed
 
     globalTimer.stop();
 
-    //bag.clear();
+    /* bag.clear(); */
 
     // ========
     // OUTPUTS
@@ -241,30 +194,11 @@ module search_distributed
 
     writeln("\nExploration terminated.");
 
-    // Debugging options
-    if dbgProfiler {
-      stopVdebug();
-      writeln("### Debuging is done ###");
-    }
-
-    if dbgDiagnostics {
-      writeln("### Stopping communication counter ###");
-      stopCommDiagnostics();
-      writeln("\n ### Communication results ### \n", getCommDiagnostics());
-    }
-
     if saveTime {
       var path = problem.output_filepath();
       save_time(numLocales:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
     }
 
-    /* if saveTime {
-      var tup = ("./ta",instance:string,"_chpl_",(+ reduce eachExploredTree):string,"_",lb,"_",numLocales:string,"n_subtimes.txt");
-      var path = "".join(tup);
-      save_subtimes(path, timers);
-    } */
-
-    //writeln("\nNumber of global termination detection: ", counter_termination.read());
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(), globalTimer);
   }
 
