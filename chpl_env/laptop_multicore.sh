@@ -14,7 +14,6 @@ export MANPATH="$MANPATH":"$CHPL_HOME"/man
 export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 export CHPL_HOST_COMPILER=gnu
 export CHPL_TARGET_ARCH=native
-export CHPL_LAUNCHER=none
 export CHPL_LLVM=none
 NUM_T_LOCALE=$(cat /proc/cpuinfo | grep processor | wc -l) # hyperthreading
 export CHPL_RT_NUM_THREADS_PER_LOCALE=$NUM_T_LOCALE
