@@ -11,39 +11,14 @@ module DistributedBag_DFS
   use List;
 
   /*
-    Below are segment statuses, which is a way to make visible to outsiders the
-    current ongoing operation. In segments, we use test-and-test-and-set spinlocks
-    to allow polling for other conditions other than lock state. `sync` variables
-    do not offer a means of acquiring in a non-blocking way, so this is needed to
-    ensure better 'best-case' and 'average-case' phases.
-  */
-  private param STATUS_UNLOCKED: uint = 0;
-  private param STATUS_ADD: uint      = 1;
-  private param STATUS_REMOVE: uint   = 2;
-  private param STATUS_LOOKUP: uint   = 3;
-  private param STATUS_BALANCE: uint  = 4;
-
-  /*
-    Below are statuses specific to the work stealing algorithm. These allow the
-    shepherd tasks to know when its sub-helpers finish and the end status of their
-    work stealing attempt.
-  */
-  private param WS_INITIALIZED            = -1;
-  private param WS_FINISHED_WITH_NO_WORK  =  0;
-  private param WS_FINISHED_WITH_WORK     =  1;
-
-  /*
     The phases for operations. An operation is composed of multiple phases,
     where they make a full pass searching for ideal conditions, then less-than-ideal
     conditions; this is required to ensure maximized parallelism at all times, and
     critical to good performance, especially when a node is oversubscribed.
   */
-  private param ADD_BEST_CASE         = 0;
-  private param ADD_AVERAGE_CASE      = 1;
-  private param REMOVE_SIMPLE         = 2;
-  private param REMOVE_LOCAL_STEAL    = 3;
-  private param REMOVE_GLOBAL_STEAL   = 4;
-  private param REMOVE_STEAL_REQUEST  = 5;
+  private param REMOVE_SIMPLE         = 1;
+  private param REMOVE_LOCAL_STEAL    = 2;
+  private param REMOVE_GLOBAL_STEAL   = 3;
 
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
@@ -55,7 +30,7 @@ module DistributedBag_DFS
     there are larger numbers of elements. The better the locality, the better raw
     performance and easier it is to redistribute work.
   */
-  config const distributedBagInitialBlockSize: int = 500000;
+  config const distributedBagInitialBlockSize: int = 1024;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
     (hence creating an artificial load imbalance), if the other node's segment has
@@ -540,37 +515,9 @@ module DistributedBag_DFS
     // A handle to our parent 'distributed' bag, which is needed for work stealing.
     var parentHandle: borrowed DistributedBagImpl(eltType);
 
-    /*
-      Helps evenly distribute and balance placement of elements in a best-effort
-      round-robin approach. In the case where we have parallel enqueues or dequeues,
-      they are less likely overlap with each other. Furthermore, it increases our
-      chance to find our 'ideal' segment.
-    */
-    var startIdxEnq: atomic uint;
-    var startIdxDeq: atomic uint;
-
-    /*
-      If a task makes 2 complete passes (1 best-case, 1 average-case) and has not
-      found enough items, then it may attempt to balance the load distribution.
-      Furthermore, if a task is waiting on a load balance, it may piggyback on the
-      result.
-    */
-    var loadBalanceInProgress: atomic bool;
-    var loadBalanceResult: atomic bool;
-
     var segments: [0..#here.maxTaskPar] Segment(eltType);
 
     var globalStealInProgress: atomic bool = false;
-
-    inline proc nextStartIdxEnq
-    {
-      return (startIdxEnq.fetchAdd(1) % here.maxTaskPar:uint):int;
-    }
-
-    inline proc nextStartIdxDeq
-    {
-      return (startIdxDeq.fetchAdd(1) % here.maxTaskPar:uint):int;
-    }
 
     proc init(type eltType, parentHandle)
     {
@@ -637,53 +584,6 @@ module DistributedBag_DFS
     // Add an element in a (indeterminate) segment
     proc add(elt: eltType): bool
     {
-      var startIdx = nextStartIdxEnq: int;
-      var phase = ADD_BEST_CASE;
-
-      while true {
-        select phase {
-
-          // Pass 1: Best Case
-          // Find a segment that is unlocked and attempt to acquire it. As we are adding
-          // elements, we don't care how many elements there are, just that we find
-          // some place to add ours.
-          when ADD_BEST_CASE {
-            for offset in 0..#here.maxTaskPar {
-              ref segment = segments[(startIdx + offset) % here.maxTaskPar];
-
-              // Attempt to acquire...
-              if segment.acquireWithStatus(STATUS_ADD) {
-                segment.addElement(elt);
-                segment.releaseStatus();
-                return true;
-              }
-            }
-
-            phase = ADD_AVERAGE_CASE;
-          }
-
-          // Pass 2: Average Case
-          // Find any segment (locked or unlocked) and make an attempt to acquire it.
-          when ADD_AVERAGE_CASE {
-            ref segment = segments[startIdx];
-
-            while true {
-              select segment.currentStatus {
-                // Quick acquire...
-                when STATUS_UNLOCKED {
-                  if segment.acquireWithStatus(STATUS_ADD) {
-                    segment.addElement(elt);
-                    segment.releaseStatus();
-                    return true;
-                  }
-                }
-              }
-              chpl_task_yield();
-            }
-          }
-        }
-      }
-
       halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
 
@@ -697,225 +597,8 @@ module DistributedBag_DFS
       return true;
     }
 
-  proc remove(): (bool, eltType)
-  {
-    var startIdx = nextStartIdxDeq;
-    var idx = startIdx;
-    var iterations = 0;
-    var phase = REMOVE_SIMPLE;
-    var backoff = 0;
-
-    while true {
-      select phase {
-
-        // Pass 1: Best Case
-        // Find the first bucket that is both unlocked and contains elements. This is
-        // extremely helpful in the case where we have a good distribution of elements
-        // in each segment.
-        when REMOVE_SIMPLE {
-          while (iterations < here.maxTaskPar) {
-            ref segment = segments[idx];
-
-            // Attempt to acquire...
-            if (!segment.isEmpty && segment.acquireWithStatus(STATUS_REMOVE)) {
-              var (hasElem, elem): (bool, eltType) = segment.takeElement();
-              segment.releaseStatus();
-
-              if hasElem {
-                return (hasElem, elem);
-              }
-            }
-
-            iterations += 1;
-            idx = (idx + 1) % here.maxTaskPar;
-          }
-
-          phase = REMOVE_LOCAL_STEAL;
-        }
-
-        // Pass 2: Average Case
-        // Find the first bucket containing elements. We don't care if it is locked
-        // or unlocked this time, just that it contains elements; this handles majority
-        // of cases where we have elements anywhere in any segment.
-        when REMOVE_LOCAL_STEAL {
-          while (iterations < here.maxTaskPar) {
-            ref segment = segments[idx];
-
-            // Attempt to acquire...
-            while !segment.isEmpty {
-              if (segment.isUnlocked && segment.acquireWithStatus(STATUS_REMOVE)) {
-                var (hasElem, elem): (bool, eltType) = segment.takeElement();
-                segment.releaseStatus();
-
-                if hasElem {
-                  return (hasElem, elem);
-                }
-              }
-
-              // Backoff
-              chpl_task_yield();
-            }
-
-            iterations += 1;
-            idx = (idx + 1) % here.maxTaskPar;
-          }
-
-          phase = REMOVE_GLOBAL_STEAL;
-        }
-
-        // Pass 3: Worst Case
-        // After two full iterations, we're sure the queue is full at this point, so we
-        // can attempt to steal work from other nodes. In this pass, we find *any* segment
-        // and if it is empty, we attempt to become the work-stealer; if someone else is the
-        // current work stealer we assist them instead and lift an element for ourselves.
-        // Furthermore, in this phase we loop indefinitely until we are 100% certain it is
-        // empty or we get an item, so introduce some backoff here.
-        when REMOVE_GLOBAL_STEAL {
-          while true {
-            ref segment = segments[idx];
-
-            select segment.currentStatus {
-              // Quick acquire
-              when STATUS_UNLOCKED {
-                if segment.acquireWithStatus(STATUS_REMOVE) {
-                  // We're lucky; another element has been added to the current segment,
-                  // take it and leave like normal...
-                  if !segment.isEmpty {
-                    var (hasElem, elem): (bool, eltType) = segment.takeElement('t');
-                    segment.releaseStatus();
-                    return (hasElem, elem);
-                  }
-
-                  if (parentHandle.targetLocales.size == 1) {
-                    segment.releaseStatus();
-                    var default: eltType;
-                    return (false, default);
-                  }
-
-                  // Attempt to become the sole work stealer for this node. If we
-                  // do not, we spin until they finish. We need to release the lock
-                  // on our segment so our segment may be load balanced as well.
-                  if loadBalanceInProgress.testAndSet() {
-                    segment.releaseStatus();
-
-                    loadBalanceInProgress.waitFor(false);
-                    var notEmpty = loadBalanceResult.read();
-                    if !notEmpty {
-                      var default: eltType;
-                      return (false, default);
-                    }
-
-                    // Reset our phase and scan for more elements...
-                    phase = REMOVE_SIMPLE;
-                    break;
-                  }
-
-                  // We are the sole work stealer, and so it is our responsibility
-                  // to balance the load for our node. We fork-join new worker
-                  // tasks that will check horizontally across each node (as in
-                  // across each segment with the same index), and vertically across
-                  // each segment (each segment in a node). Horizontally, we steal
-                  // at most a % of work from other nodes to give to ourselves.
-                  // As load balancer, we also are the only one who knows whether
-                  // or not all bags are empty.
-                  var isEmpty: atomic bool;
-                  isEmpty.write(true);
-                  segment.releaseStatus();
-                  coforall segmentIdx in 0..#here.maxTaskPar {
-                    var stolenWork: [{0..#numLocales}] (int, c_ptr(eltType));
-                    coforall loc in parentHandle.targetLocalesNotHere() {
-                      if (loc != here) then on loc {
-                        // As we jumped to the target node, 'localBag' returns
-                        // the target's bag that we are attempting to steal from.
-                        var targetBag = parentHandle.bag;
-
-                        // Only proceed if the target is not load balancing themselves...
-                        if !targetBag!.loadBalanceInProgress.read() {
-                          ref targetSegment = targetBag!.segments[segmentIdx];
-
-                          // As we only care that the segment contains data,
-                          // we test-and-test-and-set until we gain ownership.
-                          while (targetSegment.nElems.read() >= distributedBagWorkStealingMinElems) {
-                            var backoff = 0;
-                            if ((targetSegment.currentStatus == STATUS_UNLOCKED) && targetSegment.acquireWithStatus(STATUS_REMOVE)) {
-                              // Sanity check: ensure segment did not fall under minimum since last check
-                              if (targetSegment.nElems.read() < distributedBagWorkStealingMinElems) {
-                                targetSegment.releaseStatus();
-                                break;
-                              }
-
-                              extern proc sizeof(type x): c_size_t;
-                              // We steal at most 1MB worth of data. If the user has less than that, we steal a %, at least 1.
-                              const mb = distributedBagWorkStealingMemCap * 1024 * 1024;
-                              var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)):int;
-
-                              // Allocate storage...
-                              on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
-                              var destPtr = stolenWork[here.id][1];
-                              targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
-                              targetSegment.releaseStatus();
-
-                              // We are done...
-                              break;
-                            }
-
-                            // Backoff...
-                            chpl_task_yield();
-                          }
-                        }
-                      }
-                    }
-
-                    // It is our job now to distribute all stolen data to the same
-                    // horizontal segment on our node. Acquire lock...
-                    ref recvSegment = segments[segmentIdx];
-                    while true {
-                      if ((recvSegment.currentStatus == STATUS_UNLOCKED) && recvSegment.acquireWithStatus(STATUS_ADD)) then break;
-                      chpl_task_yield();
-                    }
-
-                    // Add stolen elements to segment...
-                    for (nStolen, stolenPtr) in stolenWork {
-                      if (nStolen == 0) then continue;
-                      recvSegment.addElementsPtr(stolenPtr, nStolen);
-                      c_free(stolenPtr);
-
-                      // Let parent know that the bag is not empty.
-                      isEmpty.write(false);
-                    }
-                    recvSegment.releaseStatus();
-                  }
-
-                  loadBalanceResult.write(!isEmpty.read());
-                  loadBalanceInProgress.write(false);
-
-                  // At this point, if no work has been found, we will return empty...
-                  if isEmpty.read() {
-                    var default: eltType;
-                    return (false, default);
-                    } else {
-                      // Otherwise, we try to get data like everyone else.
-                      phase = REMOVE_SIMPLE;
-                      break;
-                    }
-                  }
-                }
-              }
-
-              // Backoff to maximum...
-              chpl_task_yield();
-            }
-          }
-
-          otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
-        }
-
-        // Reset variables...
-        idx = startIdx;
-        iterations = 0;
-        backoff = 0;
-      }
-
+    proc remove(): (bool, eltType)
+    {
       halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
 
@@ -929,7 +612,6 @@ module DistributedBag_DFS
     proc remove(const taskId: int): (int, eltType)
     {
       var phase = REMOVE_SIMPLE;
-      var locId: int = here.id;
 
       while true {
         select phase {
@@ -983,6 +665,7 @@ module DistributedBag_DFS
               ref targetSegment = segments[idx];
 
               if !targetSegment.globalSteal.read() {
+                targetSegment.lock_block$.readFE();
                 // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElems <= targetSegment.nElems_shared.read()) {
                   // attempt to steal an element
@@ -990,6 +673,7 @@ module DistributedBag_DFS
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElem {
+                    targetSegment.lock_block$.writeEF(true);
                     segments[taskId].timer1.stop();
                     segments[taskId].nSSteal1 += 1;
                     return (REMOVE_SUCCESS, elem);
@@ -1000,6 +684,7 @@ module DistributedBag_DFS
                   splitreq = true;
                   targetSegment.split_request.write(true);
                 }
+                targetSegment.lock_block$.writeEF(true);
               }
             }
 
@@ -1052,6 +737,7 @@ module DistributedBag_DFS
 
                   //var sharedElts: int = targetSegment.nElems_shared.read();
                   // if the shared region contains enough elements to be stolen...
+                  targetSegment.lock_block$.readFE();
                   if (2 <= targetSegment.nElems_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
@@ -1070,6 +756,7 @@ module DistributedBag_DFS
                     targetSegment.split_request.write(true);
                   }
 
+                  targetSegment.lock_block$.writeEF(true);
                   targetSegment.globalSteal.write(false);
                 }
               }
@@ -1116,9 +803,6 @@ module DistributedBag_DFS
 
     var globalSteal: atomic bool = false;
 
-    // Used as a test-and-test-and-set spinlock.
-    var status: atomic uint;
-
     var block: unmanaged Block(eltType)?;
 
     // private variables
@@ -1144,23 +828,15 @@ module DistributedBag_DFS
     // locks (initially unlocked)
     var lock$: sync bool = true;
     var lock_n$: sync bool = true;
+    var lock_block$: sync bool = true;
 
     /*
       Returns the size of the private region. This information is computed from the
-      tail and split pointers, and since the block is implemented as a  circular
-      array, two cases need to be distinguished.
+      tail and split pointers.
     */
-    // WARNING: We consider the common case only for the moment
     inline proc nElems_private
     {
-      // common case
-      if (tail >= o_split) {
-        return tail - o_split;
-      }
-      // specific case where tail < o_split, due to the circular array
-      else {
-        return block!.cap - o_split + tail;
-      }
+      return tail - o_split;
     }
 
     inline proc nElems
@@ -1175,60 +851,6 @@ module DistributedBag_DFS
       var n_private = nElems_private;
       lock_n$.writeEF(true);
       return (n_shared + n_private) == 0;
-    }
-
-    // STATUS (acquireWithStatus)
-    inline proc acquireWithStatus(newStatus)
-    {
-      return status.compareAndSwap(STATUS_UNLOCKED, newStatus);
-    }
-
-    // UNUSED. (acquire) Only needed in 'balance'
-    //Set status with a test-and-test-and-set loop...
-     inline proc acquire(newStatus)
-    {
-      while true {
-        if ((currentStatus == STATUS_UNLOCKED) && acquireWithStatus(newStatus)) then break;
-        chpl_task_yield();
-      }
-    }
-
-    // STATUS (acquireIfNonEmpty) Only used in clear() and these() iterators
-    // Set status with a test-and-test-and-set loop, but only while it is not empty...
-    inline proc acquireIfNonEmpty(newStatus): bool
-    {
-      while !isEmpty {
-        if ((currentStatus == STATUS_UNLOCKED) && acquireWithStatus(newStatus)) {
-          if isEmpty {
-            releaseStatus();
-            return false;
-          } else {
-            return true;
-          }
-        }
-
-        chpl_task_yield();
-      }
-
-      return false;
-    }
-
-    // STATUS (isUnlocked)
-    inline proc isUnlocked
-    {
-      return status.read() == STATUS_UNLOCKED;
-    }
-
-    // STATUS (currentStatus)
-    inline proc currentStatus
-    {
-      return status.read();
-    }
-
-    // STATUS (releaseStatus)
-    inline proc releaseStatus()
-    {
-      status.write(STATUS_UNLOCKED);
     }
 
     /* inline proc transferElements(destPtr, n, locId = here.id)
@@ -1502,6 +1124,20 @@ module DistributedBag_DFS
       // if the block is not already initialized...
       if (block == nil) then block = new unmanaged Block(eltType, distributedBagInitialBlockSize);
 
+      // allocate a larger block if the current one is full
+      if block!.isFull {
+        var nblock = new unmanaged Block(eltType, min(distributedBagMaxBlockSize, block!.cap * 2));
+        lock_block$.readFE();
+        nblock!.headIdx = block!.headIdx;
+        nblock!.tailIdx = block!.tailIdx;
+        for i in 0..#block!.cap {
+          nblock!.elems[i] = block!.elems[i];
+        }
+        delete block;
+        block = nblock;
+        lock_block$.writeEF(true);
+      }
+
       // we add the element at the tail
       block!.pushTail(elt);
       tail += 1;
@@ -1612,7 +1248,6 @@ module DistributedBag_DFS
     // TODO: test with elems: cap * eltType
 
     var cap: int; // capacity of the block
-    /* var size: int; // number of occupied elements in the block */
     var headIdx: int; // index of the head element
     var tailIdx: int; // index of the tail element
 
@@ -1622,10 +1257,10 @@ module DistributedBag_DFS
       return size == 0;
     } */
 
-    /* inline proc isFull
+    inline proc isFull
     {
-      return size == cap;
-    } */
+      return tailIdx == cap;
+    }
 
     // ISSUE: Cannot insert Chapel array due to "c_malloc".
     proc init(type eltType, capacity)
@@ -1634,10 +1269,6 @@ module DistributedBag_DFS
       this.eltType = eltType;
       this.elems = c_malloc(eltType, capacity);
       this.cap = capacity;
-      // the following is unnecessary I think
-      /* this.size = 0; */
-      this.headIdx = 0;
-      this.tailIdx = 0;
     }
 
     // UNUSED (init) I think
@@ -1661,8 +1292,6 @@ module DistributedBag_DFS
 
       elems[tailIdx] = elt;
       tailIdx +=1;
-      if (tailIdx >= cap) then tailIdx = 0;
-      /* size += 1; */
 
       return;
     }
@@ -1673,9 +1302,7 @@ module DistributedBag_DFS
       if isFull then halt("DistributedBag_DFS Internal Error in 'pushHead': Block is Full.");
 
       headIdx -= 1;
-      if (headIdx == -1) then headIdx = cap - 1;
       elems[headIdx] = elt;
-      size += 1;
 
       return;
     } */
@@ -1686,22 +1313,17 @@ module DistributedBag_DFS
       /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popTail': Block is Empty."); */
 
       tailIdx -= 1;
-      if (tailIdx < 0) then tailIdx = cap - 1;
-      /* size -= 1; */
 
       return elems[tailIdx];
     }
 
     inline proc popHead(): eltType
     {
-      // security check
       if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popHead': 'elems' is nil.");
       /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popHead': Block is Empty."); */
 
       var elt = elems[headIdx];
       headIdx += 1;
-      if (headIdx >= cap) then headIdx = 0;
-      //size -= 1;
 
       return elt;
     }
