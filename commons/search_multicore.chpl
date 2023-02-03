@@ -10,20 +10,25 @@ module search_multicore
 
   use Problem;
 
-  const BUSY: bool = false;
-  const IDLE: bool = true;
+  /*
+    Maximum number of tasks per fragmented termination counters.
+  */
+  const fragSize: int = 16;
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
+    var numTasks = here.maxTaskPar;
+
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    var allTasksIdleFlag: atomic bool = false;
-    var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = BUSY;
+    var fragDom: domain(1) = 0..#divceil(numTasks, fragSize);
+    var eachTaskTermination: [fragDom] atomic int = fragSize;
+    if (numTasks%fragSize != 0) then eachTaskTermination[fragDom.high].write(numTasks%fragSize);
 
     // Counters and timers (for analysis)
-    var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
-    var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
-    var eachMaxDepth: [0..#here.maxTaskPar] int = 0;
+    var eachLocalExploredTree: [0..#numTasks] int = 0;
+    var eachLocalExploredSol: [0..#numTasks] int = 0;
+    var eachMaxDepth: [0..#numTasks] int = 0;
     var globalTimer: stopwatch;
 
     problem.print_settings();
@@ -40,7 +45,7 @@ module search_multicore
         An initial set is sequentially computed and distributed across locales.
         We require at least 2 nodes per task.
       */
-      var initSize: int = 2 * here.maxTaskPar * numLocales;
+      var initSize: int = 2 * numTasks * numLocales;
       var initList: list(Node);
       initList.append(root);
 
@@ -49,7 +54,7 @@ module search_multicore
       ref num_sol = eachLocalExploredSol[0];
 
       // Computation of the initial set
-      while (initList.size < initSize) {
+      while (initList.size < initSize){
         var parent: Node = initList.pop();
 
         {
@@ -70,7 +75,7 @@ module search_multicore
           loc = loc % numLocales;
           seg += 1;
         }
-        if (seg == here.maxTaskPar) then seg = 0;
+        if (seg == numTasks) then seg = 0;
       }
 
       initList.clear();
@@ -89,26 +94,20 @@ module search_multicore
     // PARALLEL EXPLORATION
     // =====================
 
-    coforall tid in 0..#here.maxTaskPar {
+    coforall tid in 0..#numTasks {
 
       // Task variables (best solution found)
       var best_task: int = best.read();
+      var idle: bool = false;
+      var frag: int = tid / fragSize;
       ref tree_loc = eachLocalExploredTree[tid];
       ref num_sol = eachLocalExploredSol[tid];
 
       // Counters and timers (for analysis)
-      var count, counter: int = 0;
+      var count: int = 0;
 
       // Exploration of the tree
-      while true do {
-        counter += 1;
-
-        // Check if the global termination flag is set or not
-        if (counter % 10000 == 0) {
-          if allTasksIdleFlag.read() {
-            break;
-          }
-        }
+      label search while true do {
 
         // Try to remove an element
         var (hasWork, parent): (int, Node) = bag.remove(tid);
@@ -119,16 +118,28 @@ module search_multicore
             'hasWork' =  0 : remove() prematurely fails  -> continue
             'hasWork' =  1 : remove() succeeds           -> decompose
         */
-        if (hasWork == 1) {
-          eachTaskTermination[tid].write(BUSY);
+        if (hasWork == 1){
+          if idle {
+            idle = false;
+            eachTaskTermination[frag].add(1);
+          }
         }
-        else if (hasWork == 0) {
-          eachTaskTermination[tid].write(IDLE);
+        else if (hasWork == 0){
+          if !idle {
+            idle = true;
+            eachTaskTermination[frag].sub(1);
+          }
           continue;
         }
         else {
-          eachTaskTermination[tid].write(IDLE);
-          if allTasksIdle(eachTaskTermination, allTasksIdleFlag) { // local check
+          if !idle {
+            idle = true;
+            eachTaskTermination[frag].sub(1);
+          }
+          if idle {
+            for status in eachTaskTermination {
+              if status.read() then continue search;
+            }
             break;
           }
           continue;
@@ -142,7 +153,7 @@ module search_multicore
         }
 
         // Read the best solution found so far
-        if (tid == 0) {
+        if (tid == 0){
           count += 1;
           if (count % 10000 == 0) then best_task = best.read();
         }
@@ -162,10 +173,9 @@ module search_multicore
 
     if saveTime {
       var path = problem.output_filepath();
-      save_time(here.maxTaskPar:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
+      save_time(numTasks:c_int, globalTimer.elapsed(TimeUnits.seconds):c_double, path.c_str());
     }
 
     problem.print_results(eachLocalExploredTree, eachLocalExploredSol, eachMaxDepth, best.read(), globalTimer);
   }
-
 }
