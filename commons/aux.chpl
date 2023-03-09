@@ -36,20 +36,8 @@ module aux
     }
   }
 
-  proc allTasksIdle(const arr: [] atomic bool, flag: atomic bool): bool
+  proc allIdle(const arr: [] atomic bool, flag: atomic bool): bool
   {
-    // fast exit
-    if flag.read() {
-      return true;
-    }
-    else {
-      return check_and_set(arr, flag);
-    }
-  }
-
-  proc allLocalesIdle(const arr: [] atomic bool, flag: atomic bool): bool
-  {
-    // fast exit
     if flag.read() {
       return true;
     }
@@ -60,7 +48,6 @@ module aux
 
   proc allLocalesIdle_dbg(const arr: [] atomic bool, flag: atomic bool, cTerm: atomic int): bool
   {
-    // fast exit
     if flag.read() {
       return true;
     }
@@ -70,7 +57,7 @@ module aux
     }
   }
 
-  proc save_subtimes(const path: string, const table: [] real): void
+  proc save_tables(const path: string, const table: [] real): void
   {
     try! {
       var f: file = open(path, iomode.cw);
@@ -86,9 +73,6 @@ module aux
     writeln("\n    usage:  main.o [parameter value] ...");
     writeln("\n  General Parameters:\n");
     writeln("   --mode                str   parallel execution mode (multicore, distributed)");
-    /* writeln("   --printExploredTree   bool  print explored sub-trees");
-    writeln("   --printExploredSol    bool  print explored solutions");
-    writeln("   --printMakespan       bool  print optimal makespan"); */
     writeln("   --activeSet           bool  computes and distributes an initial set of elements");
     writeln("   --saveTime            bool  save processing time in a file");
     writeln("   --help (or -h)              this message");

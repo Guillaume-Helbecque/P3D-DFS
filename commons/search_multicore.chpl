@@ -10,10 +10,8 @@ module search_multicore
 
   use Problem;
 
-  /*
-    Maximum number of tasks per fragmented termination counters.
-  */
-  const fragSize: int = 16;
+  const BUSY: bool = false;
+  const IDLE: bool = true;
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
@@ -21,9 +19,8 @@ module search_multicore
 
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    var fragDom: domain(1) = 0..#divceil(numTasks, fragSize);
-    var eachTaskTermination: [fragDom] atomic int = fragSize;
-    if (numTasks%fragSize != 0) then eachTaskTermination[fragDom.high].write(numTasks%fragSize);
+    var allTasksIdleFlag: atomic bool = false;
+    var eachTaskState: [0..#here.maxTaskPar] atomic bool = BUSY;
 
     // Counters and timers (for analysis)
     var eachLocalExploredTree: [0..#numTasks] int = 0;
@@ -66,8 +63,7 @@ module search_multicore
       }
 
       // Static distribution of the set
-      var seg: int = 0;
-      var loc: int = 0;
+      var seg, loc: int = 0;
       for elt in initList {
         on Locales[loc % numLocales] do bag.add(elt, seg);
         loc += 1;
@@ -85,7 +81,6 @@ module search_multicore
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
-      eachLocalExploredTree[0] += 1;
     }
 
     globalTimer.start();
@@ -98,8 +93,7 @@ module search_multicore
 
       // Task variables (best solution found)
       var best_task: int = best.read();
-      var idle: bool = false;
-      var frag: int = tid / fragSize;
+      var taskState: bool = false;
       ref tree_loc = eachLocalExploredTree[tid];
       ref num_sol = eachLocalExploredSol[tid];
 
@@ -107,7 +101,7 @@ module search_multicore
       var count: int = 0;
 
       // Exploration of the tree
-      label search while true do {
+      while true do {
 
         // Try to remove an element
         var (hasWork, parent): (int, Node) = bag.remove(tid);
@@ -119,27 +113,24 @@ module search_multicore
             'hasWork' =  1 : remove() succeeds           -> decompose
         */
         if (hasWork == 1){
-          if idle {
-            idle = false;
-            eachTaskTermination[frag].add(1);
+          if taskState {
+            taskState = false;
+            eachTaskState[tid].write(BUSY);
           }
         }
         else if (hasWork == 0){
-          if !idle {
-            idle = true;
-            eachTaskTermination[frag].sub(1);
+          if !taskState {
+            taskState = true;
+            eachTaskState[tid].write(IDLE);
           }
           continue;
         }
         else {
-          if !idle {
-            idle = true;
-            eachTaskTermination[frag].sub(1);
+          if !taskState {
+            taskState = true;
+            eachTaskState[tid].write(IDLE);
           }
-          if idle {
-            for status in eachTaskTermination {
-              if status.read() then continue search;
-            }
+          if allIdle(eachTaskState, allTasksIdleFlag){
             break;
           }
           continue;
@@ -169,7 +160,7 @@ module search_multicore
     // OUTPUTS
     // ========
 
-    writeln("Exploration terminated.\n");
+    writeln("\nExploration terminated.");
 
     if saveTime {
       var path = problem.output_filepath();

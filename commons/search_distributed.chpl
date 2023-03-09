@@ -20,7 +20,8 @@ module search_distributed
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
     const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
-    var eachLocaleTermination: [PrivateSpace] atomic bool = BUSY;
+    var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
+    var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
 
     // Counters and timers (for analysis)
@@ -63,8 +64,7 @@ module search_distributed
       }
 
       // Static distribution of the set
-      var seg: int = 0;
-      var loc: int = 0;
+      var seg, loc: int = 0;
       for elt in initList {
         on Locales[loc % numLocales] do bag.add(elt, seg);
         loc += 1;
@@ -82,7 +82,6 @@ module search_distributed
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
       bag.add(root, 0);
-      eachExploredTree[0] += 1;
     }
 
     globalTimer.start();
@@ -93,25 +92,23 @@ module search_distributed
 
     coforall loc in Locales with (const ref problem) do on loc {
 
+      var numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
 
       // Local variables (best solution found and termination)
       var best_locale: int = problem.setInitUB();
       var allTasksIdleFlag: atomic bool = false;
-      var globalTerminationFlag: atomic bool = false;
-      var eachTaskTermination: [0..#here.maxTaskPar] atomic bool = BUSY;
+      var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
       // Counters and timers (for analysis)
-      var eachLocalExploredTree: [0..#here.maxTaskPar] int = 0;
-      var eachLocalExploredSol: [0..#here.maxTaskPar] int = 0;
-      var localTimer: stopwatch;
+      var eachLocalExploredTree: [0..#numTasks] int = 0;
+      var eachLocalExploredSol: [0..#numTasks] int = 0;
 
-      localTimer.start();
-
-      coforall tid in 0..#here.maxTaskPar with (ref best_locale) {
+      coforall tid in 0..#numTasks with (ref best_locale) {
 
         // Task variables (best solution found)
         var best_task: int = best_locale;
+        var taskState, locState: bool = false;
         ref tree_loc = eachLocalExploredTree[tid];
         ref num_sol = eachLocalExploredSol[tid];
 
@@ -125,7 +122,7 @@ module search_distributed
 
           // Check if the global termination flag is set or not
           if (counter % 10000 == 0) {
-            if globalTerminationFlag.read() {
+            if allLocalesIdleFlag.read() {
               break;
             }
           }
@@ -140,23 +137,41 @@ module search_distributed
               'hasWork' =  1 : remove() succeeds           -> decompose
           */
 
-          if (hasWork == 1) {
-            eachTaskTermination[tid].write(BUSY);
-            eachLocaleTermination[here.id].write(BUSY);
+          if (hasWork == 1){
+            if taskState {
+              taskState = false;
+              eachTaskState[tid].write(BUSY);
+            }
+            if locState {
+              locState = false;
+              eachLocaleState[here.id].write(BUSY);
+            }
           }
           else if (hasWork == 0) {
-            eachTaskTermination[tid].write(IDLE);
+            if !taskState {
+              taskState = true;
+              eachTaskState[tid].write(IDLE);
+            }
             continue;
           }
           else {
-            eachTaskTermination[tid].write(IDLE);
-            if allTasksIdle(eachTaskTermination, allTasksIdleFlag) { // local check
-              eachLocaleTermination[here.id].write(IDLE);
-                if allLocalesIdle(eachLocaleTermination, globalTerminationFlag) { // global check
-                  break;
-                }
+            if !taskState {
+              taskState = true;
+              eachTaskState[tid].write(IDLE);
+            }
+            if allIdle(eachTaskState, allTasksIdleFlag) {
+              if !locState {
+                locState = true;
+                eachLocaleState[tid].write(IDLE);
+              }
+              if allIdle(eachLocaleState, allLocalesIdleFlag) {
+                break;
+              }
             } else {
-              eachLocaleTermination[here.id].write(BUSY);
+              if locState {
+                locState = false;
+                eachLocaleState[here.id].write(BUSY);
+              }
             }
             continue;
           }
@@ -177,8 +192,6 @@ module search_distributed
           best_task = best_locale;
         }
       } // end coforall tasks
-
-      localTimer.stop();
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
       eachExploredSol[here.id] += (+ reduce eachLocalExploredSol);
