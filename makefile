@@ -14,7 +14,7 @@ CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 # Build Chapel codes
 # ==========================
 
-all: main_pfsp.o main_uts.o main_nqueens.o
+all: main_pfsp.o main_uts.o main_nqueens.o main_knapsack.o
 
 # ==========
 # PFSP
@@ -68,6 +68,16 @@ CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
 
 main_nqueens.o: main_nqueens.chpl
 	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) main_nqueens.chpl -o main_nqueens.o
+
+# ==========
+# Knapsack
+# ==========
+
+CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
+CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR)
+
+main_knapsack.o: main_knapsack.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) main_knapsack.chpl -o main_knapsack.o
 
 # ==========================
 # Utilities
