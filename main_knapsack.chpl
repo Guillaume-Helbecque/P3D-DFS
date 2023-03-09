@@ -16,11 +16,8 @@ module main_knapsack
   config const mode: string = "multicore"; // multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool = false;
-  /* config const printExploredTree: bool = true; // number of explored nodes
-  config const printExploredSol: bool = true; // number of explored solutions
-  config const printMakespan: bool = true; // best makespan */
 
-  // Knapsack-specific option(s)
+  // Knapsack-specific option
   config const name: string = "default.txt";
 
   proc main(args: [] string): int

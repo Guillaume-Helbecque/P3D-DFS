@@ -5,7 +5,7 @@ Chapel-based implementation of our Productivity- and Performance-aware Parallel 
 [Chapel](https://chapel-lang.org/) is a programming language designed for productive parallel computing on large-scale systems.
 Chapel supports a multi-threaded execution model via high-level abstractions for data parallelism, task parallelism, concurrency, and nested parallelism. Chapel's locale type enables users to specify and reason about the placement of data and tasks on a target architecture in order to tune for locality and affinity. Chapel supports global-view data aggregates with user-defined implementations, permitting operations on distributed data structures to be expressed in a natural manner.
 
-Our Chapel codes rely on version 1.29.0. <br/>
+Our Chapel codes rely on version $1.29.0$. <br/>
 The corresponding Chapel's version is downloadable at: https://github.com/chapel-lang/chapel/releases.
 
 ## The `DistBag_DFS` distributed data structure
@@ -28,14 +28,14 @@ where:
 ### Branch-and-Bound algorithms (B&B)
 B&B are exact optimization algorithms constructing implicity trees by successively applying *branching*, *bounding* and *pruning* operators. Each tree node corresponds to a subproblem (the initial problem defined on a restricted domain) and children nodes are obtained by further restricting the search space.
 
-- [The Permutation Flow-shop Scheduling problem](./benchmark/PFSP) (PFSP)
-- [The 0/1-Knapsack problem](./benchmark/Knapsack)
+- [The Permutation Flow-shop Scheduling problem](./benchmarks/PFSP) (PFSP)
+- [The 0/1-Knapsack problem](./benchmarks/Knapsack)
 
 ### Backtracking algorithms
 Backtracking is an algorithmic technique for solving problems recursively by trying to build a solution incrementally, one piece at a time, removing those solutions that fail to satisfy the constraints of the problem at any point in time.
 
-- [The Unbalanced Tree-Search benchmark](./benchmark/UTS) (UTS)
-- [The N-Queens problem](./benchmark/NQueens)
+- [The Unbalanced Tree-Search benchmark](./benchmarks/UTS) (UTS)
+- [The N-Queens problem](./benchmarks/NQueens)
 
 ## Future improvements
 - Perform low-level investigations and optimizations of the `DistBag-DFS` distributed data structure, as well as the underlying WS mechanism.
@@ -43,7 +43,7 @@ Backtracking is an algorithmic technique for solving problems recursively by try
 - Extend the list of supported problems, *e.g.* the Quadratic Assignment Problem (QAP), the Traveling Salesman Problem (TSP).
 
 ## Contributors
-- Guillaume Helbecque (maintainer), Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France
+- Guillaume Helbecque, Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France
 - Jan Gmys, Centre Inria de l'Université de Lille, France
 - Tiago Carneiro, Université du Luxembourg, FSTM, Luxembourg
 - Nouredine Melab, Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France

@@ -1,5 +1,4 @@
 use IO;
-use aux;
 use List;
 use Time;
 use CTypes;
@@ -9,9 +8,9 @@ use Problem;
 
 class Problem_Knapsack : Problem
 {
-  var name: string; // file name
-  var N: int; // number of items
-  var W: real; // maximum weight of the bag
+  var name: string;         // file name
+  var N: int;               // number of items
+  var W: real;              // maximum weight of the bag
   var weight: [0..#N] real; // items' weight
   var profit: [0..#N] real; // items' profit
 
@@ -60,39 +59,6 @@ class Problem_Knapsack : Problem
     best: atomic int, ref best_task: int): list
   {
     var childList: list(Node);
-
-    /* var child = new Node(parent);
-    child.items[parent.depth] = 1:c_int;
-    child.depth += 1;
-    if (arrMultSom(child.items, weight, child.depth) <= W){
-      if (child.depth == N - 1){
-        num_sol += 1;
-        var eval = arrMultSom(child.items, profit, child.depth):int;
-        if (best_task <= eval){
-          best_task = eval;
-          best.write(best_task);
-        }
-      }
-      else {
-        childList.append(child);
-        tree_loc += 1;
-      }
-
-      var child2 = new Node(parent);
-      child2.depth += 1;
-      if (child2.depth != N - 1){
-        childList.append(child2);
-        tree_loc += 1;
-      }
-      else {
-        num_sol += 1;
-        var eval = arrMultSom(child.items, profit, child.depth):int;
-        if (best_task <= eval){
-          best_task = eval;
-          best.write(best_task);
-        }
-      }
-    } */
 
     for i in 0..1 by -1 {
       var child = new Node(parent);

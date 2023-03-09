@@ -16,9 +16,6 @@ module main_uts
   config const mode: string = "multicore"; // multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool = false;
-  /* config const printExploredTree: bool = true; // number of explored nodes
-  config const printExploredSol: bool = true; // number of explored solutions
-  config const printMakespan: bool = true; // best makespan */
 
   // UTS-specific options
   config const t: c_int     = 0; // BIN
