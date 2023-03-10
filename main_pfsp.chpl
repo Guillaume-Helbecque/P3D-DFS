@@ -13,15 +13,15 @@ module main_pfsp
   use Problem_PFSP;
 
   // Common options
-  config const mode: string = "multicore"; // multicore, distributed
+  config const mode: string    = "multicore"; // multicore, distributed
   config const activeSet: bool = false;
-  config const saveTime: bool = false;
+  config const saveTime: bool  = false;
 
   // PFSP-specific options
-  config const inst: c_int = 14;    // between 1 and 120
-  config const lb: string = "lb1";  // lb1, lb1_d, lb2
-  config const br: int = 0;         // forward (0), backward (1)
-  config const ub: string = "opt";  // opt, inf
+  config const inst: string = "ta14"; // instance's name
+  config const lb: string   = "lb1";  // lb1, lb1_d, lb2
+  config const br: int      = 0;      // forward (0), backward (1)
+  config const ub: string   = "opt";  // opt, inf
 
   proc main(args: [] string): int
   {

@@ -4,7 +4,9 @@ module Header_chpl_c_PFSP
 
 	require "c_sources/c_bound_simple.c", "c_headers/c_bound_simple.h";
 
-	extern record bound_data {};
+	extern record bound_data {
+		var p_times: c_ptr(c_int);
+	};
 
 	extern proc new_bound_data(_jobs: c_int, _machines: c_int): c_ptr(bound_data);
 	extern proc free_bound_data(const b: c_ptr(bound_data)): void;
