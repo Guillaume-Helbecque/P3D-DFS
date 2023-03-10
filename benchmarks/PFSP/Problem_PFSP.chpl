@@ -9,7 +9,7 @@ module Problem_PFSP
   use Header_chpl_c_PFSP;
 
   use Instance;
-  use Instance_VFR;
+  use Instance_VRF;
   use Instance_Taillard;
 
   class Problem_PFSP : Problem
@@ -31,7 +31,7 @@ module Problem_PFSP
 
       var inst = new Instance();
       if (fileName[0..1] == "ta") then inst = new Instance_Taillard(fileName);
-      else if (fileName[0..2] == "VFR") then inst = new Instance_VFR(fileName);
+      else if (fileName[0..2] == "VFR") then inst = new Instance_VRF(fileName);
       else halt("Error - Unknown PFSP instance class");
 
       this.jobs     = inst.get_nb_jobs();
@@ -210,7 +210,7 @@ module Problem_PFSP
     {
       var inst = new Instance();
       if (this.name[0..1] == "ta") then inst = new Instance_Taillard(this.name);
-      else if (this.name[0..2] == "VFR") then inst = new Instance_VFR(this.name);
+      else if (this.name[0..2] == "VFR") then inst = new Instance_VRF(this.name);
       else halt("Error - Unknown PFSP instance class");
 
       if (this.ub_init == "inf"){

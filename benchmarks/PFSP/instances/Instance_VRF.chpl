@@ -1,9 +1,10 @@
 use IO;
+use Path;
 use CTypes;
 use Instance;
 use Header_chpl_c_PFSP;
 
-class Instance_VFR : Instance
+class Instance_VRF : Instance
 {
   var jobs: c_int;
   var machines: c_int;
@@ -12,7 +13,7 @@ class Instance_VFR : Instance
   proc init(const fileName: string)
   {
     this.name = fileName;
-    var tup = ("./benchmarks/PFSP/instances/VFR/", this.name);
+    var tup = ("./benchmarks/PFSP/instances/data_VRF/", fileName);
     var path = "".join(tup);
 
     var f = open(path, iomode.r);
@@ -47,5 +48,21 @@ class Instance_VFR : Instance
   override proc get_data(lbd1: c_ptr(bound_data))
   {
     for i in 0..#this.jobs*this.machines do lbd1.deref().p_times[i] = this.data[i];
+  }
+
+  override proc get_ub(): int
+  {
+    var tup = ("./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt");
+    var path = "".join(tup);
+
+    var f = open(path, iomode.r);
+    var channel = f.reader();
+
+    var file = channel.read([0..240, 0..2] string);
+
+    channel.close();
+    f.close();
+
+    return file[file.find((splitExt(this.name)[0]))[1][0], 1]:int;
   }
 }
