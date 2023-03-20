@@ -2,7 +2,6 @@ use IO;
 use Path;
 use CTypes;
 use Instance;
-use Header_chpl_c_PFSP;
 
 class Instance_VRF : Instance
 {
@@ -45,9 +44,9 @@ class Instance_VRF : Instance
     return this.machines;
   }
 
-  override proc get_data(lbd1: c_ptr(bound_data))
+  override proc get_data(d: c_ptr(c_int))
   {
-    for i in 0..#this.jobs*this.machines do lbd1.deref().p_times[i] = this.data[i];
+    for i in 0..#this.jobs*this.machines do d[i] = this.data[i];
   }
 
   override proc get_ub(): int

@@ -6,11 +6,8 @@ module Problem_PFSP
   use CTypes;
 
   use Problem;
+  use Instances;
   use Header_chpl_c_PFSP;
-
-  use Instance;
-  use Instance_VRF;
-  use Instance_Taillard;
 
   class Problem_PFSP : Problem
   {
@@ -41,7 +38,7 @@ module Problem_PFSP
       else halt("Error - Unsupported lower bound");
 
       this.lbound1 = new_bound_data(jobs, machines);
-      inst.get_data(lbound1);
+      inst.get_data(lbound1.deref().p_times);
       fill_min_heads_tails(lbound1);
 
       if (lb == "lb2"){
