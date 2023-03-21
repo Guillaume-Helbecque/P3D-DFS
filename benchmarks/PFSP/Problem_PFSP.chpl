@@ -75,7 +75,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list
     {
       var childList: list(Node); // list containing the child nodes
 

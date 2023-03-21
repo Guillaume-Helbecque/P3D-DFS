@@ -20,7 +20,7 @@ module search_multicore
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
     var allTasksIdleFlag: atomic bool = false;
-    var eachTaskState: [0..#here.maxTaskPar] atomic bool = BUSY;
+    var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
     // Counters and timers (for analysis)
     var eachLocalExploredTree: [0..#numTasks] int = 0;
@@ -49,14 +49,15 @@ module search_multicore
       var best_task: int = best.read();
       ref tree_loc = eachLocalExploredTree[0];
       ref num_sol = eachLocalExploredSol[0];
+      ref max_depth = eachMaxDepth[0];
 
       // Computation of the initial set
-      while (initList.size < initSize){
+      while (initList.size < initSize) {
         var parent: Node = initList.pop();
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            best, best_task);
+            max_depth, best, best_task);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -96,6 +97,7 @@ module search_multicore
       var taskState: bool = false;
       ref tree_loc = eachLocalExploredTree[tid];
       ref num_sol = eachLocalExploredSol[tid];
+      ref max_depth = eachMaxDepth[tid];
 
       // Counters and timers (for analysis)
       var count: int = 0;
@@ -112,13 +114,13 @@ module search_multicore
             'hasWork' =  0 : remove() prematurely fails  -> continue
             'hasWork' =  1 : remove() succeeds           -> decompose
         */
-        if (hasWork == 1){
+        if (hasWork == 1) {
           if taskState {
             taskState = false;
             eachTaskState[tid].write(BUSY);
           }
         }
-        else if (hasWork == 0){
+        else if (hasWork == 0) {
           if !taskState {
             taskState = true;
             eachTaskState[tid].write(IDLE);
@@ -130,7 +132,7 @@ module search_multicore
             taskState = true;
             eachTaskState[tid].write(IDLE);
           }
-          if allIdle(eachTaskState, allTasksIdleFlag){
+          if allIdle(eachTaskState, allTasksIdleFlag) {
             break;
           }
           continue;
@@ -138,13 +140,14 @@ module search_multicore
 
         // Decompose an element
         {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
+          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+            max_depth, best, best_task);
 
           bag.addBulk(children, tid);
         }
 
         // Read the best solution found so far
-        if (tid == 0){
+        if (tid == 0) {
           count += 1;
           if (count % 10000 == 0) then best_task = best.read();
         }

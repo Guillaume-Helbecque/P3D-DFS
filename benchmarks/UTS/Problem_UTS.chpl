@@ -83,7 +83,7 @@ module Problem_UTS
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      best: atomic int, ref best_task: int): [] Node
+      ref max_depth: int, best: atomic int, ref best_task: int): [] Node
     {
       var numChildren: c_int = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb,
         b_0, shape_fn, gen_mx, shiftDepth);
@@ -92,7 +92,7 @@ module Problem_UTS
 
       if (numChildren > 0) {
         c_decompose(parent, c_ptrTo(children), treeType, numChildren, gen_mx,
-        shiftDepth, computeGranularity, tree_loc, best_task);
+        shiftDepth, computeGranularity, tree_loc, max_depth);
       }
       else {
         num_sol += 1;
@@ -117,7 +117,7 @@ module Problem_UTS
       writeln("UTS - Unbalanced Tree Search");
       writeln("Tree type: ", treeType, " (", uts_trees_str[treeType]:string, ")");
       writeln("Tree shape parameters:");
-      writeln("  root branching factor b_0 = ", b_0, ", root seed r = ", rootId);
+      writeln("  root branching factor b_0 = ", b_0:int, ", root seed r = ", rootId);
       if (treeType == GEO || treeType == HYBRID) {
         writeln("  GEO parameters: gen_mx = ", gen_mx, ", shape function = ", shape_fn, " (", uts_geoshapes_str[shape_fn]:string, ")");
       }
@@ -161,10 +161,10 @@ module Problem_UTS
       writeln("=================================\n");
     }
 
-    // TO COMPLETE
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_uts.txt");
+      var tup = ("./chpl_uts_bin_b", b_0:int:string, "_r", rootId:string, "_m", nonLeafBF:string,
+        "_q", nonLeafProb:string, "_g", computeGranularity:string, ".txt");
       return "".join(tup);
     }
 
@@ -172,7 +172,7 @@ module Problem_UTS
     {
       writeln("\n  UTS Benchmark Parameters:\n");
       writeln("   --t   int       tree type (0: BIN, 1: GEO, 2: HYBRID, 3: BALANCED)");
-      writeln("   --b   double    root branching factor");
+      writeln("   --b   int       root branching factor");
       writeln("   --r   int       root seed 0 <= r < 2^31");
       writeln("   --a   int       GEO: tree shape function");
       writeln("   --d   int       GEO, BALANCED: tree depth");

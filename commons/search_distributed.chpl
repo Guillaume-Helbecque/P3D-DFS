@@ -51,13 +51,15 @@ module search_distributed
       var best_task, best_locale: int = best.read();
       ref tree_loc = eachExploredTree[0];
       ref num_sol = eachExploredSol[0];
+      ref max_depth = eachMaxDepth[0];
 
       // Computation of the initial set
       while (initList.size < initSize) {
         var parent: Node = initList.pop();
 
         {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol, best, best_task);
+          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+            max_depth, best, best_task);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -103,6 +105,7 @@ module search_distributed
       // Counters and timers (for analysis)
       var eachLocalExploredTree: [0..#numTasks] int = 0;
       var eachLocalExploredSol: [0..#numTasks] int = 0;
+      var eachLocalMaxDepth: [0..#numTasks] int = 0;
 
       coforall tid in 0..#numTasks with (ref best_locale) {
 
@@ -111,6 +114,7 @@ module search_distributed
         var taskState, locState: bool = false;
         ref tree_loc = eachLocalExploredTree[tid];
         ref num_sol = eachLocalExploredSol[tid];
+        ref max_depth = eachLocalMaxDepth[tid];
 
         // Counters and timers (for analysis)
         var count, counter: int = 0;
@@ -137,7 +141,7 @@ module search_distributed
               'hasWork' =  1 : remove() succeeds           -> decompose
           */
 
-          if (hasWork == 1){
+          if (hasWork == 1) {
             if taskState {
               taskState = false;
               eachTaskState[tid].write(BUSY);
@@ -178,7 +182,8 @@ module search_distributed
 
           // Decompose an element
           {
-            var children = problem_loc.decompose(Node, parent, tree_loc, num_sol, best, best_task);
+            var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
+              max_depth, best, best_task);
 
             bag.addBulk(children, tid);
           }
@@ -195,6 +200,7 @@ module search_distributed
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
       eachExploredSol[here.id] += (+ reduce eachLocalExploredSol);
+      eachMaxDepth[here.id] = (maxloc reduce zip(eachLocalMaxDepth, eachLocalMaxDepth.domain))[0];
     } // end coforall locales
 
     globalTimer.stop();
