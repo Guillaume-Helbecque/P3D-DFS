@@ -15,7 +15,7 @@ class Instance_VRF : Instance
     var tup = ("./benchmarks/PFSP/instances/data_VRF/", fileName);
     var path = "".join(tup);
 
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     var channel = f.reader();
 
     this.jobs = channel.read(c_int);
@@ -54,7 +54,7 @@ class Instance_VRF : Instance
     var tup = ("./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt");
     var path = "".join(tup);
 
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     var channel = f.reader();
 
     var file = channel.read([0..240, 0..2] string);
@@ -62,6 +62,6 @@ class Instance_VRF : Instance
     channel.close();
     f.close();
 
-    return file[file.find((splitExt(this.name)[0]))[1][0], 1]:int;
+    return file[file.find(splitExt(this.name)[0])]:int;
   }
 }

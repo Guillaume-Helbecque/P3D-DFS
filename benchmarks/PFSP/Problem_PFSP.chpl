@@ -107,7 +107,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list
     {
       var childList: list(Node); // list containing the child nodes
 
@@ -153,7 +153,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list
     {
       var childList: list(Node); // list containing the child nodes
 
@@ -184,18 +184,18 @@ module Problem_PFSP
       return childList;
     }
 
-    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int, best: atomic int,
-      ref best_task: int): list
+    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, best: atomic int, ref best_task: int): list
     {
       select lb_name {
         when "lb1" {
-          return decompose_lb1(Node, parent, tree_loc, num_sol, best, best_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
         when "lb1_d" {
-          return decompose_lb1_d(Node, parent, tree_loc, num_sol, best, best_task);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
         when "lb2" {
-          return decompose_lb2(Node, parent, tree_loc, num_sol, best, best_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
         otherwise {
           halt("Error - Unknown lower bound");
@@ -252,7 +252,7 @@ module Problem_PFSP
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Optimal makespan: ", best);
-      writeln("Elapsed time: ", timer.elapsed(TimeUnits.seconds), " [s]");
+      writeln("Elapsed time: ", timer.elapsed(), " [s]");
       writeln("=================================================\n");
     }
 
