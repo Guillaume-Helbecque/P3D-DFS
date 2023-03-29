@@ -9,9 +9,7 @@ module search_multicore
   use statistics;
 
   use Problem;
-
-  const BUSY: bool = false;
-  const IDLE: bool = true;
+  use Termination;
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
@@ -19,8 +17,6 @@ module search_multicore
 
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    var allTasksIdleFlag: atomic bool = false;
-    var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
     // Counters and timers (for analysis)
     var eachLocalExploredTree: [0..#numTasks] int = 0;
@@ -35,6 +31,7 @@ module search_multicore
     // ===============
 
     var bag = new DistBag_DFS(Node, targetLocales = Locales);
+    var term = new Termination();
     var root = new Node(problem);
 
     if activeSet {
@@ -94,7 +91,6 @@ module search_multicore
 
       // Task variables (best solution found)
       var best_task: int = best.read();
-      var taskState: bool = false;
       ref tree_loc = eachLocalExploredTree[tid];
       ref num_sol = eachLocalExploredSol[tid];
       ref max_depth = eachMaxDepth[tid];
@@ -114,28 +110,14 @@ module search_multicore
             'hasWork' =  0 : remove() prematurely fails  -> continue
             'hasWork' =  1 : remove() succeeds           -> decompose
         */
-        if (hasWork == 1) {
-          if taskState {
-            taskState = false;
-            eachTaskState[tid].write(BUSY);
+        select term.check_end_MC(hasWork, tid){
+          when "c" {
+            continue;
           }
-        }
-        else if (hasWork == 0) {
-          if !taskState {
-            taskState = true;
-            eachTaskState[tid].write(IDLE);
-          }
-          continue;
-        }
-        else {
-          if !taskState {
-            taskState = true;
-            eachTaskState[tid].write(IDLE);
-          }
-          if allIdle(eachTaskState, allTasksIdleFlag) {
+          when "b" {
             break;
           }
-          continue;
+          otherwise {}
         }
 
         // Decompose an element

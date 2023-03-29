@@ -11,20 +11,16 @@ module search_distributed
   use statistics;
 
   use Problem;
-
-  const BUSY: bool = false;
-  const IDLE: bool = true;
+  use Termination;
 
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
-    var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
-    var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
 
     // Counters and timers (for analysis)
+    const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
     var eachExploredTree: [PrivateSpace] int = 0;
     var eachExploredSol: [PrivateSpace] int = 0;
     var eachMaxDepth: [PrivateSpace] int = 0;
@@ -37,6 +33,7 @@ module search_distributed
     // ===============
 
     var bag = new DistBag_DFS(Node, targetLocales = Locales);
+    var term = new Termination();
     var root = new Node(problem);
 
     if activeSet {
@@ -99,8 +96,6 @@ module search_distributed
 
       // Local variables (best solution found and termination)
       var best_locale: int = problem.setInitUB();
-      var allTasksIdleFlag: atomic bool = false;
-      var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
       // Counters and timers (for analysis)
       var eachLocalExploredTree: [0..#numTasks] int = 0;
@@ -111,7 +106,6 @@ module search_distributed
 
         // Task variables (best solution found)
         var best_task: int = best_locale;
-        var taskState, locState: bool = false;
         ref tree_loc = eachLocalExploredTree[tid];
         ref num_sol = eachLocalExploredSol[tid];
         ref max_depth = eachLocalMaxDepth[tid];
@@ -125,11 +119,11 @@ module search_distributed
           counter += 1;
 
           // Check if the global termination flag is set or not
-          if (counter % 10000 == 0) {
+          /* if (counter % 10000 == 0) {
             if allLocalesIdleFlag.read() {
               break;
             }
-          }
+          } */
 
           // Try to remove an element
           var (hasWork, parent): (int, Node) = bag.remove(tid);
@@ -140,44 +134,14 @@ module search_distributed
               'hasWork' =  0 : remove() prematurely fails  -> continue
               'hasWork' =  1 : remove() succeeds           -> decompose
           */
-
-          if (hasWork == 1) {
-            if taskState {
-              taskState = false;
-              eachTaskState[tid].write(BUSY);
+          select term.check_end_D(hasWork, tid, here.id){
+            when "c" {
+              continue;
             }
-            if locState {
-              locState = false;
-              eachLocaleState[here.id].write(BUSY);
+            when "b" {
+              break;
             }
-          }
-          else if (hasWork == 0) {
-            if !taskState {
-              taskState = true;
-              eachTaskState[tid].write(IDLE);
-            }
-            continue;
-          }
-          else {
-            if !taskState {
-              taskState = true;
-              eachTaskState[tid].write(IDLE);
-            }
-            if allIdle(eachTaskState, allTasksIdleFlag) {
-              if !locState {
-                locState = true;
-                eachLocaleState[tid].write(IDLE);
-              }
-              if allIdle(eachLocaleState, allLocalesIdleFlag) {
-                break;
-              }
-            } else {
-              if locState {
-                locState = false;
-                eachLocaleState[here.id].write(BUSY);
-              }
-            }
-            continue;
+            otherwise {}
           }
 
           // Decompose an element
