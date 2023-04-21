@@ -1,8 +1,6 @@
 module main_knapsack
 {
   // Common modules
-  use CTypes;
-
   use aux;
   use search_multicore;
   use search_distributed;
@@ -12,9 +10,9 @@ module main_knapsack
   use Problem_Knapsack;
 
   // Common options
-  config const mode: string = "multicore"; // multicore, distributed
+  config const mode: string    = "multicore"; // multicore, distributed
   config const activeSet: bool = false;
-  config const saveTime: bool = false;
+  config const saveTime: bool  = false;
 
   // Knapsack-specific option
   config const name: string = "default.txt";

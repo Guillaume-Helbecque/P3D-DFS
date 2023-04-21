@@ -1,8 +1,6 @@
 module main_pfsp
 {
   // Common modules
-  use CTypes;
-
   use aux;
   use search_multicore;
   use search_distributed;

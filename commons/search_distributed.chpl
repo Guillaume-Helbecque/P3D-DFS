@@ -117,19 +117,11 @@ module search_distributed
         ref max_depth = eachLocalMaxDepth[tid];
 
         // Counters and timers (for analysis)
-        var count, counter: int = 0;
+        var count: int = 0;
 
         allLocalesBarrier.barrier(); // synchronization of tasks
 
         while true do {
-          counter += 1;
-
-          // Check if the global termination flag is set or not
-          if (counter % 10000 == 0) {
-            if allLocalesIdleFlag.read() {
-              break;
-            }
-          }
 
           // Try to remove an element
           var (hasWork, parent): (int, Node) = bag.remove(tid);
@@ -166,7 +158,7 @@ module search_distributed
             if allIdle(eachTaskState, allTasksIdleFlag) {
               if !locState {
                 locState = true;
-                eachLocaleState[tid].write(IDLE);
+                eachLocaleState[here.id].write(IDLE);
               }
               if allIdle(eachLocaleState, allLocalesIdleFlag) {
                 break;

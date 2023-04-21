@@ -12,9 +12,9 @@ module main_uts
   use Problem_UTS;
 
   // Common options
-  config const mode: string = "multicore"; // multicore, distributed
+  config const mode: string    = "multicore"; // multicore, distributed
   config const activeSet: bool = false;
-  config const saveTime: bool = false;
+  config const saveTime: bool  = false;
 
   // UTS-specific options
   config const t: c_int     = 0; // BIN
