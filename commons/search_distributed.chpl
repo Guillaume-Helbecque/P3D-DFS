@@ -8,8 +8,6 @@ module search_distributed
   use AllLocalesBarriers;
 
   use aux;
-  use statistics;
-
   use Problem;
 
   const BUSY: bool = false;
@@ -24,10 +22,10 @@ module search_distributed
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
 
-    // Counters and timers (for analysis)
-    var eachExploredTree: [PrivateSpace] int = 0;
-    var eachExploredSol: [PrivateSpace] int = 0;
-    var eachMaxDepth: [PrivateSpace] int = 0;
+    // Statistics
+    var eachExploredTree: [PrivateSpace] int;
+    var eachExploredSol: [PrivateSpace] int;
+    var eachMaxDepth: [PrivateSpace] int;
     var globalTimer: stopwatch;
 
     problem.print_settings();
@@ -55,7 +53,7 @@ module search_distributed
 
       // Computation of the initial set
       while (initList.size < initSize) {
-        var parent: Node = initList.pop();
+        var parent = initList.pop();
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
@@ -65,8 +63,8 @@ module search_distributed
         }
       }
 
-      // Static distribution of the set
-      var seg, loc: int = 0;
+      // Static distribution of the initial set
+      var seg, loc: int;
       for elt in initList {
         on Locales[loc % numLocales] do bag.add(elt, seg);
         loc += 1;
@@ -97,34 +95,33 @@ module search_distributed
       var numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
 
-      // Local variables (best solution found and termination)
+      // Local variables
       var best_locale: int = problem.setInitUB();
       var allTasksIdleFlag: atomic bool = false;
       var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
-      // Counters and timers (for analysis)
-      var eachLocalExploredTree: [0..#numTasks] int = 0;
-      var eachLocalExploredSol: [0..#numTasks] int = 0;
-      var eachLocalMaxDepth: [0..#numTasks] int = 0;
+      // Local statistics
+      var eachLocalExploredTree: [0..#numTasks] int;
+      var eachLocalExploredSol: [0..#numTasks] int;
+      var eachLocalMaxDepth: [0..#numTasks] int;
 
-      coforall tid in 0..#numTasks with (ref best_locale) {
+      coforall taskId in 0..#numTasks with (ref best_locale) {
 
-        // Task variables (best solution found)
+        // Task variables
         var best_task: int = best_locale;
         var taskState, locState: bool = false;
-        ref tree_loc = eachLocalExploredTree[tid];
-        ref num_sol = eachLocalExploredSol[tid];
-        ref max_depth = eachLocalMaxDepth[tid];
+        var counter: int = 0;
+        ref tree_loc = eachLocalExploredTree[taskId];
+        ref num_sol = eachLocalExploredSol[taskId];
+        ref max_depth = eachLocalMaxDepth[taskId];
 
-        // Counters and timers (for analysis)
-        var count: int = 0;
+        allLocalesBarrier.barrier(); // synchronization barrier
 
-        allLocalesBarrier.barrier(); // synchronization of tasks
-
+        // Exploration of the tree
         while true do {
 
           // Try to remove an element
-          var (hasWork, parent): (int, Node) = bag.remove(tid);
+          var (hasWork, parent): (int, Node) = bag.remove(taskId);
 
           /*
             Check (or not) the termination condition regarding the value of 'hasWork':
@@ -132,11 +129,10 @@ module search_distributed
               'hasWork' =  0 : remove() prematurely fails  -> continue
               'hasWork' =  1 : remove() succeeds           -> decompose
           */
-
           if (hasWork == 1) {
             if taskState {
               taskState = false;
-              eachTaskState[tid].write(BUSY);
+              eachTaskState[taskId].write(BUSY);
             }
             if locState {
               locState = false;
@@ -146,14 +142,14 @@ module search_distributed
           else if (hasWork == 0) {
             if !taskState {
               taskState = true;
-              eachTaskState[tid].write(IDLE);
+              eachTaskState[taskId].write(IDLE);
             }
             continue;
           }
           else {
             if !taskState {
               taskState = true;
-              eachTaskState[tid].write(IDLE);
+              eachTaskState[taskId].write(IDLE);
             }
             if allIdle(eachTaskState, allTasksIdleFlag) {
               if !locState {
@@ -173,17 +169,15 @@ module search_distributed
           }
 
           // Decompose an element
-          {
-            var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
-              max_depth, best, best_task);
+          var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
+            max_depth, best, best_task);
 
-            bag.addBulk(children, tid);
-          }
+          bag.addBulk(children, taskId);
 
           // Read the best solution found so far
-          if (tid == 0) {
-            count += 1;
-            if (count % 10000 == 0) then best_locale = best.read();
+          if (taskId == 0) {
+            counter += 1;
+            if (counter % 10000 == 0) then best_locale = best.read();
           }
 
           best_task = best_locale;

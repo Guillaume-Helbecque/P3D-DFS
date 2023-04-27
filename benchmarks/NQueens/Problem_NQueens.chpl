@@ -9,7 +9,7 @@ module Problem_NQueens
 
   class Problem_NQueens : Problem
   {
-    var N: int; // size of the problem (number of queens)
+    var N: int; // number of queens
 
     proc init(const n: int): void
     {
@@ -26,7 +26,7 @@ module Problem_NQueens
       // For each queen before this one
       for i in 0..#queen_num {
         // Get the row position
-        const other_row_pos: c_int = board[i];
+        const other_row_pos = board[i];
 
         // Check diagonals
         if (other_row_pos == row_pos - (queen_num - i) ||
@@ -40,9 +40,9 @@ module Problem_NQueens
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node);
+      var children: list(Node);
 
-      const depth: int = parent.depth;
+      const depth = parent.depth;
 
       if (depth == this.N) { // All queens are placed
         num_sol += 1;
@@ -52,12 +52,12 @@ module Problem_NQueens
           var child = new Node(parent);
           swap(child.board[depth], child.board[j]);
           child.depth += 1;
-          childList.append(child);
+          children.append(child);
           tree_loc += 1;
         }
       }
 
-      return childList;
+      return children;
     }
 
     // No bounding in NQueens

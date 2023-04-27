@@ -6,8 +6,6 @@ module search_multicore
   use DistributedBag_DFS;
 
   use aux;
-  use statistics;
-
   use Problem;
 
   const BUSY: bool = false;
@@ -22,10 +20,10 @@ module search_multicore
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
-    // Counters and timers (for analysis)
-    var eachLocalExploredTree: [0..#numTasks] int = 0;
-    var eachLocalExploredSol: [0..#numTasks] int = 0;
-    var eachMaxDepth: [0..#numTasks] int = 0;
+    // Statistics
+    var eachExploredTree: [0..#numTasks] int;
+    var eachExploredSol: [0..#numTasks] int;
+    var eachMaxDepth: [0..#numTasks] int;
     var globalTimer: stopwatch;
 
     problem.print_settings();
@@ -47,13 +45,13 @@ module search_multicore
       initList.append(root);
 
       var best_task: int = best.read();
-      ref tree_loc = eachLocalExploredTree[0];
-      ref num_sol = eachLocalExploredSol[0];
+      ref tree_loc = eachExploredTree[0];
+      ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
 
       // Computation of the initial set
       while (initList.size < initSize) {
-        var parent: Node = initList.pop();
+        var parent = initList.pop();
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
@@ -64,7 +62,7 @@ module search_multicore
       }
 
       // Static distribution of the set
-      var seg, loc: int = 0;
+      var seg, loc: int;
       for elt in initList {
         on Locales[loc % numLocales] do bag.add(elt, seg);
         loc += 1;
@@ -90,23 +88,21 @@ module search_multicore
     // PARALLEL EXPLORATION
     // =====================
 
-    coforall tid in 0..#numTasks {
+    coforall taskId in 0..#numTasks {
 
-      // Task variables (best solution found)
+      // Task variables
       var best_task: int = best.read();
       var taskState: bool = false;
-      ref tree_loc = eachLocalExploredTree[tid];
-      ref num_sol = eachLocalExploredSol[tid];
-      ref max_depth = eachMaxDepth[tid];
-
-      // Counters and timers (for analysis)
-      var count: int = 0;
+      var counter: int = 0;
+      ref tree_loc = eachExploredTree[taskId];
+      ref num_sol = eachExploredSol[taskId];
+      ref max_depth = eachMaxDepth[taskId];
 
       // Exploration of the tree
       while true do {
 
         // Try to remove an element
-        var (hasWork, parent): (int, Node) = bag.remove(tid);
+        var (hasWork, parent): (int, Node) = bag.remove(taskId);
 
         /*
           Check (or not) the termination condition regarding the value of 'hasWork':
@@ -117,20 +113,20 @@ module search_multicore
         if (hasWork == 1) {
           if taskState {
             taskState = false;
-            eachTaskState[tid].write(BUSY);
+            eachTaskState[taskId].write(BUSY);
           }
         }
         else if (hasWork == 0) {
           if !taskState {
             taskState = true;
-            eachTaskState[tid].write(IDLE);
+            eachTaskState[taskId].write(IDLE);
           }
           continue;
         }
         else {
           if !taskState {
             taskState = true;
-            eachTaskState[tid].write(IDLE);
+            eachTaskState[taskId].write(IDLE);
           }
           if allIdle(eachTaskState, allTasksIdleFlag) {
             break;
@@ -139,17 +135,15 @@ module search_multicore
         }
 
         // Decompose an element
-        {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task);
+        var children = problem.decompose(Node, parent, tree_loc, num_sol,
+          max_depth, best, best_task);
 
-          bag.addBulk(children, tid);
-        }
+        bag.addBulk(children, taskId);
 
         // Read the best solution found so far
-        if (tid == 0) {
-          count += 1;
-          if (count % 10000 == 0) then best_task = best.read();
+        if (taskId == 0) {
+          counter += 1;
+          if (counter % 10000 == 0) then best_task = best.read();
         }
 
       }
@@ -170,6 +164,6 @@ module search_multicore
       save_time(numTasks:c_int, globalTimer.elapsed():c_double, path.c_str());
     }
 
-    problem.print_results(eachLocalExploredTree, eachLocalExploredSol, eachMaxDepth, best.read(), globalTimer);
+    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(), globalTimer);
   }
 }

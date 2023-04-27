@@ -41,7 +41,7 @@ module Problem_PFSP
       inst.get_data(lbound1.deref().p_times);
       fill_min_heads_tails(lbound1);
 
-      if (lb == "lb2"){
+      if (lb == "lb2") {
         this.lbound2 = new_johnson_bd_data(lbound1/*, LB2_FULL*/);
         fill_machine_pairs(lbound2/*, LB2_FULL*/);
         fill_lags(lbound1, lbound2);
@@ -77,16 +77,15 @@ module Problem_PFSP
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
-      // Treatment of childs
       for i in parent.limit1+1..parent.limit2-1 {
         var child = new Node(parent);
         swap(child.prmu[child.depth], child.prmu[i]);
         child.depth  += 1;
         child.limit1 += 1;
 
-        var lowerbound: c_int = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+        var lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -97,19 +96,19 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
+            children.append(child);
             tree_loc += 1;
-            childList.append(child);
           }
         }
       }
 
-      return childList;
+      return children;
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
       var lb_begin = c_malloc(c_int, jobs);
       var BEGINEND: c_int = -1;
@@ -117,30 +116,29 @@ module Problem_PFSP
       lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
         lb_begin, c_nil, c_nil, c_nil, BEGINEND);
 
-      // Treatment of childs
       for i in parent.limit1+1..parent.limit2-1 {
 
-        if (parent.depth + 1 == jobs){ // if child leaf
+        if (parent.depth + 1 == jobs) { // if child leaf
           num_sol += 1;
 
-          if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
+          if (lb_begin[parent.prmu[i]] < best_task) { // if child feasible
             best_task = lb_begin[parent.prmu[i]];
             best.write(lb_begin[parent.prmu[i]]);
           }
         } else { // if not leaf
-          if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
+          if (lb_begin[parent.prmu[i]] < best_task) { // if child feasible
             var child = new Node(parent);
             child.depth += 1;
 
-            if (branching == 0){ // if forward
+            if (branching == 0) { // if forward
               child.limit1 += 1;
               swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (branching == 1){ // if backward
+            } else if (branching == 1) { // if backward
               child.limit2 -= 1;
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
 
-            childList.append(child);
+            children.append(child);
             tree_loc += 1;
           }
         }
@@ -149,13 +147,13 @@ module Problem_PFSP
 
       c_free(lb_begin);
 
-      return childList;
+      return children;
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
       for i in parent.limit1+1..parent.limit2-1 {
         var child = new Node(parent);
@@ -163,7 +161,7 @@ module Problem_PFSP
         child.depth  += 1;
         child.limit1 += 1;
 
-        var lowerbound: c_int = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+        var lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -174,20 +172,20 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
+            children.append(child);
             tree_loc += 1;
-            childList.append(child);
           }
         }
 
       }
 
-      return childList;
+      return children;
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      select lb_name {
+      select this.lb_name {
         when "lb1" {
           return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
@@ -221,7 +219,7 @@ module Problem_PFSP
     proc free(): void
     {
       free_bound_data(this.lbound1);
-      if (lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
+      if (this.lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
     }
 
     // =======================
@@ -231,10 +229,10 @@ module Problem_PFSP
     override proc print_settings(): void
     {
       writeln("\n=================================================");
-      writeln("PFSP instance: ", name, " (m = ", machines, ", n = ", jobs, ")");
+      writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
       writeln("Initial upper bound: ", setInitUB());
-      writeln("Lower bound function: ", lb_name);
-      writeln("Branching rules: ", (1-branching)*"forward" + branching*"backward");
+      writeln("Lower bound function: ", this.lb_name);
+      writeln("Branching rules: ", (1-this.branching)*"forward" + this.branching*"backward");
       writeln("=================================================");
     }
 
@@ -258,8 +256,8 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_pfsp_", name, "_", lb_name, "_",
-        ((1-branching)*"forward" + branching*"backward"), ".txt");
+      var tup = ("./chpl_pfsp_", this.name, "_", this.lb_name, "_",
+        ((1-this.branching)*"forward" + this.branching*"backward"), ".txt");
       return "".join(tup);
     }
 

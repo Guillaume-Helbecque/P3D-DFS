@@ -65,34 +65,34 @@ module Problem_UTS
       const nonLeafProba: c_double, const gen: c_int, const shape_fct: c_int, const shiftD: c_double,
       const gran: c_int): void
     {
-      this.treeType = tree_type;
-      this.b_0 = bf_0;
-      this.rootId = rootIdx;
-      this.nonLeafBF = nonLeafBFact;
-      this.nonLeafProb = nonLeafProba;
-      this.gen_mx = gen;
-      this.shape_fn = shape_fct;
-      this.shiftDepth = shiftD;
+      this.treeType           = tree_type;
+      this.b_0                = bf_0;
+      this.rootId             = rootIdx;
+      this.nonLeafBF          = nonLeafBFact;
+      this.nonLeafProb        = nonLeafProba;
+      this.gen_mx             = gen;
+      this.shape_fn           = shape_fct;
+      this.shiftDepth         = shiftD;
       this.computeGranularity = gran;
     }
 
     override proc copy()
     {
-      return new Problem_UTS(treeType, b_0, rootId, nonLeafBF, nonLeafProb, gen_mx,
-        shape_fn, shiftDepth, computeGranularity);
+      return new Problem_UTS(this.treeType, this.b_0, this.rootId, this.nonLeafBF,
+        this.nonLeafProb, this.gen_mx, this.shape_fn, this.shiftDepth, this.computeGranularity);
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): [] Node
     {
-      var numChildren: c_int = uts_numChildren(parent, treeType, nonLeafBF, nonLeafProb,
-        b_0, shape_fn, gen_mx, shiftDepth);
+      var numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
+        this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
 
       var children: [0..#numChildren] Node;
 
       if (numChildren > 0) {
-        c_decompose(parent, c_ptrTo(children), treeType, numChildren, gen_mx,
-        shiftDepth, computeGranularity, tree_loc, max_depth);
+        c_decompose(parent, c_ptrTo(children), this.treeType, numChildren, this.gen_mx,
+          this.shiftDepth, this.computeGranularity, tree_loc, max_depth);
       }
       else {
         num_sol += 1;
@@ -115,29 +115,29 @@ module Problem_UTS
     {
       writeln("\n=================================================");
       writeln("UTS - Unbalanced Tree Search");
-      writeln("Tree type: ", treeType, " (", uts_trees_str[treeType]:string, ")");
+      writeln("Tree type: ", this.treeType, " (", uts_trees_str[this.treeType]:string, ")");
       writeln("Tree shape parameters:");
-      writeln("  root branching factor b_0 = ", b_0:int, ", root seed r = ", rootId);
-      if (treeType == GEO || treeType == HYBRID) {
-        writeln("  GEO parameters: gen_mx = ", gen_mx, ", shape function = ", shape_fn, " (", uts_geoshapes_str[shape_fn]:string, ")");
+      writeln("  root branching factor b_0 = ", this.b_0:int, ", root seed r = ", this.rootId);
+      if (this.treeType == GEO || this.treeType == HYBRID) {
+        writeln("  GEO parameters: gen_mx = ", this.gen_mx, ", shape function = ", this.shape_fn, " (", uts_geoshapes_str[this.shape_fn]:string, ")");
       }
-      if (treeType == BIN || treeType == HYBRID) {
-        var q: c_double = nonLeafProb;
-        var m: c_int = nonLeafBF;
+      if (this.treeType == BIN || this.treeType == HYBRID) {
+        var q = this.nonLeafProb;
+        var m = this.nonLeafBF;
         var es: c_double = (1.0 / (1.0 - q * m));
         writeln("  BIN parameters: q = ", q, ", m = ", m, ", E(n) = ", q * m, ", E(s) = ", es);
       }
-      if (treeType == HYBRID) {
-        writeln("  HYBRID:  GEO from root to depth ", ceil(shiftDepth * gen_mx): c_int, ", then BIN");
+      if (this.treeType == HYBRID) {
+        writeln("  HYBRID:  GEO from root to depth ", ceil(this.shiftDepth * this.gen_mx):int, ", then BIN");
       }
-      if (treeType == BALANCED) {
-        var exp_nodes: uint(64) = ((b_0**(gen_mx+1) - 1.0) / (b_0 - 1.0)):uint(64); /* geometric series */
-        var exp_leaves: uint(64) = (b_0**gen_mx):uint(64);
-        writeln("  BALANCED parameters gen_mx = ", gen_mx);
+      if (this.treeType == BALANCED) {
+        var exp_nodes: uint(64) = ((b_0**(this.gen_mx+1) - 1.0) / (b_0 - 1.0)):uint(64); /* geometric series */
+        var exp_leaves: uint(64) = (b_0**this.gen_mx):uint(64);
+        writeln("  BALANCED parameters gen_mx = ", this.gen_mx);
         writeln("    Expected size: ", exp_nodes, ", ", exp_leaves);
       }
       writeln("Random number generator: "); // TO COMPLETE
-      writeln("Compute granularity: ", computeGranularity);
+      writeln("Compute granularity: ", this.computeGranularity);
       writeln("=================================================");
     }
 
@@ -163,8 +163,8 @@ module Problem_UTS
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_uts_bin_b", b_0:int:string, "_r", rootId:string, "_m", nonLeafBF:string,
-        "_q", nonLeafProb:string, "_g", computeGranularity:string, ".txt");
+      var tup = ("./chpl_uts_bin_b", this.b_0:int:string, "_r", this.rootId:string, "_m", this.nonLeafBF:string,
+        "_q", this.nonLeafProb:string, "_g", this.computeGranularity:string, ".txt");
       return "".join(tup);
     }
 

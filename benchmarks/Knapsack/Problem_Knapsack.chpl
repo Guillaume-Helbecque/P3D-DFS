@@ -58,29 +58,29 @@ class Problem_Knapsack : Problem
   override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
     ref max_depth: int, best: atomic int, ref best_task: int): list
   {
-    var childList: list(Node);
+    var children: list(Node);
 
     for i in 0..1 by -1 {
       var child = new Node(parent);
       child.items[parent.depth] = i:c_int;
       child.depth += 1;
-      if (arrMultSom(child.items, weight, child.depth) <= W){
-        if (child.depth == N - 1){
+      if (arrMultSom(child.items, this.weight, child.depth) <= this.W) {
+        if (child.depth == N - 1) {
           num_sol += 1;
-          var eval = arrMultSom(child.items, profit, child.depth):int;
-          if (best_task <= eval){
+          var eval = arrMultSom(child.items, this.profit, child.depth):int;
+          if (best_task <= eval) {
             best_task = eval;
-            best.write(best_task);
+            best.write(eval);
           }
         }
         else {
-          childList.append(child);
+          children.append(child);
           tree_loc += 1;
         }
       }
     }
 
-    return childList;
+    return children;
   }
 
   // No bounding

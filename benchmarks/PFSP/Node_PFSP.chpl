@@ -19,11 +19,10 @@ module Node_PFSP
     // root-initializer
     proc init(problem)
     {
-      this.depth  = 0;
       this.limit1 = -1;
       this.limit2 = problem.jobs;
       this.complete();
-      for i in 0..#problem.jobs do this.prmu(i) = i:c_int;
+      for i in 0..#problem.jobs do this.prmu[i] = i:c_int;
     }
 
     // copy-initializer
