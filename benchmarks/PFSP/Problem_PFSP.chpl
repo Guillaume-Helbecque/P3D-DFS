@@ -9,8 +9,8 @@ module Problem_PFSP
   use Instances;
   use Header_chpl_c_PFSP;
 
-  const allowedLowerBound = ["lb1", "lb1_d", "lb2"];
-  const allowedBranching  = ["fwd", "bwd", "alt", "maxSum", "minMin"];
+  const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
+  const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
   class Problem_PFSP : Problem
   {
@@ -37,7 +37,7 @@ module Problem_PFSP
       this.jobs     = inst.get_nb_jobs();
       this.machines = inst.get_nb_machines();
 
-      if (allowedLowerBound.find(lb) != -1) then this.lb_name = lb;
+      if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
 
       this.lbound1 = new_bound_data(jobs, machines);
@@ -51,7 +51,7 @@ module Problem_PFSP
         fill_johnson_schedules(lbound1, lbound2);
       }
 
-      if (allowedBranching.find(rules) != -1) then this.branching = rules;
+      if (allowedBranchingRules.find(rules) != -1) then this.branching = rules;
       else halt("Error - Unsupported branching rule");
 
       if (ub == "opt" || ub == "inf") then this.ub_init = ub;
@@ -76,6 +76,62 @@ module Problem_PFSP
     {
       return new Problem_PFSP(this.name, this.jobs, this.machines, this.lb_name,
         this.lbound1, this.lbound2, this.branching, this.ub_init);
+    }
+
+    proc branchingRule(const lb_begin: [], const lb_end: [], const depth, const best)
+    {
+      var branch = this.branching;
+
+      while true {
+        select branch {
+          when "fwd" {
+            return (0, lb_begin); // begin
+          }
+          when "bwd" {
+            return (1, lb_end); // end
+          }
+          when "alt" {
+            if (depth % 2 == 0) then branch = "fwd";
+            else branch = "bwd";
+          }
+          when "maxSum" {
+            var sum1 = (+ reduce lb_begin);
+            var sum2 = (+ reduce lb_end);
+            if (sum1 >= sum2) then branch = "fwd";
+            else branch = "bwd";
+          }
+          when "minMin" {
+            var min1, min2: c_int = 99999;
+            for k in 0..#this.jobs {
+              if (lb_begin[k] != 0) then min1 = min(lb_begin[k], min1);
+              if (lb_end[k] != 0) then min2 = min(lb_end[k], min2);
+            }
+            var min3 = min(min1, min2);
+            var c1 = lb_begin.count(min3);
+            var c2 = lb_end.count(min3);
+            if (c1 < c2) then branch = "fwd";
+            else if (c1 == c2) then branch = "minBranch";
+            else branch = "bwd";
+          }
+          when "minBranch" {
+            var c1, c2, s1, s2: int;
+            for k in 0..#this.jobs {
+              if (lb_begin[k] > best) then c1 += 1;
+              else s1 += lb_begin[k];
+
+              if (lb_end[k] > best) then c2 += 1;
+              else s2 += lb_end[k];
+            }
+            if (c1 < c2) then branch = "bwd";
+            else if (c1 > c2) then branch = "fwd";
+            else {
+              if (s1 >= s2) then branch = "fwd";
+              else branch = "bwd";
+            }
+          }
+        }
+      }
+      return (0, lb_begin);
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -116,57 +172,17 @@ module Problem_PFSP
 
       var lb_begin: [0..#this.jobs] c_int;
       var lb_end: [0..#this.jobs] c_int;
-      var lbs: [0..#this.jobs] c_int;
       var prio_begin: [0..#this.jobs] c_int;
       var prio_end: [0..#this.jobs] c_int;
-      var b: int;
 
-      var BEGINEND: c_int = 0; // need opt
+      /* TODO: optimize BEGINEND */
+      /* What is the meaning of prio_begin/end ? */
+      var BEGINEND: c_int = 0;
 
       lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
         c_ptrTo(lb_begin), c_ptrTo(lb_end), c_ptrTo(prio_begin), c_ptrTo(prio_end), BEGINEND);
 
-      var branch = this.branching;
-      while true {
-        select branch {
-          when "fwd" {
-            lbs = lb_begin;
-            b = 0;
-            break;
-          }
-          when "bwd" {
-            lbs = lb_end;
-            b = 1;
-            break;
-          }
-          when "alt" {
-            if (parent.depth % 2 == 0) then branch = "fwd";
-            else branch = "bwd";
-          }
-          when "maxSum" {
-            var sum1 = (+ reduce lb_begin);
-            var sum2 = (+ reduce lb_end);
-            if (sum1 >= sum2) then branch = "fwd";
-            else branch = "bwd";
-          }
-          when "minMin" {
-            var min1, min2: c_int = 99999;
-            for k in lb_begin.domain {
-              if (lb_begin[k] != 0) then min1 = min(lb_begin[k], min1);
-              if (lb_end[k] != 0) then min2 = min(lb_end[k], min2);
-            }
-            var min3 = min(min1, min2);
-            var c1 = lb_begin.count(min3);
-            var c2 = lb_end.count(min3);
-            writeln(lb_begin, "   ", c1);
-            writeln(lb_end, "   ", c2);
-            writeln(min3);
-            if (c1 < c2) then branch = "fwd";
-            else if (c1 == c2) then branch = "maxSum";
-            else branch = "bwd";
-          }
-        }
-      }
+      var (beginEnd, lbs) = branchingRule(lb_begin, lb_end, parent.depth, best_task);
 
       for i in parent.limit1+1..parent.limit2-1 {
         const job = parent.prmu[i];
@@ -184,10 +200,10 @@ module Problem_PFSP
             var child = new Node(parent);
             child.depth += 1;
 
-            if (b == 0) { // if forward
+            if (beginEnd == 0) { // begin
               child.limit1 += 1;
               swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (b == 1) { // if backward
+            } else if (beginEnd == 1) { // end
               child.limit2 -= 1;
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
@@ -248,7 +264,7 @@ module Problem_PFSP
           return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
         otherwise {
-          halt("Error - Unknown lower bound");
+          halt("DEADCODE");
         }
       }
     }
@@ -257,10 +273,9 @@ module Problem_PFSP
     {
       var inst = new Instance();
       if (this.name[0..1] == "ta") then inst = new Instance_Taillard(this.name);
-      else if (this.name[0..2] == "VFR") then inst = new Instance_VRF(this.name);
-      else halt("Error - Unknown PFSP instance class");
+      else inst = new Instance_VRF(this.name);
 
-      if (this.ub_init == "inf"){
+      if (this.ub_init == "inf") {
         return 999999;
       }
       else {
@@ -317,7 +332,7 @@ module Problem_PFSP
       writeln("\n  PFSP Benchmark Parameters:\n");
       writeln("   --inst  str   instance's name");
       writeln("   --lb    str   lower bound function (lb1, lb1_d, lb2)");
-      writeln("   --br    str   branching rule (fwd, bwd, maxSum)");
+      writeln("   --br    str   branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
       writeln("   --ub    str   upper bound initialization (opt, inf)\n");
     }
 
