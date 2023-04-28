@@ -9,6 +9,9 @@ module Problem_PFSP
   use Instances;
   use Header_chpl_c_PFSP;
 
+  const allowedLowerBound = ["lb1", "lb1_d", "lb2"];
+  const allowedBranching  = ["fwd", "bwd", "alt", "maxSum", "minMin"];
+
   class Problem_PFSP : Problem
   {
     var name: string;
@@ -19,10 +22,10 @@ module Problem_PFSP
     var lbound1: c_ptr(bound_data);
     var lbound2: c_ptr(johnson_bd_data);
 
-    var branching: int;
+    var branching: string;
     var ub_init: string;
 
-    proc init(const fileName: string, const lb: string, const rules: int, const ub: string): void
+    proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;
 
@@ -34,7 +37,7 @@ module Problem_PFSP
       this.jobs     = inst.get_nb_jobs();
       this.machines = inst.get_nb_machines();
 
-      if (lb == "lb1" || lb == "lb1_d" || lb == "lb2") then this.lb_name = lb;
+      if (allowedLowerBound.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
 
       this.lbound1 = new_bound_data(jobs, machines);
@@ -48,7 +51,8 @@ module Problem_PFSP
         fill_johnson_schedules(lbound1, lbound2);
       }
 
-      this.branching = rules;
+      if (allowedBranching.find(rules) != -1) then this.branching = rules;
+      else halt("Error - Unsupported branching rule");
 
       if (ub == "opt" || ub == "inf") then this.ub_init = ub;
       else halt("Error - Unsupported upper bound");
@@ -56,7 +60,7 @@ module Problem_PFSP
 
     proc init(const n: string, const j: c_int, const m: c_int, const lb: string,
       const lbd1: c_ptr(bound_data), const lbd2: c_ptr(johnson_bd_data),
-      const br: int, const ub: string)
+      const br: string, const ub: string)
     {
       this.name      = n;
       this.jobs      = j;
@@ -110,30 +114,80 @@ module Problem_PFSP
     {
       var children: list(Node);
 
-      var lb_begin = c_malloc(c_int, jobs);
-      var BEGINEND: c_int = -1;
+      var lb_begin: [0..#this.jobs] c_int;
+      var lb_end: [0..#this.jobs] c_int;
+      var lbs: [0..#this.jobs] c_int;
+      var prio_begin: [0..#this.jobs] c_int;
+      var prio_end: [0..#this.jobs] c_int;
+      var b: int;
+
+      var BEGINEND: c_int = 0; // need opt
 
       lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
-        lb_begin, c_nil, c_nil, c_nil, BEGINEND);
+        c_ptrTo(lb_begin), c_ptrTo(lb_end), c_ptrTo(prio_begin), c_ptrTo(prio_end), BEGINEND);
+
+      var branch = this.branching;
+      while true {
+        select branch {
+          when "fwd" {
+            lbs = lb_begin;
+            b = 0;
+            break;
+          }
+          when "bwd" {
+            lbs = lb_end;
+            b = 1;
+            break;
+          }
+          when "alt" {
+            if (parent.depth % 2 == 0) then branch = "fwd";
+            else branch = "bwd";
+          }
+          when "maxSum" {
+            var sum1 = (+ reduce lb_begin);
+            var sum2 = (+ reduce lb_end);
+            if (sum1 >= sum2) then branch = "fwd";
+            else branch = "bwd";
+          }
+          when "minMin" {
+            var min1, min2: c_int = 99999;
+            for k in lb_begin.domain {
+              if (lb_begin[k] != 0) then min1 = min(lb_begin[k], min1);
+              if (lb_end[k] != 0) then min2 = min(lb_end[k], min2);
+            }
+            var min3 = min(min1, min2);
+            var c1 = lb_begin.count(min3);
+            var c2 = lb_end.count(min3);
+            writeln(lb_begin, "   ", c1);
+            writeln(lb_end, "   ", c2);
+            writeln(min3);
+            if (c1 < c2) then branch = "fwd";
+            else if (c1 == c2) then branch = "maxSum";
+            else branch = "bwd";
+          }
+        }
+      }
 
       for i in parent.limit1+1..parent.limit2-1 {
+        const job = parent.prmu[i];
+        const lb = lbs[job];
 
         if (parent.depth + 1 == jobs) { // if child leaf
           num_sol += 1;
 
-          if (lb_begin[parent.prmu[i]] < best_task) { // if child feasible
-            best_task = lb_begin[parent.prmu[i]];
-            best.write(lb_begin[parent.prmu[i]]);
+          if (lb < best_task) { // if child feasible
+            best_task = lb;
+            best.write(lb);
           }
         } else { // if not leaf
-          if (lb_begin[parent.prmu[i]] < best_task) { // if child feasible
+          if (lb < best_task) { // if child feasible
             var child = new Node(parent);
             child.depth += 1;
 
-            if (branching == 0) { // if forward
+            if (b == 0) { // if forward
               child.limit1 += 1;
               swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (branching == 1) { // if backward
+            } else if (b == 1) { // if backward
               child.limit2 -= 1;
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
@@ -144,8 +198,6 @@ module Problem_PFSP
         }
 
       }
-
-      c_free(lb_begin);
 
       return children;
     }
@@ -232,7 +284,7 @@ module Problem_PFSP
       writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
       writeln("Initial upper bound: ", setInitUB());
       writeln("Lower bound function: ", this.lb_name);
-      writeln("Branching rules: ", (1-this.branching)*"forward" + this.branching*"backward");
+      writeln("Branching rules: ", this.branching);
       writeln("=================================================");
     }
 
@@ -256,8 +308,7 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_pfsp_", this.name, "_", this.lb_name, "_",
-        ((1-this.branching)*"forward" + this.branching*"backward"), ".txt");
+      var tup = ("./chpl_pfsp_", this.name, "_", this.lb_name, "_", this.branching, ".txt");
       return "".join(tup);
     }
 
@@ -266,7 +317,7 @@ module Problem_PFSP
       writeln("\n  PFSP Benchmark Parameters:\n");
       writeln("   --inst  str   instance's name");
       writeln("   --lb    str   lower bound function (lb1, lb1_d, lb2)");
-      writeln("   --br    int   branching rule (0: forward, 1: backward)");
+      writeln("   --br    str   branching rule (fwd, bwd, maxSum)");
       writeln("   --ub    str   upper bound initialization (opt, inf)\n");
     }
 
