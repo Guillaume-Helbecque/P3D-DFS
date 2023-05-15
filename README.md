@@ -48,3 +48,6 @@ Backtracking is an algorithmic technique for solving problems recursively by try
 - Tiago Carneiro, Université du Luxembourg, FSTM, Luxembourg
 - Nouredine Melab, Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France
 - Pascal Bouvry, Université du Luxembourg, DCS-FSTM/SnT, Luxembourg
+
+## Publications
+[1] G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Productivity-aware Parallel Distributed Tree-Search for Exact Optimization. *International Conference on Optimization and Learning (OLA 2023)*, May 2023, Malaga, Spain.
