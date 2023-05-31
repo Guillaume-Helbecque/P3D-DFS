@@ -13,6 +13,8 @@ module search_distributed
   const BUSY: bool = false;
   const IDLE: bool = true;
 
+  config const eps: int = 10;
+
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
@@ -57,7 +59,7 @@ module search_distributed
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task);
+            max_depth, best, best_task, eps);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -170,7 +172,7 @@ module search_distributed
 
           // Decompose an element
           var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task);
+            max_depth, best, best_task, eps);
 
           bag.addBulk(children, taskId);
 

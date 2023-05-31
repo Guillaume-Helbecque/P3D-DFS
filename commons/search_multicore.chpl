@@ -11,6 +11,8 @@ module search_multicore
   const BUSY: bool = false;
   const IDLE: bool = true;
 
+  config const eps: int = 10;
+
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     var numTasks = here.maxTaskPar;
@@ -55,7 +57,7 @@ module search_multicore
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task);
+            max_depth, best, best_task, eps);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -136,7 +138,7 @@ module search_multicore
 
         // Decompose an element
         var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, best, best_task);
+          max_depth, best, best_task, eps);
 
         bag.addBulk(children, taskId);
 
