@@ -1,5 +1,5 @@
 # P3D-DFS
-Chapel-based implementation of our Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag_DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
+Chapel-based implementation of our Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag-DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
 
 ## Chapel
 [Chapel](https://chapel-lang.org/) is a programming language designed for productive parallel computing on large-scale systems.
@@ -8,8 +8,8 @@ Chapel supports a multi-threaded execution model via high-level abstractions for
 Our Chapel codes rely on version $1.30.0$. <br/>
 The corresponding Chapel's version is downloadable at: https://github.com/chapel-lang/chapel/releases.
 
-## The `DistBag_DFS` distributed data structure
-The `DistBag_DFS` distributed data structure is a parallel-safe distributed multi-pool implementation that is unordered and incorporates a WS mechanism that balances workload across multiple locales, transparently to the user. It can contain either predefined-Chapel types, user-defined types or external ones (*e.g.* C structures).
+## The `DistBag-DFS` distributed data structure
+The `DistBag-DFS` distributed data structure is a parallel-safe distributed multi-pool implementation that is unordered and incorporates a WS mechanism that balances workload across multiple locales, transparently to the user. It can contain either predefined-Chapel types, user-defined types or external ones (*e.g.* C structures).
 This data structure has been derived from the `DistBag` data structure supplied is the `DistributedBag` Chapel's module, and revised in two different ways: (1) we propose a new scheduling policy of its elements as well as a new synchronization mechanism using non-blocking split-deques, and (2) we redefine the underlying WS mechanism.
 
 ## Compilation & Execution
@@ -36,6 +36,28 @@ Backtracking is an algorithmic technique for solving problems recursively by try
 
 - [The Unbalanced Tree-Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
+
+## Experimental results
+
+The following figures show the absolute speed-up achieved by P3D-DFS and MPI+X baseline implementations on large unbalanced tree-based
+problems, considering different granularities (fine, medium, coarse). For each figure, most coarse-grained is top-right, most
+fine-grained is bottom-left.
+
+<table><tr><td>
+
+![results_pfsp_dist](https://github.com/Guillaume-Helbecque/P3D-DFS/assets/72358009/b8a99db2-9b3c-49ec-8fad-33d6e5020af1)
+<p align = "center">
+Fig.1 - P3D-DFS vs. MPI-PBB on B&B applied to PFSP.
+</p>
+
+</td><td>
+
+![results_uts_dist](https://github.com/Guillaume-Helbecque/P3D-DFS/assets/72358009/bd603a08-46d1-4829-a92f-7f15cf72970b)
+<p align = "center">
+Fig.2 - P3D-DFS vs. MPI-PUTS on UTS.
+</p> 
+
+</td></tr></table>
 
 ## Future improvements
 - Perform low-level investigations and optimizations of the `DistBag-DFS` distributed data structure, as well as the underlying WS mechanism.
