@@ -3,6 +3,7 @@ module search_multicore
   use List;
   use Time;
   use CTypes;
+  use Collectives;
   use DistributedBag_DFS;
 
   use aux;
@@ -11,11 +12,12 @@ module search_multicore
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  config const eps: int = 10;
-
-  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool, const eps: int,
+    const beam_step: int): void
   {
     var numTasks = here.maxTaskPar;
+    var b = new barrier(numTasks, true); // true ?
+    var beam = eps;
 
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
@@ -100,54 +102,75 @@ module search_multicore
       ref num_sol = eachExploredSol[taskId];
       ref max_depth = eachMaxDepth[taskId];
 
-      // Exploration of the tree
-      while true do {
-
-        // Try to remove an element
-        var (hasWork, parent): (int, Node) = bag.remove(taskId);
-
-        /*
-          Check (or not) the termination condition regarding the value of 'hasWork':
-            'hasWork' = -1 : remove() fails              -> check termination
-            'hasWork' =  0 : remove() prematurely fails  -> continue
-            'hasWork' =  1 : remove() succeeds           -> decompose
-        */
-        if (hasWork == 1) {
-          if taskState {
-            taskState = false;
-            eachTaskState[taskId].write(BUSY);
-          }
-        }
-        else if (hasWork == 0) {
-          if !taskState {
-            taskState = true;
-            eachTaskState[taskId].write(IDLE);
-          }
-          continue;
-        }
-        else {
-          if !taskState {
-            taskState = true;
-            eachTaskState[taskId].write(IDLE);
-          }
-          if allIdle(eachTaskState, allTasksIdleFlag) {
-            break;
-          }
-          continue;
-        }
-
-        // Decompose an element
-        var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, best, best_task, eps);
-
-        bag.addBulk(children, taskId);
-
-        // Read the best solution found so far
+      label beam_iteration for beam in 2..<problem.jobs by beam_step {
+        writeln("hello from task ", taskId);
+        taskState = false;
+        eachTaskState[taskId].write(BUSY);
         if (taskId == 0) {
-          counter += 1;
-          if (counter % 10000 == 0) then best_task = best.read();
-        }
+          /* taskState = false;
+          eachTaskState[taskId].write(BUSY); */
+          allTasksIdleFlag.write(false);
+          bag.add(root, taskId);
 
+          writeln("Restart with beam = ", beam, " best = ", best_task);
+          writeln(eachExploredTree);
+          writeln(eachExploredSol);
+        }
+        best_task = best.read();
+        b.barrier();
+
+        eachExploredTree[taskId] = 0;
+        eachExploredSol[taskId] = 0;
+
+        // Exploration of the tree
+        label search while true do {
+
+          // Try to remove an element
+          var (hasWork, parent): (int, Node) = bag.remove(taskId);
+
+          /*
+            Check (or not) the termination condition regarding the value of 'hasWork':
+              'hasWork' = -1 : remove() fails              -> check termination
+              'hasWork' =  0 : remove() prematurely fails  -> continue
+              'hasWork' =  1 : remove() succeeds           -> decompose
+          */
+          if (hasWork == 1) {
+            if taskState {
+              taskState = false;
+              eachTaskState[taskId].write(BUSY);
+            }
+          }
+          else if (hasWork == 0) {
+            if !taskState {
+              taskState = true;
+              eachTaskState[taskId].write(IDLE);
+            }
+            continue;
+          }
+          else {
+            if !taskState {
+              taskState = true;
+              eachTaskState[taskId].write(IDLE);
+            }
+            if allIdle(eachTaskState, allTasksIdleFlag) {
+              break search;
+            }
+            continue;
+          }
+
+          // Decompose an element
+          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+            max_depth, best, best_task, beam);
+
+          bag.addBulk(children, taskId);
+
+          // Read the best solution found so far
+          if (taskId == 0) {
+            counter += 1;
+            if (counter % 10000 == 0) then best_task = best.read();
+          }
+
+        }
       }
     }
 

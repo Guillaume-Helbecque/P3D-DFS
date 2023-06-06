@@ -20,6 +20,10 @@ module main_pfsp
   config const br: string   = "fwd";  // fwd, bwd, alt, maxSum, minMin, minBranch
   config const ub: string   = "opt";  // opt, inf
 
+  // Beam option
+  config const eps: int = 1;
+  config const beam_step: int = 4;
+
   proc main(args: [] string): int
   {
     // Initialization of the problem
@@ -38,10 +42,10 @@ module main_pfsp
     // Parallel search
     select mode {
       when "multicore" {
-        search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
+        search_multicore(Node_PFSP, pfsp, saveTime, activeSet, eps, beam_step);
       }
       when "distributed" {
-        search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
+        search_distributed(Node_PFSP, pfsp, saveTime, activeSet, eps);
       }
       otherwise {
         halt("ERROR - Unknown parallel execution mode");

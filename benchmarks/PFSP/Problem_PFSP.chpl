@@ -3,6 +3,7 @@ module Problem_PFSP
   use aux;
   use List;
   use Time;
+  use Sort;
   use CTypes;
 
   use Problem;
@@ -183,36 +184,40 @@ module Problem_PFSP
         c_ptrTo(lb_begin), c_ptrTo(lb_end), c_ptrTo(prio_begin), c_ptrTo(prio_end), BEGINEND);
 
       var (beginEnd, lbs) = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+      var lbs_s = lbs;
+      sort(lbs_s);
+      var lb_thresh = lbs_s[min(parent.depth+eps-1, this.jobs-1)];
 
       for i in parent.limit1+1..parent.limit2-1 {
         const job = parent.prmu[i];
         const lb = lbs[job];
 
-        if (parent.depth + 1 == jobs) { // if child leaf
-          num_sol += 1;
+        if (lb <= lb_thresh) {
+          if (parent.depth + 1 == jobs) { // if child leaf
+            num_sol += 1;
 
-          if (lb < best_task) { // if child feasible
-            best_task = lb;
-            best.write(lb);
-          }
-        } else { // if not leaf
-          if (lb < best_task) { // if child feasible
-            var child = new Node(parent);
-            child.depth += 1;
-
-            if (beginEnd == 0) { // begin
-              child.limit1 += 1;
-              swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (beginEnd == 1) { // end
-              child.limit2 -= 1;
-              swap(child.prmu[child.limit2], child.prmu[i]);
+            if (lb < best_task) { // if child feasible
+              best_task = lb;
+              best.write(lb);
             }
+          } else { // if not leaf
+            if (lb < best_task) { // if child feasible
+              var child = new Node(parent);
+              child.depth += 1;
 
-            children.append(child);
-            tree_loc += 1;
+              if (beginEnd == 0) { // begin
+                child.limit1 += 1;
+                swap(child.prmu[child.limit1], child.prmu[i]);
+              } else if (beginEnd == 1) { // end
+                child.limit2 -= 1;
+                swap(child.prmu[child.limit2], child.prmu[i]);
+              }
+              children.append(child);
+              tree_loc += 1;
+            }
           }
-        }
 
+        }
       }
 
       return children;
