@@ -77,10 +77,10 @@ module DistributedBag_DFS
     conditions; this is required to ensure maximized parallelism at all times, and
     critical to good performance, especially when a node is oversubscribed.
   */
-  private param REMOVE_SIMPLE         = 1;
-  private param REMOVE_LOCAL_STEAL    = 2;
-  private param REMOVE_GLOBAL_STEAL   = 3;
-  private param REMOVE_STEAL_REQUEST  = 4;
+  private param REMOVE_SIMPLE        = 1;
+  private param REMOVE_LOCAL_STEAL   = 2;
+  private param REMOVE_GLOBAL_STEAL  = 3;
+  private param REMOVE_STEAL_REQUEST = 4;
 
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
@@ -193,7 +193,7 @@ module DistributedBag_DFS
     proc writeThis(ch) throws {
       ch.write("[");
       var size = this.getSize();
-      for (i,iteration) in zip(this, 0..<size) {
+      for (i, iteration) in zip(this, 0..<size) {
         ch.write(i);
         if (iteration < size-1) then ch.write(", ");
       }
@@ -201,7 +201,7 @@ module DistributedBag_DFS
     }
 
     forwarding _value;
-  }
+  } // end 'DistBag_DFS' record
 
   class DistributedBagImpl : CollectionImpl
   {
@@ -212,6 +212,7 @@ module DistributedBag_DFS
       The locales to allocate bags for and load balance across.
     */
     var targetLocales: [targetLocDom] locale;
+
     pragma "no doc"
     var pid: int = -1;
 
@@ -314,6 +315,8 @@ module DistributedBag_DFS
       return bag!.remove(taskId);
     }
 
+    // TODO: implement 'removeBulk'
+
     /*
       Obtain the number of elements held in all bags across all nodes. This method
       is best-effort and can be non-deterministic for concurrent updates across nodes,
@@ -325,9 +328,8 @@ module DistributedBag_DFS
       var size: atomic int;
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
-        forall taskId in 0..#here.maxTaskPar {
+        forall taskId in 0..#here.maxTaskPar do
           size.add(instance.bag!.segments[taskId].nElems);
-        }
       }
 
       return size.read();
@@ -345,6 +347,7 @@ module DistributedBag_DFS
       forall elem in getPrivatizedThis {
         if (elem == elt) then foundElt.write(true);
       }
+
       return foundElt.read();
     }
 
@@ -553,7 +556,7 @@ module DistributedBag_DFS
         yield buffer[i];
       }
     } */
-  }
+  } // end 'DistributedBagImpl' class
 
   /*
     We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
@@ -579,9 +582,8 @@ module DistributedBag_DFS
 
     proc deinit()
     {
-      forall segment in segments {
+      forall segment in segments do
         delete segment.block;
-      }
     }
 
     /*
@@ -599,7 +601,7 @@ module DistributedBag_DFS
         when "ring" {
           var id = (callerId + 1) % N;
 
-          while ((count < N-1) && (count < tries)){
+          while ((count < N-1) && (count < tries)) {
             yield id;
             count += 1;
             id = (id + 1) % N;
@@ -611,8 +613,8 @@ module DistributedBag_DFS
           var victims: [0..#N] int = noinit;
           permutation(victims);
 
-          while ((count < N-1) && (count < tries)){
-            if (victims[id] != callerId){
+          while ((count < N-1) && (count < tries)) {
+            if (victims[id] != callerId) {
               yield victims[id];
               count += 1;
             }
@@ -629,7 +631,6 @@ module DistributedBag_DFS
     proc add(elt: eltType, const taskId: int): bool
     {
       segments[taskId].addElement(elt);
-
       return true;
     }
 
@@ -665,7 +666,6 @@ module DistributedBag_DFS
             is empty.
           */
           when REMOVE_SIMPLE {
-
             ref segment = segments[taskId];
 
             // if the private region contains at least one element to be removed...
@@ -689,7 +689,6 @@ module DistributedBag_DFS
             a victim, or when a shared region becomes empty due to a concurrent operation.
           */
           when REMOVE_LOCAL_STEAL {
-
             var default: eltType;
             var splitreq: bool = false;
 
@@ -703,7 +702,6 @@ module DistributedBag_DFS
 
             segments[taskId].nSteal1 += 1;
             segments[taskId].timer1.start();
-
             // selection of the victim segment
             for idx in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
               ref targetSegment = segments[idx];
@@ -728,7 +726,6 @@ module DistributedBag_DFS
                 }
               }
             }
-
             segments[taskId].timer1.stop();
 
             if splitreq then return (REMOVE_FAST_EXIT, default);
@@ -761,13 +758,9 @@ module DistributedBag_DFS
             var stolenElts: list(eltType);
             var timer, subtimer: stopwatch;
 
-            //writeln("loc/thread ", here.id, " ", taskId, ", state of bag ", segments.nElems);
-
             segments[taskId].nSteal2 += 1;
             segments[taskId].timer2.start();
-
             timer.start();
-
             // selection of the victim locale
             for idx in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
               on Locales[idx] {
@@ -812,13 +805,9 @@ module DistributedBag_DFS
               return (REMOVE_FAIL, default);
             }
             else {
-              /* writeln(stolenElts.size); */
               segments[taskId].addElements(stolenElts);
               //segments[taskId].split.add((3*stolenElts.size/4):int);
               segments[taskId].nSSteal2 += 1;
-
-              /* writeln("loc/thread ", here.id, " ", taskId, ", steals in ", timer.elapsed(TimeUnits.seconds));
-              writeln("loc/thread ", here.id, " ", taskId, ", selection in ", subtimer.elapsed(TimeUnits.seconds)); */
 
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
@@ -1101,8 +1090,7 @@ module DistributedBag_DFS
     {
       for elt in elts do addElement(elt);
     }
-
-  } // end Segment record
+  } // end 'Segment' record
 
   /*
     A segment block is an unrolled linked list node that holds a contiguous buffer
@@ -1117,11 +1105,10 @@ module DistributedBag_DFS
   {
     type eltType;
     var elems: c_ptr(eltType); // contiguous memory containing all elements
-    // TODO: test with elems: cap * eltType
 
     var cap: int; // capacity of the block
-    var headIdx: int; // index of the head element
-    var tailIdx: int; // index of the tail element
+    var headId: int; // index of the head element
+    var tailId: int; // index of the tail element
 
     /* inline proc isEmpty
     {
@@ -1134,16 +1121,15 @@ module DistributedBag_DFS
       return size == cap;
     } */
 
-    // ISSUE: Cannot insert Chapel array due to "c_malloc".
     proc init(type eltType, capacity)
     {
       /* if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0."); */
       this.eltType = eltType;
-      this.elems = c_malloc(eltType, capacity);
+      this.elems = c_malloc(eltType, capacity); // Github issue #19859 // TODO: test with elems: cap * eltType
       this.cap = capacity;
     }
 
-    // UNUSED (init) I think
+    // UNUSED (init)
     /* proc init(type eltType, ptr, capacity)
     {
       this.eltType = eltType;
@@ -1162,8 +1148,8 @@ module DistributedBag_DFS
       /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'pushTail': 'elems' is nil."); */
       /* if isFull then halt("DistributedBag_DFS Internal Error in 'pushTail': Block is Full."); */
 
-      elems[tailIdx] = elt;
-      tailIdx +=1;
+      elems[tailId] = elt;
+      tailId +=1;
 
       return;
     }
@@ -1173,9 +1159,9 @@ module DistributedBag_DFS
       /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popTail': 'elems' is nil."); */
       /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popTail': Block is Empty."); */
 
-      tailIdx -= 1;
+      tailId -= 1;
 
-      return elems[tailIdx];
+      return elems[tailId];
     }
 
     inline proc popHead(): eltType
@@ -1183,11 +1169,10 @@ module DistributedBag_DFS
       /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popHead': 'elems' is nil."); */
       /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popHead': Block is Empty."); */
 
-      var elt = elems[headIdx];
-      headIdx += 1;
+      var elt = elems[headId];
+      headId += 1;
 
       return elt;
     }
   } // end 'Block' class
-
 } // end module
