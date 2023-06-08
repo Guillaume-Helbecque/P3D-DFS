@@ -322,15 +322,15 @@ module DistributedBag_DFS
     */
     override proc getSize(): int
     {
-      var sz: atomic int;
+      var size: atomic int;
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
-        forall segmentIdx in 0..#here.maxTaskPar {
-          sz.add(instance.bag!.segments[segmentIdx].nElems.read():int);
+        forall taskId in 0..#here.maxTaskPar {
+          size.add(instance.bag!.segments[taskId].nElems);
         }
       }
 
-      return sz.read();
+      return size.read();
     }
 
     /*
