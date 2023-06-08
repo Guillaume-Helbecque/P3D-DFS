@@ -280,21 +280,11 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert an element to this node's bag. The ordering is not guaranteed to be
-      preserved.
-    */
-    pragma "no doc"
-    override proc add(elt: eltType): bool
-    {
-      return bag!.add(elt);
-    }
-
-    /*
       Insert an element in the calling task's segment of this node's bag.
     */
-    proc add(elt: eltType, tid: int): bool
+    proc add(elt: eltType, taskId: int): bool
     {
-      return bag!.add(elt, tid);
+      return bag!.add(elt, taskId);
     }
 
     /*
@@ -302,11 +292,11 @@ module DistributedBag_DFS
       If the node's bag rejects an element, we cease to offer more. We return the
       number of elements successfully added to this data structure.
     */
-    proc addBulk(elts, tid: int): int
+    proc addBulk(elts, taskId: int): int
     {
       var successful: int;
       for elt in elts {
-        if !add(elt, tid) then break;
+        if !add(elt, taskId) then break;
 
         successful += 1;
       }
@@ -315,24 +305,13 @@ module DistributedBag_DFS
     }
 
     /*
-      Remove an element from this node's bag. The order in which elements are removed
-      are not guaranteed to be the same order it has been inserted. If this node's
-      bag is empty, it will attempt to steal elements from bags of other nodes.
-    */
-    pragma "no doc"
-    override proc remove(): (bool, eltType)
-    {
-      return bag!.remove();
-    }
-
-    /*
       Remove an element from the calling thread's segment of this node's bag.
       If the thread's segment is empty, it will attempt to steal an element from
       the segment of another thread or node.
     */
-    proc remove(tid: int): (int, eltType)
+    proc remove(taskId: int): (int, eltType)
     {
-      return bag!.remove(tid);
+      return bag!.remove(taskId);
     }
 
     /*
@@ -644,25 +623,14 @@ module DistributedBag_DFS
       }
     }
 
-    // Add an element in a (indeterminate) segment
-    proc add(elt: eltType): bool
-    {
-      halt("DistributedBag_DFS Internal Error: DEADCODE.");
-    }
-
     /*
       Insertion operation.
     */
-    proc add(elt: eltType, const threadId: int): bool
+    proc add(elt: eltType, const taskId: int): bool
     {
-      segments[threadId].addElement(elt);
+      segments[taskId].addElement(elt);
 
       return true;
-    }
-
-    proc remove(): (bool, eltType)
-    {
-      halt("DistributedBag_DFS Internal Error: DEADCODE.");
     }
 
     /*
@@ -930,79 +898,11 @@ module DistributedBag_DFS
       return (n_shared + n_private) == 0;
     }
 
-    /* inline proc transferElements(destPtr, n, locId = here.id)
-    {
-      var destOffset = 0;
-      var srcOffset = 0;
-      while (destOffset < n) {
-        if ((block == nil) || isEmpty) {
-          halt(here, ": DistributedBag_DFS Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
-        }
-        var len = block!.size;
-        var need = n - destOffset;
-        // If the amount in this block is greater than what is left to transfer, we
-        // cannot begin transferring at the beginning, so we set our offset from the end.
-        if (len > need) {
-          srcOffset = len - need;
-          block!.size = srcOffset;
-          __primitive("chpl_comm_array_put", block!.elems[srcOffset], locId, destPtr[destOffset], need);
-          destOffset += need;
-        } else {
-          srcOffset = 0;
-          block!.size = 0;
-          __primitive("chpl_comm_array_put", block!.elems[srcOffset], locId, destPtr[destOffset], len);
-          destOffset += len;
-        }
-      }
-      nElems.sub(n:int);
-    } */
+    // TODO: implement 'transferElements'
 
-    // UNUSED (addElementsPtr) Only in balance() and old remove()
-    /* proc addElementsPtr(ptr, n, locId = here.id)
-    {
-      var offset = 0;
-      while (offset < n) {
-        // Empty? Create a new one of initial size
-        if (block == nil) {
-          block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
-        }
-        // Full? Create a new one double the previous size
-         if block!.isFull {
-          block!.next = new unmanaged Block(eltType, min(distributedBagMaxBlockCap, block!.cap * 2));
-          block = block!.next;
-        }
-        var nLeft = n - offset;
-        var nSpace = block!.cap - block!.size;
-        var nFill = min(nLeft, nSpace);
-        __primitive("chpl_comm_array_get", block!.elems[block!.size], locId, ptr[offset], nFill);
-        block!.size += nFill;
-        offset += nFill;
-      }
-      nElems.add(n:int);
-    } */
+    // TODO: implement 'addElementsPtr'
 
-    // UNUSED (takeElements)
-    /* inline proc takeElements(n, side: string)
-    {
-      var iterations = n:int;
-      var arr: [{0..#n : int}] eltType;
-      var arrIdx = 0;
-      for 1..n : int {
-        if isEmpty then halt("DistributedBag_DFS Internal Error: Attempted to take ", n, " elements when insufficient");
-        if headBlock!.isEmpty then halt("DistributedBag_DFS Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
-        arr[arrIdx] = headBlock.pop();
-        arrIdx += 1;
-        nElems.sub(1);
-        // Fix list if we consumed last one...
-        if headBlock!.isEmpty {
-          var tmp = headBlock;
-          headBlock = headBlock!.next;
-          delete tmp;
-          if (headBlock == nil) then tailBlock = nil;
-        }
-      }
-      return arr;
-    } */
+    // TODO: implement 'takeElements'
 
     inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
     {
@@ -1063,36 +963,6 @@ module DistributedBag_DFS
       return (false, default);
     }
 
-    /* // We can take element at the tail or head block, according to the 'side' argument.
-    inline proc takeElement(side: string)
-    {
-      // If the segment is empty
-      if isEmpty {
-        var default: eltType;
-        return (false, default);
-      }
-      if block!.isEmpty then halt("DistributedBag_DFS Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
-      if (side == 't') { // remove at the 't'ail
-        var elem = block!.popTail();
-        nElems.sub(1);
-        if block!.isEmpty { // if block is now empty
-          delete block;
-          block = nil;
-        }
-        return (true, elem);
-      }
-      else if (side == 'h') { // remove at the 'h'ead
-        var elem = block!.popHead();
-        nElems.sub(1);
-        if block!.isEmpty { // if block is now empty
-          delete block;
-          block = nil;
-        }
-        return (true, elem);
-      }
-      else halt("DistributedBag_DFS Internal Error: Wrong 'side' choice in takeElement().");
-    } */
-
     /*
       Retrieve operation, only executed by the segment's owner.
     */
@@ -1131,21 +1001,6 @@ module DistributedBag_DFS
 
       return (true, elem);
     }
-
-    /* // Insertion operation equivalent to pushTail
-    inline proc addElement(elt: eltType)
-    {
-      // 'block' empty ? (= empty segment) Create a new one of initial size
-      if (block == nil) {
-        block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
-      }
-      // 'block' full ? Create a new one double the previous size
-      if block!.isFull {
-        halt("DistributedBag_DFS Internal Error: 'block' full.");
-      }
-      block!.pushTail(elt);
-      nElems.add(1);
-    } */
 
     /*
       Insertion operation, only executed by the segment's owner.
