@@ -191,8 +191,6 @@ module search_distributed
 
     globalTimer.stop();
 
-    /* bag.clear(); */
-
     // ========
     // OUTPUTS
     // ========

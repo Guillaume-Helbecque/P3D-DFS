@@ -151,8 +151,6 @@ module search_multicore
 
     globalTimer.stop();
 
-    /* bag.clear(); */
-
     // ========
     // OUTPUTS
     // ========

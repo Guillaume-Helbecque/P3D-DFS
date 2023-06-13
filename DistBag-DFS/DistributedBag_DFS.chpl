@@ -355,22 +355,32 @@ module DistributedBag_DFS
       Clear all bags across all nodes in a best-effort approach. Elements added or
       moved around from concurrent additions or removals may be missed while clearing.
     */
-    /* override proc clear(): void
+    override proc clear(): void
     {
-      var localThis = getPrivatizedThis;
-      coforall loc in localThis.targetLocales do on loc {
+      coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
-        forall segmentIdx in 0..#here.maxTaskPar {
-          ref segment = instance.bag!.segments[segmentIdx];
-          if segment.acquireIfNonEmpty(STATUS_REMOVE) {
-            delete segment.block;
-            segment.block = nil;
-            segment.nElems.write(0);
-            segment.releaseStatus();
-          }
+        forall taskId in 0..#here.maxTaskPar {
+          ref segment = instance.bag!.segments[taskId];
+
+          delete segment.block;
+          segment.block = nil;
+          segment.nElems_shared.write(0);
+          segment.head.write(0);
+          segment.split.write(0);
+          segment.globalSteal.write(false);
+          segment.split_request.write(false);
+          segment.lock$.writeXF(true);
+          segment.lock_n$.writeXF(true);
+          segment.tail = 0;
+          segment.o_split = 0;
+
+          segment.nSteal1 = 0; segment.nSSteal1 = 0;
+          segment.nSteal2 = 0; segment.nSSteal2 = 0;
+          segment.timer1.clear(); segment.timer2.clear();
         }
+        instance.bag!.globalStealInProgress.write(false);
       }
-    } */
+    }
 
     /*
       Triggers a more static approach to load balancing, fairly redistributing all
@@ -837,6 +847,9 @@ module DistributedBag_DFS
 
     var globalSteal: atomic bool = false;
 
+    // Does it make sense to allow the block to be nilable? Especially as this
+    // requires an 'if' checking at each insertion, which is unnecessary most of
+    // the time.
     var block: unmanaged Block(eltType)?;
 
     // private variables
