@@ -15,7 +15,8 @@ module search_distributed
 
   config const eps: int = 10;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool,
+    const D: int, const R: int): void
   {
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();

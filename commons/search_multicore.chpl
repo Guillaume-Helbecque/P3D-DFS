@@ -12,12 +12,14 @@ module search_multicore
   const BUSY: bool = false;
   const IDLE: bool = true;
 
-  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool, const eps: int,
-    const beam_step: int): void
+  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool,
+    const D: int, const R: int): void
   {
     var numTasks = here.maxTaskPar;
     var b = new barrier(numTasks, true); // true ?
-    var beam = eps;
+
+    if (D < 1) then halt("Error - D < 1");
+    if (R < 1) then halt("Error - R < 1");
 
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
@@ -59,7 +61,7 @@ module search_multicore
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task, eps);
+            max_depth, best, best_task, D);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -102,7 +104,7 @@ module search_multicore
       ref num_sol = eachExploredSol[taskId];
       ref max_depth = eachMaxDepth[taskId];
 
-      label beam_iteration for beam in 2..<problem.jobs by beam_step {
+      label beam_search for beamSize in beam_growth(D, R, problem.jobs) {
         writeln("hello from task ", taskId);
         taskState = false;
         eachTaskState[taskId].write(BUSY);
@@ -112,7 +114,7 @@ module search_multicore
           allTasksIdleFlag.write(false);
           bag.add(root, taskId);
 
-          writeln("Restart with beam = ", beam, " best = ", best_task);
+          writeln("Restart with beam = ", beamSize, " best = ", best_task);
           writeln(eachExploredTree);
           writeln(eachExploredSol);
         }
@@ -160,7 +162,7 @@ module search_multicore
 
           // Decompose an element
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task, beam);
+            max_depth, best, best_task, beamSize);
 
           bag.addBulk(children, taskId);
 

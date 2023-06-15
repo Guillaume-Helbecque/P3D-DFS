@@ -77,4 +77,14 @@ module aux
     writeln("   --saveTime            bool  save processing time in a file");
     writeln("   --help (or -h)              this message");
   }
+
+  iter beam_growth(const D, const R, const max)
+  {
+    var d = D;
+    while (d < max) {
+      yield d;
+      d *= R;
+    }
+    yield max;
+  }
 }
