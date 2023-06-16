@@ -58,24 +58,10 @@ module Problem_PFSP
       else halt("Error - Unsupported upper bound");
     }
 
-    proc init(const n: string, const j: c_int, const m: c_int, const lb: string,
-      const lbd1: c_ptr(bound_data), const lbd2: c_ptr(johnson_bd_data),
-      const br: string, const ub: string)
-    {
-      this.name      = n;
-      this.jobs      = j;
-      this.machines  = m;
-      this.lb_name   = lb;
-      this.lbound1   = lbd1;
-      this.lbound2   = lbd2;
-      this.branching = br;
-      this.ub_init   = ub;
-    }
-
+    // TODO: Implement a copy initializer, to avoid re-computing all the data
     override proc copy()
     {
-      return new Problem_PFSP(this.name, this.jobs, this.machines, this.lb_name,
-        this.lbound1, this.lbound2, this.branching, this.ub_init);
+      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
     }
 
     proc branchingRule(const lb_begin: [], const lb_end: [], const depth, const best)
