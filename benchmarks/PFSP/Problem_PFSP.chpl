@@ -58,6 +58,12 @@ module Problem_PFSP
       else halt("Error - Unsupported upper bound");
     }
 
+    proc deinit()
+    {
+      free_bound_data(this.lbound1);
+      if (this.lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
+    }
+
     // TODO: Implement a copy initializer, to avoid re-computing all the data
     override proc copy()
     {
@@ -267,12 +273,6 @@ module Problem_PFSP
       else {
         return inst.get_ub();
       }
-    }
-
-    proc free(): void
-    {
-      free_bound_data(this.lbound1);
-      if (this.lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
     }
 
     // =======================
