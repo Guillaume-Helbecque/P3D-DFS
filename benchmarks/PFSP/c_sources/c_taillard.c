@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
-
 #include "../c_headers/c_taillard.h"
 
 long time_seeds[] =
@@ -41,8 +39,8 @@ int taillard_get_nb_jobs(const int id)
 
 int taillard_get_nb_machines(const int id)
 {
-    if (id > 110) return 20;    //500x20
-    if (id > 100) return 20;    //200x20
+    if (id > 110) return 20; //500x20
+    if (id > 100) return 20; //200x20
     if (id > 90) return 10; //200x10
     if (id > 80) return 20; //100x20
     if (id > 70) return 10; //100x10
@@ -60,7 +58,7 @@ long unif(long * seed, long low, long high)
     long m = 2147483647, a = 16807, b = 127773, c = 2836, k;
     double value_0_1;
 
-    k       = (*seed) / b;
+    k = (*seed) / b;
     *(seed) = a * (*(seed) % b) - k * c;
     if ((*seed) < 0)
         *(seed) = *(seed) + m;
@@ -72,23 +70,14 @@ void taillard_get_processing_times(int *ptm, const int id)
 {
     int N = taillard_get_nb_jobs(id);
     int M = taillard_get_nb_machines(id);
-    long time_seed = time_seeds[id - 1];
+    long time_seed = time_seeds[id-1];
 
-    if(!ptm){
+    if (!ptm)
         ptm = malloc(N*M*sizeof(int));
-    }
 
-    for(int i=0;i<M;i++){
-        for(int j=0;j<N;j++){
-            ptm[i*N+j] = (int)unif(&time_seed, 1, 99);
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            ptm[i * N + j] = (int)unif(&time_seed, 1, 99);
         }
     }
-}
-
-void taillard_get_instance_data(int *ptm, int *N, int *M, const int id)
-{
-    *N = taillard_get_nb_jobs(id);
-    *M = taillard_get_nb_machines(id);
-
-    taillard_get_processing_times(ptm, id);
 }
