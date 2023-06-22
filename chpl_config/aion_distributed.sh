@@ -11,13 +11,13 @@
 
 # Load the foss toolchain to get access to gcc, mpi, etc...
 module load toolchain/foss/2020b
+module load devel/CMake
 
-export CHPL_VERSION="1.30.0"
+export CHPL_VERSION="1.31.0"
 export CHPL_HOME="$PWD/chapel-${CHPL_VERSION}D"
 
 # Download Chapel if not found
 if [ ! -d "$CHPL_HOME" ]; then
-    module load devel/CMake
     wget -c https://github.com/chapel-lang/chapel/releases/download/$CHPL_VERSION/chapel-${CHPL_VERSION}.tar.gz -O - | tar xz
     mv chapel-$CHPL_VERSION $CHPL_HOME
 fi

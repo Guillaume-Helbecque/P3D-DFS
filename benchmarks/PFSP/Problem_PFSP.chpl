@@ -148,7 +148,7 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
-            children.append(child);
+            children.pushBack(child);
             tree_loc += 1;
           }
         }
@@ -200,7 +200,7 @@ module Problem_PFSP
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
 
-            children.append(child);
+            children.pushBack(child);
             tree_loc += 1;
           }
         }
@@ -232,7 +232,7 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
-            children.append(child);
+            children.pushBack(child);
             tree_loc += 1;
           }
         }

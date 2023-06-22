@@ -52,7 +52,7 @@ module Problem_NQueens
           var child = new Node(parent);
           swap(child.board[depth], child.board[j]);
           child.depth += 1;
-          children.append(child);
+          children.pushBack(child);
           tree_loc += 1;
         }
       }

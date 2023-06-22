@@ -6,7 +6,7 @@
 
 export HERE=$(pwd)
 
-export CHPL_VERSION=1.30.0
+export CHPL_VERSION=1.31.0
 export CHPL_HOME=~/chapel-${CHPL_VERSION}D
 
 # Download Chapel if not found
