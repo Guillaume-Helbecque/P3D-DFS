@@ -92,7 +92,7 @@ module DistributedBag_DFS
     there are larger numbers of elements. The better the locality, the better raw
     performance and easier it is to redistribute work.
   */
-  config const distributedBagInitialBlockCap: int = 204800;
+  config const distributedBagInitialBlockCap: int = 1024;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
     (hence creating an artificial load imbalance), if the other node's segment has
@@ -362,6 +362,8 @@ module DistributedBag_DFS
         forall taskId in 0..#here.maxTaskPar {
           ref segment = instance.bag!.segments[taskId];
 
+          segment.lock_block$.readFE();
+
           delete segment.block;
           segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
           segment.nElems_shared.write(0);
@@ -377,6 +379,8 @@ module DistributedBag_DFS
           segment.nSteal1 = 0; segment.nSSteal1 = 0;
           segment.nSteal2 = 0; segment.nSSteal2 = 0;
           segment.timer1.clear(); segment.timer2.clear();
+
+          segment.lock_block$.writeEF(true);
         }
         instance.bag!.globalStealInProgress.write(false);
       }
@@ -717,6 +721,7 @@ module DistributedBag_DFS
               ref targetSegment = segments[idx];
 
               if !targetSegment.globalSteal.read() {
+                targetSegment.lock_block$.readFE();
                 // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElems <= targetSegment.nElems_shared.read()) {
                   // attempt to steal an element
@@ -724,6 +729,7 @@ module DistributedBag_DFS
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElem {
+                    targetSegment.lock_block$.writeEF(true);
                     segments[taskId].timer1.stop();
                     segments[taskId].nSSteal1 += 1;
                     return (REMOVE_SUCCESS, elem);
@@ -734,6 +740,7 @@ module DistributedBag_DFS
                   splitreq = true;
                   targetSegment.split_request.write(true);
                 }
+                targetSegment.lock_block$.writeEF(true);
               }
             }
             segments[taskId].timer1.stop();
@@ -783,6 +790,7 @@ module DistributedBag_DFS
 
                   //var sharedElts: int = targetSegment.nElems_shared.read();
                   // if the shared region contains enough elements to be stolen...
+                  targetSegment.lock_block$.readFE();
                   if (1 < targetSegment.nElems_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
@@ -801,6 +809,7 @@ module DistributedBag_DFS
                     targetSegment.split_request.write(true);
                   }
 
+                  targetSegment.lock_block$.writeEF(true);
                   targetSegment.globalSteal.write(false);
                 }
               }
@@ -872,6 +881,7 @@ module DistributedBag_DFS
     // locks (initially unlocked)
     var lock$: sync bool = true;
     var lock_n$: sync bool = true;
+    var lock_block$: sync bool = true;
 
     proc init(type eltType)
     {
@@ -908,6 +918,20 @@ module DistributedBag_DFS
     */
     inline proc addElement(elt: eltType)
     {
+      // allocate a larger block with the double capacity.
+      if block.isFull {
+        var newBlock = new unmanaged Block(eltType, min(distributedBagMaxBlockCap, 2*block.cap));
+        lock_block$.readFE();
+        newBlock.headId = block.headId;
+        newBlock.tailId = block.tailId;
+        for i in 0..#block!.cap {
+          newBlock!.elems[i] = block!.elems[i];
+        }
+        delete block;
+        block = newBlock;
+        lock_block$.writeEF(true);
+      }
+
       // we add the element at the tail
       block.pushTail(elt);
       tail += 1;
@@ -1129,10 +1153,10 @@ module DistributedBag_DFS
       return size == 0;
     } */
 
-    /* inline proc isFull
+    inline proc isFull
     {
-      return size == cap;
-    } */
+      return tailId == cap;
+    }
 
     proc init(type eltType, capacity)
     {
