@@ -363,7 +363,7 @@ module DistributedBag_DFS
           ref segment = instance.bag!.segments[taskId];
 
           delete segment.block;
-          segment.block = nil;
+          segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
           segment.nElems_shared.write(0);
           segment.head.write(0);
           segment.split.write(0);
@@ -847,10 +847,7 @@ module DistributedBag_DFS
 
     var globalSteal: atomic bool = false;
 
-    // Does it make sense to allow the block to be nilable? Especially as this
-    // requires an 'if' checking at each insertion, which is unnecessary most of
-    // the time.
-    var block: unmanaged Block(eltType)?;
+    var block: unmanaged Block(eltType);
 
     // private variables
     var o_split: int;
@@ -875,6 +872,12 @@ module DistributedBag_DFS
     // locks (initially unlocked)
     var lock$: sync bool = true;
     var lock_n$: sync bool = true;
+
+    proc init(type eltType)
+    {
+      this.eltType = eltType;
+      this.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+    }
 
     /*
       Returns the size of the private region. This information is computed from the
@@ -905,11 +908,8 @@ module DistributedBag_DFS
     */
     inline proc addElement(elt: eltType)
     {
-      // if the block is not already initialized...
-      if (block == nil) then block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
-
       // we add the element at the tail
-      block!.pushTail(elt);
+      block.pushTail(elt);
       tail += 1;
 
       // if there is a split request...
@@ -957,7 +957,7 @@ module DistributedBag_DFS
       if (nElems_private == 0) { //(o_split == tail) {
         // if we successfully shring the shared region...
         if shrink_shared() {
-          var elem = block!.popTail();
+          var elem = block.popTail();
           tail -= 1; //?
 
           return (true, elem);
@@ -965,7 +965,7 @@ module DistributedBag_DFS
       }
 
       // if the private region is not empty...
-      var elem = block!.popTail();
+      var elem = block.popTail();
       tail -= 1;
 
       // if there is a split request...
@@ -1019,7 +1019,7 @@ module DistributedBag_DFS
         // if we successfully moved the pointers...
         if simCAS(head, split, h, s, h+1, s) {
           lock_n$.readFE();
-          var elem = block!.popHead();
+          var elem = block.popHead();
 
           nElems_shared.sub(1);
           lock_n$.writeEF(true);
