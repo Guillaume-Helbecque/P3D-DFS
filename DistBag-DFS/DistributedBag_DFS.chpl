@@ -70,6 +70,7 @@ module DistributedBag_DFS
   use Random;
   use Time;
   use List;
+  use Math;
 
   /*
     The phases for operations. An operation is composed of multiple phases,
@@ -295,14 +296,7 @@ module DistributedBag_DFS
     */
     proc addBulk(elts, taskId: int): int
     {
-      var successful: int;
-      for elt in elts {
-        if !add(elt, taskId) then break;
-
-        successful += 1;
-      }
-
-      return successful;
+      return bag!.addBulk(elts, taskId);
     }
 
     /*
@@ -606,6 +600,15 @@ module DistributedBag_DFS
     proc add(elt: eltType, const taskId: int): bool
     {
       segments[taskId].addElement(elt);
+      return true;
+    }
+
+    /*
+      Insertion operation in bulk.
+    */
+    proc addBulk(elts, const taskId: int): bool
+    {
+      segments[taskId].addElements(elts);
       return true;
     }
 
@@ -954,7 +957,28 @@ module DistributedBag_DFS
 
     inline proc addElements(elts)
     {
-      for elt in elts do addElement(elt);
+      const size = elts.size;
+
+      // allocate a larger block with the double capacity.
+      if (block.tailId + size >= block.cap) {
+        const factor: int = log2(size % block.cap) + 1;
+        var newBlock = new unmanaged Block(eltType, min(distributedBagMaxBlockCap, 2**factor*block.cap));
+        lock_block$.readFE();
+        newBlock.headId = block.headId;
+        newBlock.tailId = block.tailId;
+        for i in 0..#block!.cap {
+          newBlock!.elems[i] = block!.elems[i];
+        }
+        delete block;
+        block = newBlock;
+        lock_block$.writeEF(true);
+      }
+
+      for elt in elts do block.pushTail(elt);
+      tail += size;
+
+      // if there is a split request...
+      if split_request.read() then grow_shared();
     }
 
     // TODO: implement 'addElementsPtr'
