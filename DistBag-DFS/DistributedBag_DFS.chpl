@@ -597,6 +597,15 @@ module DistributedBag_DFS
     }
 
     /*
+      Insertion operation.
+    */
+    proc add(elt: eltType, const taskId: int): bool
+    {
+      segments[taskId].addElement(elt);
+      return true;
+    }
+
+    /*
       This iterator is intented to select victim(s) in work-stealing strategies,
       according to the specified policy. By default, the 'rand' strategy is chosen and
       the calling thread/locale cannot be chosen. We can specify how many tries we want,
@@ -633,15 +642,6 @@ module DistributedBag_DFS
         }
         otherwise halt("DistributedBag_DFS internal error: Wrong victim choice policy");
       }
-    }
-
-    /*
-      Insertion operation.
-    */
-    proc add(elt: eltType, const taskId: int): bool
-    {
-      segments[taskId].addElement(elt);
-      return true;
     }
 
     /*
@@ -900,11 +900,83 @@ module DistributedBag_DFS
       return (n_shared + n_private) == 0;
     }
 
-    // TODO: implement 'transferElements'
+    /*
+      Insertion operation, only executed by the segment's owner.
+    */
+    inline proc addElement(elt: eltType)
+    {
+      // if the block is not already initialized...
+      if (block == nil) then block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+
+      // we add the element at the tail
+      block!.pushTail(elt);
+      tail += 1;
+
+      // if there is a split request...
+      if split_request.read() then grow_shared();
+
+      /* if o_allstolen {
+        lock$.readFE(); // block until its full and set locked (empty)
+        head.write(tail - 1);
+        split.write(tail);
+        lock$.writeEF(true); // set unlocked (full)
+        o_split = tail;
+        allstolen.write(false);
+        o_allstolen = false;
+        if split_request.read() then split_request.write(false);
+      }
+      else if split_request.read() then grow_shared(); */
+    }
+
+    inline proc addElements(elts)
+    {
+      for elt in elts do addElement(elt);
+    }
 
     // TODO: implement 'addElementsPtr'
 
+    /*
+      Retrieve operation, only executed by the segment's owner.
+    */
+    inline proc takeElement(): (bool, eltType)
+    {
+
+      // if the segment is empty...
+      if (nElems_private == 0) {
+        var default: eltType;
+        return (false, default);
+      }
+
+      /* if o_allstolen then {
+        var elem = block!.popTail();
+        nElems_private.sub(1);
+        return (true, elem);
+      } */
+
+      // if the private region is empty...
+      if (nElems_private == 0) { //(o_split == tail) {
+        // if we successfully shring the shared region...
+        if shrink_shared() {
+          var elem = block!.popTail();
+          tail -= 1; //?
+
+          return (true, elem);
+        }
+      }
+
+      // if the private region is not empty...
+      var elem = block!.popTail();
+      tail -= 1;
+
+      // if there is a split request...
+      if split_request.read() then grow_shared();
+
+      return (true, elem);
+    }
+
     // TODO: implement 'takeElements'
+
+    // TODO: implement 'transferElements'
 
     inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
     {
@@ -963,73 +1035,6 @@ module DistributedBag_DFS
       if !split_request.read() then split_request.write(true);
 
       return (false, default);
-    }
-
-    /*
-      Retrieve operation, only executed by the segment's owner.
-    */
-    inline proc takeElement(): (bool, eltType)
-    {
-
-      // if the segment is empty...
-      if (nElems_private == 0) {
-        var default: eltType;
-        return (false, default);
-      }
-
-      /* if o_allstolen then {
-        var elem = block!.popTail();
-        nElems_private.sub(1);
-        return (true, elem);
-      } */
-
-      // if the private region is empty...
-      if (nElems_private == 0) { //(o_split == tail) {
-        // if we successfully shring the shared region...
-        if shrink_shared() {
-          var elem = block!.popTail();
-          tail -= 1; //?
-
-          return (true, elem);
-        }
-      }
-
-      // if the private region is not empty...
-      var elem = block!.popTail();
-      tail -= 1;
-
-      // if there is a split request...
-      if split_request.read() then grow_shared();
-
-      return (true, elem);
-    }
-
-    /*
-      Insertion operation, only executed by the segment's owner.
-    */
-    inline proc addElement(elt: eltType)
-    {
-      // if the block is not already initialized...
-      if (block == nil) then block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
-
-      // we add the element at the tail
-      block!.pushTail(elt);
-      tail += 1;
-
-      // if there is a split request...
-      if split_request.read() then grow_shared();
-
-      /* if o_allstolen {
-        lock$.readFE(); // block until its full and set locked (empty)
-        head.write(tail - 1);
-        split.write(tail);
-        lock$.writeEF(true); // set unlocked (full)
-        o_split = tail;
-        allstolen.write(false);
-        o_allstolen = false;
-        if split_request.read() then split_request.write(false);
-      }
-      else if split_request.read() then grow_shared(); */
     }
 
     /*
@@ -1097,11 +1102,6 @@ module DistributedBag_DFS
       /* allstolen.write(true);
       o_allstolen = true; */
       return true;
-    }
-
-    inline proc addElements(elts)
-    {
-      for elt in elts do addElement(elt);
     }
   } // end 'Segment' record
 
