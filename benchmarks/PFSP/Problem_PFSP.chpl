@@ -12,6 +12,10 @@ module Problem_PFSP
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
+  const BEGIN: c_int = -1;
+  const BEGINEND: c_int = 0;
+  const END: c_int = 1;
+
   class Problem_PFSP : Problem
   {
     var name: string;
@@ -23,6 +27,7 @@ module Problem_PFSP
     var lbound2: c_ptr(johnson_bd_data);
 
     var branching: string;
+    var branchingSide: c_int;
     var ub_init: string;
 
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
@@ -54,6 +59,10 @@ module Problem_PFSP
       if (allowedBranchingRules.find(rules) != -1) then this.branching = rules;
       else halt("Error - Unsupported branching rule");
 
+      if (rules == "fwd") then this.branchingSide = BEGIN;
+      else if (rules == "bwd") then this.branchingSide = END;
+      else this.branchingSide = BEGINEND;
+
       if (ub == "opt" || ub == "inf") then this.ub_init = ub;
       else halt("Error - Unsupported upper bound");
     }
@@ -70,40 +79,39 @@ module Problem_PFSP
       return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
     }
 
-    proc branchingRule(const lb_begin: [], const lb_end: [], const depth, const best)
+    inline proc branchingRule(const lb_begin, const lb_end, const depth, const best)
     {
       var branch = this.branching;
 
       while true {
         select branch {
-          when "fwd" {
-            return (0, lb_begin); // begin
-          }
-          when "bwd" {
-            return (1, lb_end); // end
-          }
           when "alt" {
-            if (depth % 2 == 0) then branch = "fwd";
-            else branch = "bwd";
+            if (depth % 2 == 0) then return BEGIN;
+            else return END;
           }
           when "maxSum" {
-            var sum1 = (+ reduce lb_begin);
-            var sum2 = (+ reduce lb_end);
-            if (sum1 >= sum2) then branch = "fwd";
-            else branch = "bwd";
+            var sum1, sum2 = 0;
+            for i in 0..#this.jobs {
+              sum1 += lb_begin[i];
+              sum2 += lb_end[i];
+            }
+            if (sum1 >= sum2) then return BEGIN;
+            else return END;
           }
           when "minMin" {
-            var min1, min2: c_int = 99999;
+            var min0 = 99999;
             for k in 0..#this.jobs {
-              if (lb_begin[k] != 0) then min1 = min(lb_begin[k], min1);
-              if (lb_end[k] != 0) then min2 = min(lb_end[k], min2);
+              if lb_begin[k] then min0 = min(lb_begin[k], min0);
+              if lb_end[k] then min0 = min(lb_end[k], min0);
             }
-            var min3 = min(min1, min2);
-            var c1 = lb_begin.count(min3);
-            var c2 = lb_end.count(min3);
-            if (c1 < c2) then branch = "fwd";
+            var c1, c2 = 0;
+            for k in 0..#this.jobs {
+              if (lb_begin[k] == min0) then c1 += 1;
+              if (lb_end[k] == min0) then c2 += 1;
+            }
+            if (c1 < c2) then return BEGIN;
             else if (c1 == c2) then branch = "minBranch";
-            else branch = "bwd";
+            else return END;
           }
           when "minBranch" {
             var c1, c2, s1, s2: int;
@@ -114,16 +122,17 @@ module Problem_PFSP
               if (lb_end[k] > best) then c2 += 1;
               else s2 += lb_end[k];
             }
-            if (c1 < c2) then branch = "bwd";
-            else if (c1 > c2) then branch = "fwd";
+            if (c1 < c2) then return END;
+            else if (c1 > c2) then return BEGIN;
             else {
-              if (s1 >= s2) then branch = "fwd";
-              else branch = "bwd";
+              if (s1 >= s2) then return BEGIN;
+              else return END;
             }
           }
+          otherwise halt("Error - Unsupported branching rule");
         }
       }
-      return (0, lb_begin);
+      halt("DEADCODE");
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -162,23 +171,22 @@ module Problem_PFSP
     {
       var children: list(Node);
 
-      var lb_begin: [0..#this.jobs] c_int;
-      var lb_end: [0..#this.jobs] c_int;
-      var prio_begin: [0..#this.jobs] c_int;
-      var prio_end: [0..#this.jobs] c_int;
-
-      /* TODO: optimize BEGINEND */
-      /* What is the meaning of prio_begin/end ? */
-      var BEGINEND: c_int = 0;
+      var lb_begin = allocate(c_int, this.jobs);
+      var lb_end = allocate(c_int, this.jobs);
+      /* var prio_begin = allocate(c_int, this.jobs);
+      var prio_end = allocate(c_int, this.jobs); */
+      var beginEnd = this.branchingSide;
 
       lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
-        c_ptrTo(lb_begin), c_ptrTo(lb_end), c_ptrTo(prio_begin), c_ptrTo(prio_end), BEGINEND);
+        lb_begin, lb_end, nil, nil, beginEnd);
 
-      var (beginEnd, lbs) = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+      if (this.branchingSide == BEGINEND) {
+        beginEnd = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+      }
 
       for i in parent.limit1+1..parent.limit2-1 {
         const job = parent.prmu[i];
-        const lb = lbs[job];
+        const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
 
         if (parent.depth + 1 == jobs) { // if child leaf
           num_sol += 1;
@@ -192,10 +200,10 @@ module Problem_PFSP
             var child = new Node(parent);
             child.depth += 1;
 
-            if (beginEnd == 0) { // begin
+            if (beginEnd == BEGIN) {
               child.limit1 += 1;
               swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (beginEnd == 1) { // end
+            } else if (beginEnd == END) {
               child.limit2 -= 1;
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
@@ -206,6 +214,9 @@ module Problem_PFSP
         }
 
       }
+
+      deallocate(lb_begin); deallocate(lb_end);
+      /* deallocate(prio_begin); deallocate(prio_end); */
 
       return children;
     }
