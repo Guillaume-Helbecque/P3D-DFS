@@ -9,6 +9,13 @@ module Problem_PFSP
   use Instances;
   use Header_chpl_c_PFSP;
 
+  const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
+  const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
+
+  const BEGIN: c_int = -1;
+  const BEGINEND: c_int = 0;
+  const END: c_int = 1;
+
   class Problem_PFSP : Problem
   {
     var name: string;
@@ -19,10 +26,11 @@ module Problem_PFSP
     var lbound1: c_ptr(bound_data);
     var lbound2: c_ptr(johnson_bd_data);
 
-    var branching: int;
+    var branching: string;
+    var branchingSide: c_int;
     var ub_init: string;
 
-    proc init(const fileName: string, const lb: string, const rules: int, const ub: string): void
+    proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;
 
@@ -34,59 +42,111 @@ module Problem_PFSP
       this.jobs     = inst.get_nb_jobs();
       this.machines = inst.get_nb_machines();
 
-      if (lb == "lb1" || lb == "lb1_d" || lb == "lb2") then this.lb_name = lb;
+      if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
 
       this.lbound1 = new_bound_data(jobs, machines);
       inst.get_data(lbound1.deref().p_times);
       fill_min_heads_tails(lbound1);
 
-      if (lb == "lb2"){
+      if (lb == "lb2") {
         this.lbound2 = new_johnson_bd_data(lbound1/*, LB2_FULL*/);
         fill_machine_pairs(lbound2/*, LB2_FULL*/);
         fill_lags(lbound1, lbound2);
         fill_johnson_schedules(lbound1, lbound2);
       }
 
-      this.branching = rules;
+      if (allowedBranchingRules.find(rules) != -1) then this.branching = rules;
+      else halt("Error - Unsupported branching rule");
+
+      if (rules == "fwd") then this.branchingSide = BEGIN;
+      else if (rules == "bwd") then this.branchingSide = END;
+      else this.branchingSide = BEGINEND;
 
       if (ub == "opt" || ub == "inf") then this.ub_init = ub;
       else halt("Error - Unsupported upper bound");
     }
 
-    proc init(const n: string, const j: c_int, const m: c_int, const lb: string,
-      const lbd1: c_ptr(bound_data), const lbd2: c_ptr(johnson_bd_data),
-      const br: int, const ub: string)
+    proc deinit()
     {
-      this.name      = n;
-      this.jobs      = j;
-      this.machines  = m;
-      this.lb_name   = lb;
-      this.lbound1   = lbd1;
-      this.lbound2   = lbd2;
-      this.branching = br;
-      this.ub_init   = ub;
+      free_bound_data(this.lbound1);
+      if (this.lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
     }
 
+    // TODO: Implement a copy initializer, to avoid re-computing all the data
     override proc copy()
     {
-      return new Problem_PFSP(this.name, this.jobs, this.machines, this.lb_name,
-        this.lbound1, this.lbound2, this.branching, this.ub_init);
+      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
+    }
+
+    inline proc branchingRule(const lb_begin, const lb_end, const depth, const best)
+    {
+      var branch = this.branching;
+
+      while true {
+        select branch {
+          when "alt" {
+            if (depth % 2 == 0) then return BEGIN;
+            else return END;
+          }
+          when "maxSum" {
+            var sum1, sum2 = 0;
+            for i in 0..#this.jobs {
+              sum1 += lb_begin[i];
+              sum2 += lb_end[i];
+            }
+            if (sum1 >= sum2) then return BEGIN;
+            else return END;
+          }
+          when "minMin" {
+            var min0 = 99999;
+            for k in 0..#this.jobs {
+              if lb_begin[k] then min0 = min(lb_begin[k], min0);
+              if lb_end[k] then min0 = min(lb_end[k], min0);
+            }
+            var c1, c2 = 0;
+            for k in 0..#this.jobs {
+              if (lb_begin[k] == min0) then c1 += 1;
+              if (lb_end[k] == min0) then c2 += 1;
+            }
+            if (c1 < c2) then return BEGIN;
+            else if (c1 == c2) then branch = "minBranch";
+            else return END;
+          }
+          when "minBranch" {
+            var c1, c2, s1, s2: int;
+            for k in 0..#this.jobs {
+              if (lb_begin[k] > best) then c1 += 1;
+              else s1 += lb_begin[k];
+
+              if (lb_end[k] > best) then c2 += 1;
+              else s2 += lb_end[k];
+            }
+            if (c1 < c2) then return END;
+            else if (c1 > c2) then return BEGIN;
+            else {
+              if (s1 >= s2) then return BEGIN;
+              else return END;
+            }
+          }
+          otherwise halt("Error - Unsupported branching rule");
+        }
+      }
+      halt("DEADCODE");
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
-      // Treatment of childs
       for i in parent.limit1+1..parent.limit2-1 {
         var child = new Node(parent);
         swap(child.prmu[child.depth], child.prmu[i]);
         child.depth  += 1;
         child.limit1 += 1;
 
-        var lowerbound: c_int = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+        var lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -97,65 +157,74 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
+            children.pushBack(child);
             tree_loc += 1;
-            childList.append(child);
           }
         }
       }
 
-      return childList;
+      return children;
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
-      var lb_begin = c_malloc(c_int, jobs);
-      var BEGINEND: c_int = -1;
+      var lb_begin = allocate(c_int, this.jobs);
+      var lb_end = allocate(c_int, this.jobs);
+      /* var prio_begin = allocate(c_int, this.jobs);
+      var prio_end = allocate(c_int, this.jobs); */
+      var beginEnd = this.branchingSide;
 
       lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
-        lb_begin, c_nil, c_nil, c_nil, BEGINEND);
+        lb_begin, lb_end, nil, nil, beginEnd);
 
-      // Treatment of childs
+      if (this.branchingSide == BEGINEND) {
+        beginEnd = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+      }
+
       for i in parent.limit1+1..parent.limit2-1 {
+        const job = parent.prmu[i];
+        const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
 
-        if (parent.depth + 1 == jobs){ // if child leaf
+        if (parent.depth + 1 == jobs) { // if child leaf
           num_sol += 1;
 
-          if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
-            best_task = lb_begin[parent.prmu[i]];
-            best.write(lb_begin[parent.prmu[i]]);
+          if (lb < best_task) { // if child feasible
+            best_task = lb;
+            best.write(lb);
           }
         } else { // if not leaf
-          if (lb_begin[parent.prmu[i]] < best_task){ // if child feasible
+          if (lb < best_task) { // if child feasible
             var child = new Node(parent);
             child.depth += 1;
 
-            if (branching == 0){ // if forward
+            if (beginEnd == BEGIN) {
               child.limit1 += 1;
               swap(child.prmu[child.limit1], child.prmu[i]);
-            } else if (branching == 1){ // if backward
+            } else if (beginEnd == END) {
               child.limit2 -= 1;
               swap(child.prmu[child.limit2], child.prmu[i]);
             }
 
-            childList.append(child);
+            children.pushBack(child);
             tree_loc += 1;
           }
         }
 
       }
 
-      c_free(lb_begin);
+      deallocate(lb_begin); deallocate(lb_end);
+      /* deallocate(prio_begin); deallocate(prio_end); */
 
-      return childList;
+      return children;
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      var childList: list(Node); // list containing the child nodes
+      var children: list(Node);
 
       for i in parent.limit1+1..parent.limit2-1 {
         var child = new Node(parent);
@@ -163,7 +232,7 @@ module Problem_PFSP
         child.depth  += 1;
         child.limit1 += 1;
 
-        var lowerbound: c_int = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+        var lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
         if (child.depth == jobs) { // if child leaf
           num_sol += 1;
@@ -174,20 +243,20 @@ module Problem_PFSP
           }
         } else { // if not leaf
           if (lowerbound < best_task) { // if child feasible
+            children.pushBack(child);
             tree_loc += 1;
-            childList.append(child);
           }
         }
 
       }
 
-      return childList;
+      return children;
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, best: atomic int, ref best_task: int): list
     {
-      select lb_name {
+      select this.lb_name {
         when "lb1" {
           return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
@@ -198,7 +267,7 @@ module Problem_PFSP
           return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
         }
         otherwise {
-          halt("Error - Unknown lower bound");
+          halt("DEADCODE");
         }
       }
     }
@@ -207,21 +276,14 @@ module Problem_PFSP
     {
       var inst = new Instance();
       if (this.name[0..1] == "ta") then inst = new Instance_Taillard(this.name);
-      else if (this.name[0..2] == "VFR") then inst = new Instance_VRF(this.name);
-      else halt("Error - Unknown PFSP instance class");
+      else inst = new Instance_VRF(this.name);
 
-      if (this.ub_init == "inf"){
+      if (this.ub_init == "inf") {
         return 999999;
       }
       else {
         return inst.get_ub();
       }
-    }
-
-    proc free(): void
-    {
-      free_bound_data(this.lbound1);
-      if (lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
     }
 
     // =======================
@@ -231,10 +293,10 @@ module Problem_PFSP
     override proc print_settings(): void
     {
       writeln("\n=================================================");
-      writeln("PFSP instance: ", name, " (m = ", machines, ", n = ", jobs, ")");
+      writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
       writeln("Initial upper bound: ", setInitUB());
-      writeln("Lower bound function: ", lb_name);
-      writeln("Branching rules: ", (1-branching)*"forward" + branching*"backward");
+      writeln("Lower bound function: ", this.lb_name);
+      writeln("Branching rules: ", this.branching);
       writeln("=================================================");
     }
 
@@ -258,8 +320,7 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_pfsp_", name, "_", lb_name, "_",
-        ((1-branching)*"forward" + branching*"backward"), ".txt");
+      var tup = ("./chpl_pfsp_", this.name, "_", this.lb_name, "_", this.branching, ".txt");
       return "".join(tup);
     }
 
@@ -268,7 +329,7 @@ module Problem_PFSP
       writeln("\n  PFSP Benchmark Parameters:\n");
       writeln("   --inst  str   instance's name");
       writeln("   --lb    str   lower bound function (lb1, lb1_d, lb2)");
-      writeln("   --br    int   branching rule (0: forward, 1: backward)");
+      writeln("   --br    str   branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
       writeln("   --ub    str   upper bound initialization (opt, inf)\n");
     }
 

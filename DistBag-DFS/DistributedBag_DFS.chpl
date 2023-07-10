@@ -126,7 +126,7 @@ module DistributedBag_DFS
   /*
     Reference counter for DistributedBag_DFS
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedBagRC
   {
     type eltType;
@@ -161,14 +161,14 @@ module DistributedBag_DFS
     var _impl: unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid: int = -1;
 
     // Reference Counting
-    pragma "no doc"
+    @chpldoc.nodoc
     var _rc: shared DistributedBagRC(eltType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type eltType, targetLocales = Locales)
     {
       this.eltType = eltType;
@@ -176,20 +176,20 @@ module DistributedBag_DFS
       this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _value
     {
       if (_pid == -1) then halt("DistBag_DFS is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerError("Reading a DistBag_DFS is not supported");
     }
 
     // Write the contents of DistBag_DFS to a channel.
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
       var size = this.getSize();
@@ -205,19 +205,19 @@ module DistributedBag_DFS
 
   class DistributedBagImpl : CollectionImpl
   {
-    pragma "no doc"
+    @chpldoc.nodoc
     var targetLocDom: domain(1);
 
     /*
       The locales to allocate bags for and load balance across.
     */
     var targetLocales: [targetLocDom] locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid: int = -1;
 
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
-    pragma "no doc"
+    @chpldoc.nodoc
     var bag: unmanaged Bag(eltType)?;
 
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
@@ -233,7 +233,7 @@ module DistributedBag_DFS
       this.bag = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, pid, type eltType = other.eltType)
     {
       super.init(eltType);
@@ -247,31 +247,31 @@ module DistributedBag_DFS
       this.bag = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit()
     {
       delete bag;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(pid)
     {
       return new unmanaged DistributedBagImpl(this, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData()
     {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedThis
     {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter targetLocalesNotHere()
     {
       foreach loc in targetLocales {
@@ -283,7 +283,7 @@ module DistributedBag_DFS
       Insert an element to this node's bag. The ordering is not guaranteed to be
       preserved.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc add(elt: eltType): bool
     {
       return bag!.add(elt);
@@ -319,7 +319,7 @@ module DistributedBag_DFS
       are not guaranteed to be the same order it has been inserted. If this node's
       bag is empty, it will attempt to steal elements from bags of other nodes.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc remove(): (bool, eltType)
     {
       return bag!.remove();
@@ -437,7 +437,7 @@ module DistributedBag_DFS
         }
         // Allocate buffer, which holds the 'excess' elements for redistribution.
         // Then fill it.
-        var buffer = c_malloc(eltType, excess);
+        var buffer = allocate(eltType, excess);
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
@@ -478,7 +478,7 @@ module DistributedBag_DFS
           var tmpBuffer = buffer + bufferOffset;
           segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
         }
-        c_free(buffer);
+        deallocate(buffer);
       }
       // Phase 3: Release all locks from first node and segment to last node and segment.
       for loc in localThis.targetLocales do on loc {
@@ -547,7 +547,7 @@ module DistributedBag_DFS
             // Create a snapshot...
             var block = segment.headBlock;
             var bufferSz = segment.nElems.read():int;
-            var buffer = c_malloc(eltType, bufferSz);
+            var buffer = allocate(eltType, bufferSz);
             var bufferOffset = 0;
             while (block != nil) {
               if (bufferOffset + block!.size > bufferSz) {
@@ -560,7 +560,7 @@ module DistributedBag_DFS
             // Yield this chunk to be process...
             segment.releaseStatus();
             yield (bufferSz, buffer);
-            c_free(buffer);
+            deallocate(buffer);
           }
         }
       }
@@ -580,7 +580,7 @@ module DistributedBag_DFS
     We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
     which is required for work stealing.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class Bag
   {
     type eltType;
@@ -873,7 +873,7 @@ module DistributedBag_DFS
     A Segment is, in and of itself an unrolled linked list. We maintain one per core
     to ensure maximum parallelism.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record Segment
   {
     type eltType;
@@ -1257,7 +1257,7 @@ module DistributedBag_DFS
     It should be noted that the block itself is not parallel-safe, and access must be
     synchronized.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class Block
   {
     type eltType;
@@ -1279,12 +1279,12 @@ module DistributedBag_DFS
       return size == cap;
     } */
 
-    // ISSUE: Cannot insert Chapel array due to "c_malloc".
+    // ISSUE: Cannot insert Chapel array due to "allocate".
     proc init(type eltType, capacity)
     {
       /* if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0."); */
       this.eltType = eltType;
-      this.elems = c_malloc(eltType, capacity);
+      this.elems = allocate(eltType, capacity);
       this.cap = capacity;
     }
 
@@ -1299,7 +1299,7 @@ module DistributedBag_DFS
 
     proc deinit()
     {
-      c_free(elems);
+      deallocate(elems);
     }
 
     inline proc pushTail(elt: eltType): void

@@ -1,8 +1,6 @@
 module main_pfsp
 {
   // Common modules
-  use CTypes;
-
   use aux;
   use search_multicore;
   use search_distributed;
@@ -19,7 +17,7 @@ module main_pfsp
   // PFSP-specific options
   config const inst: string = "ta14"; // instance's name
   config const lb: string   = "lb1";  // lb1, lb1_d, lb2
-  config const br: int      = 0;      // forward (0), backward (1)
+  config const br: string   = "fwd";  // fwd, bwd, alt, maxSum, minMin, minBranch
   config const ub: string   = "opt";  // opt, inf
 
   proc main(args: [] string): int
