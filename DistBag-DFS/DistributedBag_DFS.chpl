@@ -68,7 +68,6 @@ module DistributedBag_DFS
   private use CTypes;
 
   use Random;
-  use Time;
   use List;
   use Math;
 
@@ -369,10 +368,6 @@ module DistributedBag_DFS
           segment.lock_n$.writeXF(true);
           segment.tail = 0;
           segment.o_split = 0;
-
-          segment.nSteal1 = 0; segment.nSSteal1 = 0;
-          segment.nSteal2 = 0; segment.nSSteal2 = 0;
-          segment.timer1.clear(); segment.timer2.clear();
 
           segment.lock_block$.writeEF(true);
         }
@@ -717,8 +712,6 @@ module DistributedBag_DFS
               return (REMOVE_FAST_EXIT, default);
             }
 
-            segments[taskId].nSteal1 += 1;
-            segments[taskId].timer1.start();
             // selection of the victim segment
             for idx in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
               ref targetSegment = segments[idx];
@@ -733,8 +726,6 @@ module DistributedBag_DFS
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElem {
                     targetSegment.lock_block$.writeEF(true);
-                    segments[taskId].timer1.stop();
-                    segments[taskId].nSSteal1 += 1;
                     return (REMOVE_SUCCESS, elem);
                   }
                 }
@@ -746,7 +737,6 @@ module DistributedBag_DFS
                 targetSegment.lock_block$.writeEF(true);
               }
             }
-            segments[taskId].timer1.stop();
 
             if splitreq then return (REMOVE_FAST_EXIT, default);
 
@@ -776,11 +766,7 @@ module DistributedBag_DFS
 
             const parentPid = parentHandle.pid;
             var stolenElts: list(eltType);
-            var timer, subtimer: stopwatch;
 
-            segments[taskId].nSteal2 += 1;
-            segments[taskId].timer2.start();
-            timer.start();
             // selection of the victim locale
             for idx in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
               on Locales[idx] {
@@ -799,12 +785,10 @@ module DistributedBag_DFS
                       // attempt to steal an element
                       var (hasElem, elem): (bool, eltType) = targetSegment.steal();
 
-                      subtimer.start();
                       // if the steal succeeds...
                       if hasElem {
                         stolenElts.insert(0, elem);
                       }
-                      subtimer.stop();
                   //  }
                   }
                   // otherwise, if the private region has elements, we request for a split shifting
@@ -822,19 +806,14 @@ module DistributedBag_DFS
             if (stolenElts.size == 0) {
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
-              timer.stop();
-              segments[taskId].timer2.stop();
               return (REMOVE_FAIL, default);
             }
             else {
               segments[taskId].addElements(stolenElts);
               //segments[taskId].split.add((3*stolenElts.size/4):int);
-              segments[taskId].nSSteal2 += 1;
 
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
-              timer.stop();
-              segments[taskId].timer2.stop();
               return (REMOVE_SUCCESS, segments[taskId].takeElement()[1]);
             }
           }
@@ -872,14 +851,6 @@ module DistributedBag_DFS
     /* var allstolen: atomic bool; */
     var split_request: atomic bool;
     var nElems_shared: atomic int; // number of elements in the shared space
-
-    // for profiling
-    var nSteal1: int;
-    var nSSteal1: int;
-    var nSteal2: int;
-    var nSSteal2: int;
-
-    var timer1, timer2: stopwatch;
 
     // locks (initially unlocked)
     var lock$: sync bool = true;
