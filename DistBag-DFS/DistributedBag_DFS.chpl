@@ -940,7 +940,7 @@ module DistributedBag_DFS
       tail += 1;
 
       // if there is a split request...
-      if split_request.read() then grow_shared();
+      if split_request.read() then split_release();
 
       /* if o_allstolen {
         lock$.readFE(); // block until its full and set locked (empty)
@@ -952,7 +952,7 @@ module DistributedBag_DFS
         o_allstolen = false;
         if split_request.read() then split_request.write(false);
       }
-      else if split_request.read() then grow_shared(); */
+      else if split_request.read() then split_release(); */
     }
 
     inline proc addElements(elts)
@@ -978,7 +978,7 @@ module DistributedBag_DFS
       tail += size;
 
       // if there is a split request...
-      if split_request.read() then grow_shared();
+      if split_request.read() then split_release();
     }
 
     // TODO: implement 'addElementsPtr'
@@ -1004,7 +1004,7 @@ module DistributedBag_DFS
       // if the private region is empty...
       if (nElems_private == 0) { //(o_split == tail) {
         // if we successfully shring the shared region...
-        if shrink_shared() {
+        if split_reacquire() {
           var elem = block.popTail();
           tail -= 1; //?
 
@@ -1017,7 +1017,7 @@ module DistributedBag_DFS
       tail -= 1;
 
       // if there is a split request...
-      if split_request.read() then grow_shared();
+      if split_request.read() then split_release();
 
       return (true, elem);
     }
@@ -1088,7 +1088,7 @@ module DistributedBag_DFS
     /*
       Grow operation that increases the shared space of the deque.
     */
-    inline proc grow_shared(): void
+    inline proc split_release(): void
     {
       // fast exit
       if (nElems_private <= 1) then return;
@@ -1113,7 +1113,7 @@ module DistributedBag_DFS
     /*
       Shrink operation that reduces the shared space of the deque.
     */
-    inline proc shrink_shared(): bool
+    inline proc split_reacquire(): bool
     {
       // fast exit
       if (nElems_shared.read() <= 1) then return false;
