@@ -116,7 +116,7 @@ module DistributedBag_DFS
     to be stolen from. This may be useful if some segments produce less elements than
     others and should not be stolen from.
   */
-  config const distributedBagWorkStealingMinElems: int = 1;
+  config const distributedBagWorkStealingMinElts: int = 1;
   /*
     The maximum amount of elements in an unroll block. This is crucial to ensure memory
     usage does not rapidly grow out of control.
@@ -322,7 +322,7 @@ module DistributedBag_DFS
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
         forall taskId in 0..#here.maxTaskPar do
-          size.add(instance.bag!.segments[taskId].nElems);
+          size.add(instance.bag!.segments[taskId].nElts);
       }
 
       return size.read();
@@ -359,7 +359,7 @@ module DistributedBag_DFS
 
           delete segment.block;
           segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
-          segment.nElems_shared.write(0);
+          segment.nElts_shared.write(0);
           segment.head.write(0);
           segment.split.write(0);
           segment.globalSteal.write(false);
@@ -613,11 +613,11 @@ module DistributedBag_DFS
       the calling thread/locale cannot be chosen. We can specify how many tries we want,
       by default, only 1 is performed.
     */
-    iter victim(const N: int, const callerId: int, const mode: string = "rand", const tries: int = 1): int
+    iter victim(const N: int, const callerId: int, const policy: string = "rand", const tries: int = 1): int
     {
       var count: int;
 
-      select mode {
+      select policy {
         // In the 'ring' strategy, victims are selected in a round-robin fashion.
         when "ring" {
           var id = (callerId + 1) % N;
@@ -681,7 +681,7 @@ module DistributedBag_DFS
             ref segment = segments[taskId];
 
             // if the private region contains at least one element to be removed...
-            if (segment.nElems_private > 0) {
+            if (segment.nElts_private > 0) {
               // attempt to remove an element
               var (hasWork, elt): (bool, eltType) = segment.takeElement();
 
@@ -713,24 +713,24 @@ module DistributedBag_DFS
             }
 
             // selection of the victim segment
-            for idx in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
-              ref targetSegment = segments[idx];
+            for taskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
+              ref targetSegment = segments[taskId];
 
               if !targetSegment.globalSteal.read() {
                 targetSegment.lock_block$.readFE();
                 // if the shared region contains enough elements to be stolen...
-                if (distributedBagWorkStealingMinElems <= targetSegment.nElems_shared.read()) {
+                if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
-                  var (hasElem, elem): (bool, eltType) = targetSegment.steal();
+                  var (hasElt, elt): (bool, eltType) = targetSegment.steal();
 
                   // if the steal succeeds, we return, otherwise we continue
-                  if hasElem {
+                  if hasElt {
                     targetSegment.lock_block$.writeEF(true);
-                    return (REMOVE_SUCCESS, elem);
+                    return (REMOVE_SUCCESS, elt);
                   }
                 }
                 // otherwise, if the private region has elements, we request for a split shifting
-                else if (targetSegment.nElems_private > 1) {
+                else if (targetSegment.nElts_private > 1) {
                   splitreq = true;
                   targetSegment.split_request.write(true);
                 }
@@ -768,8 +768,8 @@ module DistributedBag_DFS
             var stolenElts: list(eltType);
 
             // selection of the victim locale
-            for idx in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
-              on Locales[idx] {
+            for localeId in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
+              on Locales[localeId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // selection of the victim segment
                 for seg in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
@@ -780,19 +780,19 @@ module DistributedBag_DFS
                   //var sharedElts: int = targetSegment.nElems_shared.read();
                   // if the shared region contains enough elements to be stolen...
                   targetSegment.lock_block$.readFE();
-                  if (1 < targetSegment.nElems_shared.read()) {
+                  if (1 < targetSegment.nElts_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
-                      var (hasElem, elem): (bool, eltType) = targetSegment.steal();
+                      var (hasElt, elt): (bool, eltType) = targetSegment.steal();
 
                       // if the steal succeeds...
-                      if hasElem {
-                        stolenElts.insert(0, elem);
+                      if hasElt {
+                        stolenElts.insert(0, elt);
                       }
                   //  }
                   }
                   // otherwise, if the private region has elements, we request for a split shifting
-                  else if (targetSegment.nElems_private > 1) {
+                  else if (targetSegment.nElts_private > 1) {
                     targetSegment.split_request.write(true);
                   }
 
@@ -850,7 +850,7 @@ module DistributedBag_DFS
     var head: atomic int;
     /* var allstolen: atomic bool; */
     var split_request: atomic bool;
-    var nElems_shared: atomic int; // number of elements in the shared space
+    var nElts_shared: atomic int; // number of elements in the shared space
 
     // locks (initially unlocked)
     var lock$: sync bool = true;
@@ -868,21 +868,21 @@ module DistributedBag_DFS
       tail and split pointers, and since the block is implemented as a  circular
       array, two cases need to be distinguished.
     */
-    inline proc nElems_private
+    inline proc nElts_private
     {
       return tail - o_split;
     }
 
-    inline proc nElems
+    inline proc nElts
     {
-      return nElems_private + nElems_shared.read();
+      return nElts_private + nElts_shared.read();
     }
 
     inline proc isEmpty
     {
       lock_n$.readFE();
-      var n_shared = nElems_shared.read();
-      var n_private = nElems_private;
+      var n_shared = nElts_shared.read();
+      var n_private = nElts_private;
       lock_n$.writeEF(true);
       return (n_shared + n_private) == 0;
     }
@@ -899,7 +899,7 @@ module DistributedBag_DFS
         newBlock.headId = block.headId;
         newBlock.tailId = block.tailId;
         for i in 0..#block!.cap {
-          newBlock!.elems[i] = block!.elems[i];
+          newBlock!.elts[i] = block!.elts[i];
         }
         delete block;
         block = newBlock;
@@ -938,7 +938,7 @@ module DistributedBag_DFS
         newBlock.headId = block.headId;
         newBlock.tailId = block.tailId;
         for i in 0..#block!.cap {
-          newBlock!.elems[i] = block!.elems[i];
+          newBlock!.elts[i] = block!.elts[i];
         }
         delete block;
         block = newBlock;
@@ -961,7 +961,7 @@ module DistributedBag_DFS
     {
 
       // if the segment is empty...
-      if (nElems_private == 0) {
+      if (nElts_private == 0) {
         var default: eltType;
         return (false, default);
       }
@@ -973,24 +973,24 @@ module DistributedBag_DFS
       } */
 
       // if the private region is empty...
-      if (nElems_private == 0) { //(o_split == tail) {
+      if (nElts_private == 0) { //(o_split == tail) {
         // if we successfully shring the shared region...
         if split_reacquire() {
-          var elem = block.popTail();
+          var elt = block.popTail();
           tail -= 1; //?
 
-          return (true, elem);
+          return (true, elt);
         }
       }
 
       // if the private region is not empty...
-      var elem = block.popTail();
+      var elt = block.popTail();
       tail -= 1;
 
       // if there is a split request...
       if split_request.read() then split_release();
 
-      return (true, elem);
+      return (true, elt);
     }
 
     // TODO: implement 'takeElements'
@@ -1024,7 +1024,7 @@ module DistributedBag_DFS
       var default: eltType;
 
       // if the shared region becomes empty due to a concurrent operation...
-      if (nElems_shared.read() == 0) then return (false, default);
+      if (nElts_shared.read() == 0) then return (false, default);
 
       // Fast exit
       /* if allstolen.read() then return (false, default); */
@@ -1038,12 +1038,12 @@ module DistributedBag_DFS
         // if we successfully moved the pointers...
         if simCAS(head, split, h, s, h+1, s) {
           lock_n$.readFE();
-          var elem = block.popHead();
+          var elt = block.popHead();
 
-          nElems_shared.sub(1);
+          nElts_shared.sub(1);
           lock_n$.writeEF(true);
 
-          return (true, elem);
+          return (true, elt);
         }
         else {
           return (false, default);
@@ -1062,7 +1062,7 @@ module DistributedBag_DFS
     inline proc split_release(): void
     {
       // fast exit
-      if (nElems_private <= 1) then return;
+      if (nElts_private <= 1) then return;
 
       // compute the new split position
       var new_split: int = ((o_split + tail + 1) / 2): int;
@@ -1072,7 +1072,7 @@ module DistributedBag_DFS
 
       // updates the counters
       lock_n$.readFE();
-      nElems_shared.add(new_split - o_split);
+      nElts_shared.add(new_split - o_split);
       lock_n$.writeEF(true);
 
       o_split = new_split;
@@ -1087,7 +1087,7 @@ module DistributedBag_DFS
     inline proc split_reacquire(): bool
     {
       // fast exit
-      if (nElems_shared.read() <= 1) then return false;
+      if (nElts_shared.read() <= 1) then return false;
 
       lock$.readFE(); // block until its full and set locked (empty)
       var (h, s): (int, int) = (head.read(), split.read()); // o_split ?
@@ -1098,7 +1098,7 @@ module DistributedBag_DFS
         split.write(new_split);
         lock$.writeEF(true); // set unlocked (full)
         lock_n$.readFE();
-        nElems_shared.sub(new_split - o_split);
+        nElts_shared.sub(new_split - o_split);
         lock_n$.writeEF(true);
         o_split = new_split;
         // ADD FENCE
@@ -1111,7 +1111,7 @@ module DistributedBag_DFS
             split.write(new_split);
             lock$.writeEF(true); // set unlocked (full)
             lock_n$.readFE();
-            nElems_shared.sub(new_split - o_split);
+            nElts_shared.sub(new_split - o_split);
             lock_n$.writeEF(true);
             o_split = new_split;
           }
@@ -1136,7 +1136,7 @@ module DistributedBag_DFS
   class Block
   {
     type eltType;
-    var elems: c_ptr(eltType); // contiguous memory containing all elements
+    var elts: c_ptr(eltType); // contiguous memory containing all elements
 
     var cap: int; // capacity of the block
     var headId: int; // index of the head element
@@ -1157,7 +1157,7 @@ module DistributedBag_DFS
     {
       /* if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0."); */
       this.eltType = eltType;
-      this.elems = allocate(eltType, capacity); // Github issue #19859 // TODO: test with elems: cap * eltType
+      this.elts = allocate(eltType, capacity); // Github issue #19859 // TODO: test with elems: cap * eltType
       this.cap = capacity;
     }
 
@@ -1172,7 +1172,7 @@ module DistributedBag_DFS
 
     proc deinit()
     {
-      deallocate(elems);
+      deallocate(elts);
     }
 
     inline proc pushTail(elt: eltType): void
@@ -1180,7 +1180,7 @@ module DistributedBag_DFS
       /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'pushTail': 'elems' is nil."); */
       /* if isFull then halt("DistributedBag_DFS Internal Error in 'pushTail': Block is Full."); */
 
-      elems[tailId] = elt;
+      elts[tailId] = elt;
       tailId +=1;
 
       return;
@@ -1193,7 +1193,7 @@ module DistributedBag_DFS
 
       tailId -= 1;
 
-      return elems[tailId];
+      return elts[tailId];
     }
 
     inline proc popHead(): eltType
@@ -1201,7 +1201,7 @@ module DistributedBag_DFS
       /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popHead': 'elems' is nil."); */
       /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popHead': Block is Empty."); */
 
-      var elt = elems[headId];
+      var elt = elts[headId];
       headId += 1;
 
       return elt;
