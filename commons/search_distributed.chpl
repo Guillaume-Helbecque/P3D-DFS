@@ -40,7 +40,7 @@ module search_distributed
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least 2 nodes per task.
+        We require at least 2 elements per task.
       */
       var initSize: int = 2 * here.maxTaskPar * numLocales;
       var initList: list(Node);
@@ -74,8 +74,6 @@ module search_distributed
         }
         if (seg == here.maxTaskPar) then seg = 0;
       }
-
-      initList.clear();
     }
     else {
       /*
@@ -92,11 +90,11 @@ module search_distributed
 
     coforall loc in Locales with (const ref problem) do on loc {
 
-      var numTasks = here.maxTaskPar;
+      const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
 
       // Local variables
-      var best_locale: int = problem.setInitUB();
+      var best_locale: int = problem_loc.setInitUB();
       var allTasksIdleFlag: atomic bool = false;
       var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
@@ -109,7 +107,7 @@ module search_distributed
 
         // Task variables
         var best_task: int = best_locale;
-        var taskState, locState: bool = false;
+        var taskState, locState: bool = BUSY;
         var counter: int = 0;
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
@@ -131,38 +129,33 @@ module search_distributed
           */
           if (hasWork == 1) {
             if taskState {
-              taskState = false;
+              taskState = BUSY;
               eachTaskState[taskId].write(BUSY);
             }
             if locState {
-              locState = false;
+              locState = BUSY;
               eachLocaleState[here.id].write(BUSY);
             }
           }
           else if (hasWork == 0) {
             if !taskState {
-              taskState = true;
+              taskState = IDLE;
               eachTaskState[taskId].write(IDLE);
             }
             continue;
           }
           else {
             if !taskState {
-              taskState = true;
+              taskState = IDLE;
               eachTaskState[taskId].write(IDLE);
             }
             if allIdle(eachTaskState, allTasksIdleFlag) {
               if !locState {
-                locState = true;
+                locState = IDLE;
                 eachLocaleState[here.id].write(IDLE);
               }
               if allIdle(eachLocaleState, allLocalesIdleFlag) {
                 break;
-              }
-            } else {
-              if locState {
-                locState = false;
-                eachLocaleState[here.id].write(BUSY);
               }
             }
             continue;
