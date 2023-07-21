@@ -44,17 +44,21 @@ class Problem_Knapsack : Problem
   }
 
   // initialisation from parameters
-  proc init(const n: int, const w: real, const pr: [] real, const we: [] real): void
+  proc init(const file_name: string, const n: int, const w: real, const pr: [] real,
+    const we: [] real, const ub: string): void
   {
-    this.N      = n;
-    this.W      = w;
-    this.profit = pr;
-    this.weight = we;
+    this.name    = file_name;
+    this.N       = n;
+    this.W       = w;
+    this.profit  = pr;
+    this.weight  = we;
+    this.ub_init = ub;
   }
 
   override proc copy()
   {
-    return new Problem_Knapsack(this.N, this.W, this.profit, this.weight);
+    return new Problem_Knapsack(this.name, this.N, this.W, this.profit, this.weight
+      this.ub_init);
   }
 
   inline proc arrMultSom(const c_a: c_array, const chpl_a: [], const depth: int)
