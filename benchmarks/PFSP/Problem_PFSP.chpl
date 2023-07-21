@@ -55,7 +55,7 @@ module Problem_PFSP
       else halt("Error - Unsupported branching rule");
 
       if (ub == "opt" || ub == "inf") then this.ub_init = ub;
-      else halt("Error - Unsupported upper bound");
+      else halt("Error - Unsupported initial upper bound");
     }
 
     proc deinit()

@@ -16,11 +16,12 @@ module main_knapsack
 
   // Knapsack-specific option
   config const name: string = "default.txt";
+  config const ub: string   = "opt"; // opt, inf
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(name);
+    var knapsack = new Problem_Knapsack(name, ub);
 
     // Helper
     for a in args[1..] {

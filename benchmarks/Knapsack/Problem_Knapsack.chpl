@@ -14,8 +14,10 @@ class Problem_Knapsack : Problem
   var profit: [0..#N] real; // items' profit
   var weight: [0..#N] real; // items' weight
 
+  var ub_init: string;
+
   // initialisation from a file
-  proc init(const fileName: string): void
+  proc init(const fileName: string, const ub: string): void
   {
     this.name = fileName;
 
@@ -36,6 +38,9 @@ class Problem_Knapsack : Problem
 
     channel.close();
     f.close();
+
+    if (ub == "opt" || ub == "inf") then this.ub_init = ub;
+    else halt("Error - Unsupported initial upper bound");
   }
 
   // initialisation from parameters
@@ -87,10 +92,24 @@ class Problem_Knapsack : Problem
     return children;
   }
 
-  // No bounding
   override proc setInitUB(): int
   {
-    return 0;
+    if (this.ub_init == "inf") {
+      return 0;
+    }
+    else {
+      const path = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/knapPI_optimal.txt";
+
+      var f = open(path, ioMode.r);
+      var channel = f.reader();
+
+      var file = channel.read([0..480, 0..1] string);
+
+      channel.close();
+      f.close();
+
+      return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+    }
   }
 
   // =======================
@@ -105,6 +124,7 @@ class Problem_Knapsack : Problem
     writeln("  capacity of the bag: ", this.W);
     writeln("  items's profit: ", this.profit);
     writeln("  items's weight: ", this.weight);
+    writeln("\n  initial upper bound: ", setInitUB());
     writeln("=================================================");
   }
 

@@ -56,8 +56,7 @@ class Instance_VRF : Instance
 
   override proc get_ub(): int
   {
-    var tup = ("./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt");
-    var path = "".join(tup);
+    const path = "./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt";
 
     var f = open(path, ioMode.r);
     var channel = f.reader();
@@ -67,6 +66,6 @@ class Instance_VRF : Instance
     channel.close();
     f.close();
 
-    return file[file.find(splitExt(this.name)[0])]:int;
+    return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
   }
 }
