@@ -13,7 +13,7 @@ module search_multicore
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
-    var numTasks = here.maxTaskPar;
+    const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
@@ -32,15 +32,15 @@ module search_multicore
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node, targetLocales = Locales);
+    var bag = new DistBag_DFS(Node);
     var root = new Node(problem);
 
     if activeSet {
       /*
-        An initial set is sequentially computed and distributed across locales.
-        We require at least 2 nodes per task.
+        An initial set is sequentially computed and distributed across tasks.
+        We require at least 2 elements per task.
       */
-      var initSize: int = 2 * numTasks * numLocales;
+      var initSize: int = 2 * numTasks;
       var initList: list(Node);
       initList.pushBack(root);
 
@@ -62,18 +62,12 @@ module search_multicore
       }
 
       // Static distribution of the set
-      var seg, loc: int;
+      var seg: int;
       for elt in initList {
-        on Locales[loc % numLocales] do bag.add(elt, seg);
-        loc += 1;
-        if (loc % numLocales == 0) {
-          loc = loc % numLocales;
-          seg += 1;
-        }
+        bag.add(elt, seg);
+        seg += 1;
         if (seg == numTasks) then seg = 0;
       }
-
-      initList.clear();
     }
     else {
       /*
@@ -92,7 +86,7 @@ module search_multicore
 
       // Task variables
       var best_task: int = best.read();
-      var taskState: bool = false;
+      var taskState: bool = BUSY;
       var counter: int = 0;
       ref tree_loc = eachExploredTree[taskId];
       ref num_sol = eachExploredSol[taskId];
@@ -112,20 +106,20 @@ module search_multicore
         */
         if (hasWork == 1) {
           if taskState {
-            taskState = false;
+            taskState = BUSY;
             eachTaskState[taskId].write(BUSY);
           }
         }
         else if (hasWork == 0) {
           if !taskState {
-            taskState = true;
+            taskState = IDLE;
             eachTaskState[taskId].write(IDLE);
           }
           continue;
         }
         else {
           if !taskState {
-            taskState = true;
+            taskState = IDLE;
             eachTaskState[taskId].write(IDLE);
           }
           if allIdle(eachTaskState, allTasksIdleFlag) {
