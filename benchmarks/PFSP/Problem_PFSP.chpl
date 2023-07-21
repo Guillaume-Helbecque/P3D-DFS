@@ -3,6 +3,7 @@ module Problem_PFSP
   use aux;
   use List;
   use Time;
+  use Path;
   use CTypes;
 
   use Problem;
@@ -309,7 +310,7 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_pfsp_", this.name, "_", this.lb_name, "_", this.branching, ".txt");
+      var tup = ("./chpl_pfsp_", splitExt(this.name)[0], "_", this.lb_name, "_", this.branching, ".txt");
       return "".join(tup);
     }
 

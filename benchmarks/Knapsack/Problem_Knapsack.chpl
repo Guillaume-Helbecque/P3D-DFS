@@ -57,7 +57,7 @@ class Problem_Knapsack : Problem
 
   override proc copy()
   {
-    return new Problem_Knapsack(this.name, this.N, this.W, this.profit, this.weight
+    return new Problem_Knapsack(this.name, this.N, this.W, this.profit, this.weight,
       this.ub_init);
   }
 
@@ -159,7 +159,8 @@ class Problem_Knapsack : Problem
   override proc help_message(): void
   {
     writeln("\n  Knapsack Benchmark Parameters:\n");
-    writeln("   --name   str   File containing the data\n");
+    writeln("   --name   str   file containing the data\n");
+    writeln("   --ub     str   upper bound initialization (opt, inf)\n");
   }
 
 } // end class

@@ -103,7 +103,7 @@ module Problem_NQueens
     override proc help_message(): void
     {
       writeln("\n  NQueens Benchmark Parameters:\n");
-      writeln("   --N   int   Problem size (number of queens)\n");
+      writeln("   --N   int   problem size (number of queens)\n");
     }
 
   } // end class
