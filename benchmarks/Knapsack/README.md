@@ -1,6 +1,6 @@
 # The 0/1-Knapsack problem
 
-Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p_i}$, the problem is to determine which items to include in the collection so that the total weight is less than or equal to a given limit $W$ and the total profit is as large as possible. Some of the Pisinger's [1] instances are supported as test-cases.
+Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p_i}$, the problem is to determine which items to include in the collection so that the total weight is less than or equal to a given limit $W$ and the total profit is as large as possible. Some of the Pisinger's instances [1] are supported as test-cases.
 
 ### Launch & Command-line parameters
 
@@ -8,7 +8,7 @@ Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p
 ./main_knapsack.o --name=file_name
 ```
 where:
-- `file_name` (`str`): name of the file containing the data. Pisinger's instances can be specified using `knapPI_t_N_r_i` where `t` is the instance type (1=ucorrelated, 2=weakly correlated, 3=strongly correlated), `N` the number of items, `r` the range of coefficients, and `i` the instance number ($1$ to $10$). User defined instances must be placed in the `./instances` folder and formated as follows:
+- `file_name` (`str`): name of the file containing the data. Pisinger's instances can be specified using `knapPI_t_N_r_i.txt` where `t` is the instance type (1=ucorrelated, 2=weakly correlated, 3=strongly correlated), `N` the number of items, `r` the range of coefficients, and `i` the instance number ($1$ to $10$). User defined instances must be placed in the `./instances` folder and formated as follows:
 ```
 N W
 list of profits (delimited with spaces)
