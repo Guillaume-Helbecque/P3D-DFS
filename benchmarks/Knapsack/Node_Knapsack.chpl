@@ -2,7 +2,7 @@ module Node_Knapsack
 {
   use CTypes;
 
-  config param maxItems: int = 23;
+  config param maxItems: int = 50;
 
   record Node_Knapsack
   {

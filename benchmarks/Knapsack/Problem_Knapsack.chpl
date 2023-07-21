@@ -11,15 +11,19 @@ class Problem_Knapsack : Problem
   var name: string;         // file name
   var N: int;               // number of items
   var W: real;              // maximum weight of the bag
-  var weight: [0..#N] real; // items' weight
   var profit: [0..#N] real; // items' profit
+  var weight: [0..#N] real; // items' weight
 
   // initialisation from a file
   proc init(const fileName: string): void
   {
     this.name = fileName;
 
-    var tup = ("./benchmarks/Knapsack/instances/", fileName);
+    var path_dir = "./benchmarks/Knapsack/instances/";
+    if (fileName[0..5] == "knapPI") then
+      //TODO: differentiate small_coeff from large_coeff etc.
+      path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/";
+    var tup = (path_dir, fileName);
     var path = "".join(tup);
 
     var f = open(path, ioMode.r);
@@ -27,20 +31,20 @@ class Problem_Knapsack : Problem
 
     this.N = channel.read(int);
     this.W = channel.read(int);
-    this.weight = channel.read([0..#this.N] int);
     this.profit = channel.read([0..#this.N] int);
+    this.weight = channel.read([0..#this.N] int);
 
     channel.close();
     f.close();
   }
 
   // initialisation from parameters
-  proc init(const n: int, const w: real, const we: [] real, const pr: [] real): void
+  proc init(const n: int, const w: real, const pr: [] real, const we: [] real): void
   {
     this.N      = n;
     this.W      = w;
-    this.weight = we;
     this.profit = pr;
+    this.weight = we;
   }
 
   override proc copy()
