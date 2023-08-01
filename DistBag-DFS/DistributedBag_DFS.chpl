@@ -64,8 +64,6 @@
 module DistributedBag_DFS
 {
   public use Collection;
-  use BlockDist;
-  private use CTypes;
 
   use Random;
   use List;
@@ -379,101 +377,8 @@ module DistributedBag_DFS
       Triggers a more static approach to load balancing, fairly redistributing all
       elements fairly for bags across nodes. The result will result in all segments
       having roughly the same amount of elements.
-      .. note::
-      This method is very heavy-weight in that it should not be called too
-      often. Dynamic work stealing handles cases where there is a relatively fair
-      distribution across majority of nodes, but this should be called when you have
-      a severe imbalance, or when you have a smaller number of elements to balance.
-      Furthermore, while this operation is parallel-safe, it should be called from at
-      most one task.
     */
-
-    // UNUSED (balance)
-    /* proc balance(): void
-    {
-      var localThis = getPrivatizedThis;
-      // Phase 1: Acquire all locks from first node and segment to last
-      // node and segment (our global locking order...)
-      for loc in localThis.targetLocales do on loc {
-        var instance = getPrivatizedThis;
-        for segmentIdx in 0..#here.maxTaskPar {
-          ref segment = instance.bag!.segments[segmentIdx];
-          segment.acquire(STATUS_BALANCE);
-        }
-      }
-      // Phase 2: Concurrently redistribute elements from segments which contain
-      // more than the computed average.
-      coforall segmentIdx in 0..#here.maxTaskPar {
-        var nSegmentElems: [0..#localThis.targetLocales.size] int;
-        var locIdx = 0;
-        for loc in localThis.targetLocales do on loc {
-          var nElems = getPrivatizedThis.bag!.segments[segmentIdx].nElems:int;
-          nSegmentElems[locIdx] = nElems;
-          locIdx += 1;
-        }
-        // Find the average and the excess. The excess is calculated as the amount
-        // of elements a segment has over the average, which is used to calculate
-        // the buffer size for each segment.
-        var total = (+ reduce nSegmentElems);
-        var avg = total / locIdx;
-        var excess: int;
-        for nElems in nSegmentElems {
-          if (nElems > avg) then excess += nElems - avg;
-        }
-        // Allocate buffer, which holds the 'excess' elements for redistribution.
-        // Then fill it.
-        var buffer = c_malloc(eltType, excess);
-        var bufferOffset = 0;
-        for loc in localThis.targetLocales do on loc {
-          var average = avg;
-          ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
-          var nElems = segment.nElems:int;
-          if (nElems > average) {
-            var nTransfer = nElems - average;
-            var tmpBuffer = buffer + bufferOffset;
-            segment.transferElements(tmpBuffer, nTransfer, buffer.locale.id);
-            bufferOffset += nTransfer;
-          }
-        }
-        // With the excess elements, redistribute it...
-        bufferOffset = 0;
-        for loc in localThis.targetLocales do on loc {
-          var average = avg;
-          ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
-          var nElems = segment.nElems:int;
-          if (average > nElems) {
-            var give = average - nElems;
-            var arr: [1..give] eltType;
-            on bufferOffset {
-              var tmpBuffer = buffer;
-              for i in 1..give {
-                arr[i] = tmpBuffer[bufferOffset];
-                bufferOffset += 1;
-              }
-            }
-            for i in 1..give {
-              segment.addElement(arr[i]);
-            }
-          }
-        }
-        // Lastly, if there are items left over, just add them to our locale's segment.
-        if (excess > bufferOffset) {
-          ref segment = localThis.bag!.segments[segmentIdx];
-          var nLeftOvers = excess - bufferOffset;
-          var tmpBuffer = buffer + bufferOffset;
-          segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
-        }
-        c_free(buffer);
-      }
-      // Phase 3: Release all locks from first node and segment to last node and segment.
-      for loc in localThis.targetLocales do on loc {
-        var instance = getPrivatizedThis;
-        for segmentIdx in 0..#here.maxTaskPar {
-          ref segment = instance.bag!.segments[segmentIdx];
-          segment.releaseStatus();
-        }
-      }
-    } */
+    // TODO: is 'balance' needed?
 
     /*
       Iterate over each bag in each node. To avoid holding onto locks, we take
@@ -1132,12 +1037,6 @@ module DistributedBag_DFS
     var headId: int; // index of the head element
     var tailId: int; // index of the tail element
 
-    /* inline proc isEmpty
-    {
-      return headIdx == tailIdx;
-      return size == 0;
-    } */
-
     inline proc isFull
     {
       return tailId == cap;
@@ -1145,50 +1044,27 @@ module DistributedBag_DFS
 
     proc init(type eltType, capacity)
     {
-      /* if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0."); */
       this.eltType = eltType;
       this.dom = {0..#capacity};
       this.cap = capacity;
     }
 
-    // UNUSED (init)
-    /* proc init(type eltType, ptr, capacity)
-    {
-      this.eltType = eltType;
-      this.elems = ptr;
-      this.cap = capacity;
-      this.size = cap;
-    } */
-
     inline proc pushTail(elt: eltType): void
     {
-      /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'pushTail': 'elems' is nil."); */
-      /* if isFull then halt("DistributedBag_DFS Internal Error in 'pushTail': Block is Full."); */
-
       elts[tailId] = elt;
       tailId +=1;
-
-      return;
     }
 
     inline proc popTail(): eltType
     {
-      /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popTail': 'elems' is nil."); */
-      /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popTail': Block is Empty."); */
-
       tailId -= 1;
-
       return elts[tailId];
     }
 
     inline proc popHead(): eltType
     {
-      /* if (elems == nil) then halt("DistributedBag_DFS Internal Error in 'popHead': 'elems' is nil."); */
-      /* if isEmpty then halt("DistributedBag_DFS Internal Error in 'popHead': Block is Empty."); */
-
       var elt = elts[headId];
       headId += 1;
-
       return elt;
     }
   } // end 'Block' class
