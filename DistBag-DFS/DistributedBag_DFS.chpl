@@ -228,7 +228,7 @@ module DistributedBag_DFS
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      complete();
+      this.complete();
 
       this.pid = _newPrivatizedClass(this);
       this.bag = new unmanaged Bag(eltType, this);
@@ -243,7 +243,7 @@ module DistributedBag_DFS
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      complete();
+      this.complete();
 
       this.bag = new unmanaged Bag(eltType, this);
     }
@@ -581,6 +581,8 @@ module DistributedBag_DFS
     {
       this.eltType = eltType;
       this.parentHandle = parentHandle;
+      // KNOWN ISSUE: 'this.complete' produces an error when 'eltType' is a Chapel
+      // array (see Github issue #19859)
     }
 
     proc deinit()
@@ -894,15 +896,9 @@ module DistributedBag_DFS
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
-        var newBlock = new unmanaged Block(eltType, min(distributedBagMaxBlockCap, 2*block.cap));
         lock_block$.readFE();
-        newBlock.headId = block.headId;
-        newBlock.tailId = block.tailId;
-        for i in 0..#block!.cap {
-          newBlock!.elts[i] = block!.elts[i];
-        }
-        delete block;
-        block = newBlock;
+        block.cap = min(distributedBagMaxBlockCap, 2*block.cap);
+        block.dom = {0..#block.cap};
         lock_block$.writeEF(true);
       }
 
@@ -933,15 +929,9 @@ module DistributedBag_DFS
       // allocate a larger block with the double capacity.
       if (block.tailId + size >= block.cap) {
         const factor: int = log2(size % block.cap) + 1;
-        var newBlock = new unmanaged Block(eltType, min(distributedBagMaxBlockCap, 2**factor*block.cap));
         lock_block$.readFE();
-        newBlock.headId = block.headId;
-        newBlock.tailId = block.tailId;
-        for i in 0..#block!.cap {
-          newBlock!.elts[i] = block!.elts[i];
-        }
-        delete block;
-        block = newBlock;
+        block.cap = min(distributedBagMaxBlockCap, 2**factor*block.cap);
+        block.dom = {0..#block.cap};
         lock_block$.writeEF(true);
       }
 
@@ -1136,8 +1126,8 @@ module DistributedBag_DFS
   class Block
   {
     type eltType;
-    var elts: c_ptr(eltType); // contiguous memory containing all elements
-
+    var dom: domain(1);
+    var elts: [dom] eltType;
     var cap: int; // capacity of the block
     var headId: int; // index of the head element
     var tailId: int; // index of the tail element
@@ -1157,7 +1147,7 @@ module DistributedBag_DFS
     {
       /* if (capacity == 0) then halt("DistributedBag_DFS Internal Error: Capacity is 0."); */
       this.eltType = eltType;
-      this.elts = allocate(eltType, capacity); // Github issue #19859 // TODO: test with elems: cap * eltType
+      this.dom = {0..#capacity};
       this.cap = capacity;
     }
 
@@ -1169,11 +1159,6 @@ module DistributedBag_DFS
       this.cap = capacity;
       this.size = cap;
     } */
-
-    proc deinit()
-    {
-      deallocate(elts);
-    }
 
     inline proc pushTail(elt: eltType): void
     {
