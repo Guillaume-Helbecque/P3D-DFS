@@ -1,0 +1,13 @@
+--- a/third-party/gasnet/gasnet-src/other/pmi-spawner/gasnet_bootstrap_pmi.c
++++ b/third-party/gasnet/gasnet-src/other/pmi-spawner/gasnet_bootstrap_pmi.c
+@@ -13,6 +13,10 @@
+ #  undef calloc
+ #  undef free
+ #  undef strdup
++#  undef strndup
++#  undef strcasecmp
++#  undef strncasecmp
++#  undef realloc
+ #endif
+
+ #if HAVE_PMI_CRAY_H
