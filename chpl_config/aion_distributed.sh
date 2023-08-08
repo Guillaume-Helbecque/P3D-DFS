@@ -27,7 +27,7 @@ export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$CHPL_HOME/util"
 
 export CHPL_HOST_PLATFORM="linux64"
 export CHPL_HOST_COMPILER="gnu"
-export CHPL_LAUNCHER="slurm-gasnetrun_ibv"
+export CHPL_LAUNCHER="gasnetrun_ibv"
 export CHPL_LLVM="none"
 export CHPL_RT_NUM_THREADS_PER_LOCALE=$SLURM_CPUS_PER_TASK
 
