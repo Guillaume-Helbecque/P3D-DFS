@@ -523,13 +523,14 @@ module DistributedBag_DFS
     iter victim(const N: int, const callerId: int, const policy: string = "rand", const tries: int = 1): int
     {
       var count: int;
+      var limit: int = if (callerId == -1) then N else N-1;
 
       select policy {
         // In the 'ring' strategy, victims are selected in a round-robin fashion.
         when "ring" {
           var id = (callerId + 1) % N;
 
-          while ((count < N-1) && (count < tries)) {
+          while ((count < limit) && (count < tries)) {
             yield id;
             count += 1;
             id = (id + 1) % N;
@@ -541,7 +542,7 @@ module DistributedBag_DFS
           var victims: [0..#N] int = noinit;
           permutation(victims);
 
-          while ((count < N-1) && (count < tries)) {
+          while ((count < limit) && (count < tries)) {
             if (victims[id] != callerId) {
               yield victims[id];
               count += 1;
@@ -566,6 +567,9 @@ module DistributedBag_DFS
       if (numLocales == 1) then phase = REMOVE_SIMPLE;
       else phase = REMOVE_STEAL_REQUEST;
 
+      ref segment = segments[taskId];
+      var default: eltType;
+
       while true {
         select phase {
           /*
@@ -585,8 +589,6 @@ module DistributedBag_DFS
             is empty.
           */
           when REMOVE_SIMPLE {
-            ref segment = segments[taskId];
-
             // if the private region contains at least one element to be removed...
             if (segment.nElts_private > 0) {
               // attempt to remove an element
@@ -608,7 +610,6 @@ module DistributedBag_DFS
             a victim, or when a shared region becomes empty due to a concurrent operation.
           */
           when REMOVE_LOCAL_STEAL {
-            var default: eltType;
             var splitreq: bool = false;
 
             // fast exit if: (1) a segment of our bag instance is doing a global steal
@@ -620,15 +621,15 @@ module DistributedBag_DFS
             }
 
             // selection of the victim segment
-            for taskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
-              ref targetSegment = segments[taskId];
+            for victimTaskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
+              ref targetSegment = segments[victimTaskId];
 
               if !targetSegment.globalSteal.read() {
                 targetSegment.lock_block$.readFE();
                 // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
-                  var (hasElt, elt): (bool, eltType) = targetSegment.steal();
+                  var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
@@ -660,9 +661,6 @@ module DistributedBag_DFS
             empty due to a concurrent operation.
           */
           when REMOVE_GLOBAL_STEAL {
-            var default: eltType;
-            //var (hasStolen, stolenElt): (bool, eltType) = (false, default);
-
             // fast exit for single-node execution
             if (numLocales == 1) then return (REMOVE_FAIL, default);
 
@@ -675,12 +673,12 @@ module DistributedBag_DFS
             var stolenElts: list(eltType);
 
             // selection of the victim locale
-            for localeId in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
-              on Locales[localeId] {
+            for victimLocaleId in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
+              on Locales[victimLocaleId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // selection of the victim segment
-                for seg in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
-                  ref targetSegment = targetBag!.segments[seg];
+                for victimTaskId in victim(here.maxTaskPar, -1, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
+                  ref targetSegment = targetBag!.segments[victimTaskId];
 
                   targetSegment.globalSteal.write(true);
 
@@ -690,7 +688,7 @@ module DistributedBag_DFS
                   if (1 < targetSegment.nElts_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
-                      var (hasElt, elt): (bool, eltType) = targetSegment.steal();
+                      var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
 
                       // if the steal succeeds...
                       if hasElt {
@@ -716,12 +714,12 @@ module DistributedBag_DFS
               return (REMOVE_FAIL, default);
             }
             else {
-              segments[taskId].addElements(stolenElts);
+              segment.addElements(stolenElts);
               //segments[taskId].split.add((3*stolenElts.size/4):int);
 
               // "Unlock" the global steal operation
               globalStealInProgress.write(false);
-              return (REMOVE_SUCCESS, segments[taskId].takeElement()[1]);
+              return (REMOVE_SUCCESS, segment.takeElement()[1]);
             }
           }
 
@@ -914,7 +912,7 @@ module DistributedBag_DFS
     /*
       Stealing operation, only executed by thieves.
     */
-    inline proc steal(): (bool, eltType)
+    inline proc stealElement(): (bool, eltType)
     {
       var default: eltType;
 
