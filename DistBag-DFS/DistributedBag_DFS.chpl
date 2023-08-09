@@ -393,38 +393,28 @@ module DistributedBag_DFS
       Out-Of-Memory issue. If the data structure is large, the user is doubly advised to use
       parallel iteration, for both performance and memory benefit.
     */
-
-    // UNUSED (these)
-    /* override iter these(): eltType
+    override iter these(): eltType
     {
       for loc in targetLocales {
-        for segmentIdx in 0..#here.maxTaskPar {
+        for taskId in 0..#here.maxTaskPar {
           // The size of the snapshot is only known once we have the lock.
-          var dom : domain(1) = {0..-1};
-          var buffer : [dom] eltType;
+          var dom: domain(1) = {0..-1};
+          var buffer: [dom] eltType;
           on loc {
-            ref segment = getPrivatizedThis.bag!.segments[segmentIdx];
-            if segment.acquireIfNonEmpty(STATUS_LOOKUP) {
-              dom = {0..#segment.nElems.read():int};
-              var block = segment.headBlock;
-              var idx = 0;
-              while (block != nil) {
-                for i in 0..#block!.size {
-                  buffer[idx] = block!.elems[i];
-                  idx += 1;
-                }
-                block = block!.next;
+            ref segment = getPrivatizedThis.bag!.segments[taskId];
+
+              dom = {0..#segment.nElts};
+              for i in dom {
+                buffer[i] = segment.block.elts[segment.block.headId + i];
               }
-              segment.releaseStatus();
-            }
           }
           // Process this chunk if we have one...
-          foreach elem in buffer {
-            yield elem;
+          foreach elt in buffer {
+            yield elt;
           }
         }
       }
-    } */
+    }
 
     // UNUSED (these)
     /* iter these(param tag : iterKind) where tag == iterKind.leader
