@@ -793,10 +793,12 @@ module DistributedBag_DFS
     /*
       Insertion operation, only executed by the segment's owner.
     */
-    inline proc addElement(elt: eltType)
+    inline proc addElement(elt: eltType): bool
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
+        if (block.cap == distributedBagMaxBlockCap) then
+          return false;
         lock_block$.readFE();
         block.cap = min(distributedBagMaxBlockCap, 2*block.cap);
         block.dom = {0..#block.cap};
@@ -842,13 +844,12 @@ module DistributedBag_DFS
         lock_block$.writeEF(true);
       }
 
-      var c=0;
+      // TODO: find a better way to do the following.
+      var c = 0;
       for elt in elts {
-        if (c >= realSize) {
-          break;
-        }
+        if (c >= realSize) then break;
         block.pushTail(elt);
-        c+=1;
+        c += 1;
       }
       tail += realSize;
 
