@@ -501,17 +501,15 @@ module DistributedBag_DFS
     */
     proc add(elt: eltType, const taskId: int): bool
     {
-      segments[taskId].addElement(elt);
-      return true;
+      return segments[taskId].addElement(elt);
     }
 
     /*
       Insertion operation in bulk.
     */
-    proc addBulk(elts, const taskId: int): bool
+    proc addBulk(elts, const taskId: int): int
     {
-      segments[taskId].addElements(elts);
-      return true;
+      return segments[taskId].addElements(elts);
     }
 
     /*
@@ -823,26 +821,41 @@ module DistributedBag_DFS
         if split_request.read() then split_request.write(false);
       }
       else if split_request.read() then split_release(); */
+
+      return true;
     }
 
-    inline proc addElements(elts)
+    inline proc addElements(elts): int
     {
       const size = elts.size;
+      var realSize = size;
 
-      // allocate a larger block with the double capacity.
+      // allocate a larger block.
       if (block.tailId + size >= block.cap) {
-        const factor: int = log2(size % block.cap) + 1;
+        const neededCap = 2**ceil(log2((size - block.cap):real)):int;
+        if (neededCap >= distributedBagMaxBlockCap) {
+          realSize = distributedBagMaxBlockCap - block.tailId;
+        }
         lock_block$.readFE();
-        block.cap = min(distributedBagMaxBlockCap, 2**factor*block.cap);
+        block.cap = min(distributedBagMaxBlockCap, neededCap);
         block.dom = {0..#block.cap};
         lock_block$.writeEF(true);
       }
 
-      for elt in elts do block.pushTail(elt);
-      tail += size;
+      var c=0;
+      for elt in elts {
+        if (c >= realSize) {
+          break;
+        }
+        block.pushTail(elt);
+        c+=1;
+      }
+      tail += realSize;
 
       // if there is a split request...
       if split_request.read() then split_release();
+
+      return realSize;
     }
 
     // TODO: implement 'addElementsPtr'
