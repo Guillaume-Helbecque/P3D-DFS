@@ -566,7 +566,9 @@ module DistributedBag_DFS
 
             TODO: investigate this in order to remove the patch.
           */
-          when PERFORMANCE_PATCH {}
+          when PERFORMANCE_PATCH {
+            phase = REMOVE_SIMPLE;
+          }
 
           /*
             SIMPLE:
