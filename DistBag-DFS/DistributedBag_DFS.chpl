@@ -78,7 +78,6 @@ module DistributedBag_DFS
   private param REMOVE_SIMPLE        = 1;
   private param REMOVE_LOCAL_STEAL   = 2;
   private param REMOVE_GLOBAL_STEAL  = 3;
-  private param REMOVE_STEAL_REQUEST = 4;
 
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
@@ -551,9 +550,8 @@ module DistributedBag_DFS
     */
     proc remove(const taskId: int): (int, eltType)
     {
-      var phase: int;
-      if (numLocales == 1) then phase = REMOVE_SIMPLE;
-      else phase = REMOVE_STEAL_REQUEST;
+      var phase = REMOVE_SIMPLE;
+      if (numLocales > 1) then phase = PERFORMANCE_PATCH;
 
       ref segment = segments[taskId];
       var default: eltType;
@@ -561,14 +559,13 @@ module DistributedBag_DFS
       while true {
         select phase {
           /*
-            STEAL REQUEST:
-            We first check if there is a pending external steal request. If yes,
-            we take the lead and perform a local steal (as usual), before sending
-            the resulting buffer to the stealer.
+            Without this patch, the WS mechanism is not able to perform well on
+            distributed settings. This could be explained by some bottlenecks, as
+            well as mix-up between priority levels of local and global steals.
+
+            TODO: investigate this in order to remove the patch.
           */
-          when REMOVE_STEAL_REQUEST {
-            phase = REMOVE_SIMPLE;
-          }
+          when PERFORMANCE_PATCH {}
 
           /*
             SIMPLE:
@@ -1055,7 +1052,7 @@ module DistributedBag_DFS
     inline proc pushTail(elt: eltType): void
     {
       elts[tailId] = elt;
-      tailId +=1;
+      tailId += 1;
     }
 
     inline proc popTail(): eltType
