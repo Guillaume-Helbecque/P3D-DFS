@@ -101,17 +101,20 @@ class Problem_Knapsack : Problem
       return 0;
     }
     else {
-      const path = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/knapPI_optimal.txt";
+      if (this.name == "default.txt") then return 1458;
+      else { // Pisinger's instances
+        const path = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/knapPI_optimal.txt";
 
-      var f = open(path, ioMode.r);
-      var channel = f.reader();
+        var f = open(path, ioMode.r);
+        var channel = f.reader();
 
-      var file = channel.read([0..480, 0..1] string);
+        var file = channel.read([0..480, 0..1] string);
 
-      channel.close();
-      f.close();
+        channel.close();
+        f.close();
 
-      return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+        return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+      }
     }
   }
 

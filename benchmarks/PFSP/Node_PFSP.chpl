@@ -3,7 +3,7 @@ module Node_PFSP
   use CTypes;
 
   // Maximum number of jobs in PFSP Taillard's instances.
-  config param JobsMax: int = 20;
+  config param JobsMax: int = 50;
 
   record Node_PFSP
   {

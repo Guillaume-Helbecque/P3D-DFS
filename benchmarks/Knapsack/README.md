@@ -15,6 +15,10 @@ list of profits (delimited with spaces)
 list of weights (delimited with spaces)
 ```
 By default, `default.txt` is solved:
+<!--
+"default.txt" corresponds to instance "p07" of:
+https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
+-->
 ```
 15  750
 135 139 149 150 156 163 173 184 192 201 210 214 221 229 240
