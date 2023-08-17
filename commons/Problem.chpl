@@ -1,7 +1,5 @@
 module Problem
 {
-  use Time;
-
   class Problem
   {
     proc copy()
@@ -30,7 +28,7 @@ module Problem
     }
 
     proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const timer: stopwatch): void
+      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
     {
       halt("Error - print_results() not implemented");
     }

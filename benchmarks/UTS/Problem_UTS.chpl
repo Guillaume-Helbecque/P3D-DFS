@@ -1,6 +1,5 @@
 module Problem_UTS
 {
-  use Time;
   use CTypes;
 
   use Problem;
@@ -142,7 +141,7 @@ module Problem_UTS
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const timer: stopwatch): void
+      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbLeaf: int   = (+ reduce subSolExplored);
@@ -157,7 +156,7 @@ module Problem_UTS
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Tree depth: ", maxDepth);
       /* writeln("Optimal makespan: ", best); */
-      writeln("Elapsed time: ", timer.elapsed(), " [s]");
+      writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================\n");
     }
 

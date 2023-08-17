@@ -195,7 +195,8 @@ module search_distributed
       save_time(numLocales:c_int, globalTimer.elapsed():c_double, path.c_str());
     }
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(), globalTimer);
+    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(),
+      globalTimer.elapsed());
   }
 
 }

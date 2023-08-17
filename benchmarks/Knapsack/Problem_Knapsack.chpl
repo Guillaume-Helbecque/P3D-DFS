@@ -1,6 +1,5 @@
 use IO;
 use List;
-use Time;
 use CTypes;
 use Path;
 
@@ -133,7 +132,7 @@ class Problem_Knapsack : Problem
   }
 
   override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-    const subDepthReached: [] int, const best: int, const timer: stopwatch): void
+    const subDepthReached: [] int, const best: int, const elapsedTime: real): void
   {
     var treeSize: int = (+ reduce subNodeExplored);
     var nbSol: int = (+ reduce subSolExplored);
@@ -146,7 +145,7 @@ class Problem_Knapsack : Problem
     writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
     writeln("Number of explored solutions: ", nbSol);
     /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
-    writeln("Elapsed time: ", timer.elapsed(), " [s]");
+    writeln("Elapsed time: ", elapsedTime, " [s]");
     writeln("=================================================\n");
   }
 

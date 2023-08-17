@@ -2,7 +2,6 @@ module Problem_PFSP
 {
   use aux;
   use List;
-  use Time;
   use Path;
   use CTypes;
 
@@ -302,7 +301,7 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const timer: stopwatch): void
+      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
@@ -315,7 +314,7 @@ module Problem_PFSP
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Optimal makespan: ", best);
-      writeln("Elapsed time: ", timer.elapsed(), " [s]");
+      writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }
 
