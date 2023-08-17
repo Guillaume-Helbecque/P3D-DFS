@@ -114,19 +114,17 @@ module Problem_PFSP
             else return END;
           }
           when "minBranch" {
-            var c1, c2, s1, s2: int;
-            for k in 0..#this.jobs {
-              if (lb_begin[k] > best) then c1 += 1;
-              else s1 += lb_begin[k];
-
-              if (lb_end[k] > best) then c2 += 1;
-              else s2 += lb_end[k];
+            var c, s: int;
+            for i in 0..#this.jobs {
+              if (lb_begin[i] >= best) then c += 1;
+              if (lb_end[i] >= best) then c -= 1;
+              s += (lb_begin[i] - lb_end[i]);
             }
-            if (c1 < c2) then return END;
-            else if (c1 > c2) then return BEGIN;
+            if (c > 0) then return BEGIN;
+            else if (c < 0) then return END;
             else {
-              if (s1 >= s2) then return BEGIN;
-              else return END;
+              if (s < 0) then return END;
+              else return BEGIN;
             }
           }
           otherwise halt("Error - Unsupported branching rule");
