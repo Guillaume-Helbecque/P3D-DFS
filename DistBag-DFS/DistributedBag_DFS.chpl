@@ -1,13 +1,13 @@
 /*
-  A highly parallel segmented multi-pool. Each node gets its own bag, and each
-  bag is segmented into 'here.maxTaskPar' segments. Segments allow for actual
-  parallelism while operating in that it enables us to manage 'best-case',
-  'average-case', and 'worst-case' scenarios by making multiple passes over each
-  segment. In the case where there is no oversubscription, the best-case will
-  always be achieved (considering any other conditions are also met), while in
-  the case of oversubscription or, for example a near empty bag, we fall into
-  the 'average-case', etc. Examples of 'best-case' scenarios for a removal would
-  be when a segment contains some elements we can drain, and the 'average-case'
+  A highly parallel segmented multi-pool for depth-first search (DFS). Each node
+  gets its own bag, and each bag is segmented into 'here.maxTaskPar' segments.
+  Segments allow for actual parallelism while operating in that it enables us to
+  manage 'best-case', 'average-case', and 'worst-case' scenarios by making multiple
+  passes over each segment. In the case where there is no oversubscription, the
+  best-case will always be achieved (considering any other conditions are also met),
+  while in the case of oversubscription or, for example a near empty bag, we fall
+  into the 'average-case', etc. Examples of 'best-case' scenarios for a removal
+  would be when a segment contains some elements we can drain, and the 'average-case'
   would be to find any segment that contains elements we can drain (local work
   stealing), and so on.
 
@@ -35,7 +35,7 @@
   on communication.
 */
 
-/* Implements a highly parallel segmented multi-pool.
+/* Implements a highly parallel segmented multi-pool for depth-first search (DFS).
 
   Summary
   _______
@@ -43,9 +43,9 @@
   A parallel-safe distributed multi-pool implementation that scales in terms of
   nodes, processors per node (PPN), and workload; the more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
-  locality (see: const:`distributedBagInitialSegmentCap`). This data structure is
-  locally ordered and employs its own work stealing (WS) algorithm to balance work
-  across nodes.
+  locality (see :const:`distributedBagInitialSegmentCap`). This data structure is
+  locally ordered (ensuring DFS) and employs its own work stealing algorithm to
+  balance work across nodes.
 
   .. note::
 
@@ -54,7 +54,7 @@
   Usage
   _____
 
-  To use: record:`DistBag_DFS`, the initializer must be invoked explicitly to
+  To use :record:`DistBag_DFS`, the initializer must be invoked explicitly to
   properly initialize the data structure. Using the default state without
   initializing will result in a halt.
 
@@ -168,6 +168,9 @@ module DistributedBag_DFS
   pragma "always RVF"
   record DistBag_DFS
   {
+    /*
+      Type of the elements to store.
+    */
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.
@@ -220,14 +223,14 @@ module DistributedBag_DFS
     forwarding _value;
   } // end 'DistBag_DFS' record
 
-  class DistributedBagImpl : CollectionImpl
+  class DistributedBagImpl : CollectionImpl(?)
   {
     @chpldoc.nodoc
     var targetLocDom: domain(1);
 
-    // TODO: specify what is targetLocDom.
     /*
-      The locales to allocate bag instances for and load balance across.
+      The locales to allocate bags for and load balance across. `targetLocDom`
+      represents the corresponding range of locales.
     */
     var targetLocales: [targetLocDom] locale;
 
@@ -240,6 +243,9 @@ module DistributedBag_DFS
     @chpldoc.nodoc
     var bag: unmanaged Bag(eltType)?;
 
+    /*
+      Initialize an empty :record:`DistBag_DFS`.
+    */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
       super.init(eltType);
@@ -300,8 +306,17 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert an element in segment ``taskId``. The ordering is guaranteed to be
+      Insert an element in segment `taskId`. The ordering is guaranteed to be
       preserved.
+
+      :arg elt: The element to insert.
+      :type elt: `eltType`
+
+      :arg taskId: The index of the segment into which the element is inserted.
+      :type taskId: `int`
+
+      :return: `true` if `elt` is successfully inserted in segment `taskId`.
+      :rtype: `bool`
     */
     proc add(elt: eltType, taskId: int): bool
     {
@@ -309,9 +324,17 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert elements in bulk in segment ``taskId``. If the bag instance rejects
+      Insert elements in bulk in segment `taskId`. If the bag instance rejects
       an element (e.g., when :const:`distributedBagMaxSegmentCap` reached), we cease
       to offer more. We return the number of elements successfully inserted.
+
+      :arg elts: The elements to insert.
+
+      :arg taskId: The index of the segment into which the element is inserted.
+      :type taskId: `int`
+
+      :return: The number of elements successfully inserted in segment `taskId`.
+      :rtype: `int`
     */
     proc addBulk(elts, taskId: int): int
     {
@@ -319,11 +342,21 @@ module DistributedBag_DFS
     }
 
     // TODO: detail WS mechanism and scenarios.
+    // TODO: how to write return in that case ?
     /*
       Remove an element from segment ``taskId``. The order in which elements are
       removed is guaranteed to be the same order they have been inserted. If this
       bag instance is empty, it will attempt to steal elements from bags of other
       nodes.
+
+      :arg taskId: The index of the segment from which the element is removed.
+      :type taskId: `int`
+
+      :return: Three outputs are possible:
+        -
+        -
+        -
+      :rtype: `(int, eltType)`
     */
     proc remove(taskId: int): (int, eltType)
     {
@@ -337,6 +370,9 @@ module DistributedBag_DFS
       This method is best-effort and can be non-deterministic for concurrent
       updates across nodes, and may miss elements or even count duplicates
       resulting from any concurrent insertion or removal operations.
+
+      :return: The current number of elements contained in this DistBag_DFS.
+      :rtype: `int`
     */
     override proc getSize(): int
     {
@@ -352,10 +388,16 @@ module DistributedBag_DFS
 
     // TODO: visit only this bag instance or the whole bag?
     /*
-      Performs a lookup to determine if the requested element exists in this bag.
+      Perform a lookup to determine if the requested element exists in this bag.
       This method is best-effort and can be non-deterministic for concurrent
       updates across nodes, and may miss elements resulting from any concurrent
       insertion or removal operations.
+
+      :arg elt: An element to search for.
+      :type elt: `eltType`
+
+      :return: `true` if this bag contains `elt`.
+      :rtype: `bool`
     */
     override proc contains(elt: eltType): bool
     {
@@ -408,15 +450,17 @@ module DistributedBag_DFS
       operations while iterating, but opens the possibility to iterating over
       duplicates or missing elements from concurrent operations.
 
+      :yields: A reference to one of the elements contained in this DistBag_DFS.
+
       .. note::
 
-      `zip` iteration is not yet supported with rectangular data structures.
+        `zip` iteration is not yet supported with rectangular data structures.
 
       .. warning::
 
-      Iteration takes a snapshot approach, and as such can easily result in a
-      Out-Of-Memory issue. If the data structure is large, the user is doubly
-      advised to use parallel iteration, for both performance and memory benefit.
+        Iteration takes a snapshot approach, and as such can easily result in a
+        Out-Of-Memory issue. If the data structure is large, the user is doubly
+        advised to use parallel iteration, for both performance and memory benefit.
     */
     override iter these(): eltType
     {
@@ -1061,12 +1105,10 @@ module DistributedBag_DFS
   } // end 'Segment' record
 
   /*
-    A segment block is an unrolled linked list node that holds a contiguous buffer
-    of memory. Each segment block size *should* be a power of two, as we increase the
-    size of each subsequent unroll block by twice the size. This is so that stealing
-    work is faster in that majority of elements are confined to one area.
-    It should be noted that the block itself is not parallel-safe, and access must be
-    synchronized.
+    A segment block is a Chapel array that holds a buffer of memory. Each block
+    size *should* be a power of two, as we extend the size of each full block by
+    twice the size. It should be noted that the block itself is not parallel-safe,
+    and access must be synchronized.
   */
   @chpldoc.nodoc
   class Block
