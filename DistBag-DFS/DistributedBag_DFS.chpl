@@ -10,6 +10,7 @@
   be when a segment contains some elements we can drain, and the 'average-case'
   would be to find any segment that contains elements we can drain (local work
   stealing), and so on.
+
   This data structure also employs a bi-level work stealing algorithm (WS) that
   first tries to steal a ratio of elements across local segments, and if it fails,
   it tries a global steal across segments of another bag instance. We steal a ratio
@@ -21,6 +22,7 @@
   operations. Lastly, we attempt to steal a maximum of `N / sizeof(eltType)`, where
   N is some size in megabytes (representing how much data can be sent in one network
   request), which keeps down excessive communication.
+
   This data structure does not come without flaws; as WS is dynamic and triggered
   on demand, WS can still be performed in excess, which dramatically causes a
   performance drop. Furthermore, a severe imbalance across nodes, such as an unfair
@@ -34,29 +36,41 @@
 */
 
 /* Implements a highly parallel segmented multi-pool.
+
   Summary
   _______
+
   A parallel-safe distributed multi-pool implementation that scales in terms of
   nodes, processors per node (PPN), and workload; The more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
   locality (see: const:`distributedBagInitialBlockCap`). This data structure is
   unordered and employs its own work stealing algorithm to balance work across nodes.
+
   .. note::
+
     This module is a work in progress and may change in future releases.
+
   Usage
   _____
+
   To use: record:`DistBag_DFS`, the initializer must be invoked explicitly to
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
+
   .. code-block:: chapel
+
     var bag = new DistBag_DFS(int, targetLocales=ourTargetLocales);
+
   While the bag is safe to use in a distributed manner, each node always operates
   on its privatized instance. This means that it is easy to add data in bulk, expecting
   it to be distributed, when in reality it is not; if another node needs data, it
   will steal work on-demand.
+
   .. code-block:: chapel
+
     bag.addBulk(1..N);
     bag.balance();
+
   Methods
   _______
 */
@@ -70,16 +84,20 @@ module DistributedBag_DFS
   use Math;
 
   /*
-    The phases for operations. An operation is composed of multiple phases,
-    where they make a full pass searching for ideal conditions, then less-than-ideal
-    conditions; this is required to ensure maximized parallelism at all times, and
-    critical to good performance, especially when a node is oversubscribed.
+    The phases of the 'remove' operation. This operation is composed of multiple
+    phases, where they make a full pass searching for ideal conditions, then
+    less-than-ideal conditions; this is required to ensure maximized parallelism
+    at all times, and critical to good performance.
   */
   private param REMOVE_SIMPLE       = 1;
   private param REMOVE_LOCAL_STEAL  = 2;
   private param REMOVE_GLOBAL_STEAL = 3;
   private param PERFORMANCE_PATCH   = 4;
 
+  /*
+    The output phases of the 'remove' operation. They are used to indicate the
+    state of the bag instance: 'empty', waiting for stealing, and not empty.
+  */
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
   private param REMOVE_FAIL      = -1;
@@ -91,6 +109,17 @@ module DistributedBag_DFS
     performance and easier it is to redistribute work.
   */
   config const distributedBagInitialBlockCap: int = 1024;
+  /*
+    The maximum amount of elements in an unroll block. This is crucial to ensure memory
+    usage does not rapidly grow out of control.
+  */
+  config const distributedBagMaxBlockCap: int = 1024 * 1024;
+  /*
+    The minimum number of elements a horizontal segment must have to become eligible
+    to be stolen from. This may be useful if some segments produce less elements than
+    others and should not be stolen from.
+  */
+  config const distributedBagWorkStealingMinElts: int = 1;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
     (hence creating an artificial load imbalance), if the other node's segment has
@@ -109,20 +138,9 @@ module DistributedBag_DFS
     have a maximum of 125,000 elements stolen at once.
   */
   config const distributedBagWorkStealingMemCap: real = 1.0;
-  /*
-    The minimum number of elements a horizontal segment must have to become eligible
-    to be stolen from. This may be useful if some segments produce less elements than
-    others and should not be stolen from.
-  */
-  config const distributedBagWorkStealingMinElts: int = 1;
-  /*
-    The maximum amount of elements in an unroll block. This is crucial to ensure memory
-    usage does not rapidly grow out of control.
-  */
-  config const distributedBagMaxBlockCap: int = 1024 * 1024;
 
   /*
-    Reference counter for DistributedBag_DFS
+    Reference counter for DistributedBag_DFS.
   */
   @chpldoc.nodoc
   class DistributedBagRC
@@ -206,16 +224,18 @@ module DistributedBag_DFS
     @chpldoc.nodoc
     var targetLocDom: domain(1);
 
+    // TODO: specify what is targetLocDom.
     /*
-      The locales to allocate bags for and load balance across.
+      The locales to allocate bag instances for and load balance across.
     */
     var targetLocales: [targetLocDom] locale;
 
     @chpldoc.nodoc
     var pid: int = -1;
 
-    // Node-local fields below. These fields are specific to the privatized instance.
-    // To access them from another node, make sure you use 'getPrivatizedThis'
+    // Node-local fields below. These fields are specific to the privatized bag
+    // instance. To access them from another node, make sure you use
+    // 'getPrivatizedThis'.
     @chpldoc.nodoc
     var bag: unmanaged Bag(eltType)?;
 
@@ -279,7 +299,8 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert an element in the calling task's segment of this node's bag.
+      Insert an element in segment ``taskId``. The ordering is guaranteed to be
+      preserved.
     */
     proc add(elt: eltType, taskId: int): bool
     {
@@ -287,19 +308,21 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert elements in bulk in the calling thread's segment of this node's bag.
-      If the node's bag rejects an element, we cease to offer more. We return the
-      number of elements successfully added to this data structure.
+      Insert elements in bulk in segment ``taskId``. If the bag instance rejects
+      an element (e.g., when :const:distributedBagMaxBlockCap reached), we cease
+      to offer more. We return the number of elements successfully inserted.
     */
     proc addBulk(elts, taskId: int): int
     {
       return bag!.addBulk(elts, taskId);
     }
 
+    // TODO: detail WS mechanism and scenarios.
     /*
-      Remove an element from the calling thread's segment of this node's bag.
-      If the thread's segment is empty, it will attempt to steal an element from
-      the segment of another thread or node.
+      Remove an element from segment ``taskId``. The order in which elements are
+      removed is guaranteed to be the same order they have been inserted. If this
+      bag instance is empty, it will attempt to steal elements from bags of other
+      nodes.
     */
     proc remove(taskId: int): (int, eltType)
     {
@@ -309,10 +332,10 @@ module DistributedBag_DFS
     // TODO: implement 'removeBulk'
 
     /*
-      Obtain the number of elements held in all bags across all nodes. This method
-      is best-effort and can be non-deterministic for concurrent updates across nodes,
-      and may miss elements or even count duplicates resulting from any concurrent
-      insertion or removal operations.
+      Obtain the number of elements held in all bag instances across all nodes.
+      This method is best-effort and can be non-deterministic for concurrent
+      updates across nodes, and may miss elements or even count duplicates
+      resulting from any concurrent insertion or removal operations.
     */
     override proc getSize(): int
     {
@@ -326,6 +349,7 @@ module DistributedBag_DFS
       return size.read();
     }
 
+    // TODO: visit only this bag instance or the whole bag?
     /*
       Performs a lookup to determine if the requested element exists in this bag.
       This method is best-effort and can be non-deterministic for concurrent
@@ -343,8 +367,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Clear all bags across all nodes in a best-effort approach. Elements added or
-      moved around from concurrent additions or removals may be missed while clearing.
+      Clear all bag instances across all nodes in a best-effort approach. Elements
+      added or moved around from concurrent additions or removals may be missed
+      while clearing.
     */
     override proc clear(): void
     {
@@ -373,25 +398,24 @@ module DistributedBag_DFS
       }
     }
 
-    /*
-      Triggers a more static approach to load balancing, fairly redistributing all
-      elements fairly for bags across nodes. The result will result in all segments
-      having roughly the same amount of elements.
-    */
     // TODO: is 'balance' needed?
 
     /*
-      Iterate over each bag in each node. To avoid holding onto locks, we take
-      a snapshot approach, increasing memory consumption but also increasing parallelism.
-      This allows other concurrent, even mutating, operations while iterating,
-      but opens the possibility to iterating over duplicates or missing elements
-      from concurrent operations.
+      Iterate over each bag instance in each node. To avoid holding onto locks,
+      we take a snapshot approach, increasing memory consumption but also
+      increasing parallelism. This allows other concurrent, even mutating,
+      operations while iterating, but opens the possibility to iterating over
+      duplicates or missing elements from concurrent operations.
+
       .. note::
+
       `zip` iteration is not yet supported with rectangular data structures.
+
       .. warning::
+
       Iteration takes a snapshot approach, and as such can easily result in a
-      Out-Of-Memory issue. If the data structure is large, the user is doubly advised to use
-      parallel iteration, for both performance and memory benefit.
+      Out-Of-Memory issue. If the data structure is large, the user is doubly
+      advised to use parallel iteration, for both performance and memory benefit.
     */
     override iter these(): eltType
     {
