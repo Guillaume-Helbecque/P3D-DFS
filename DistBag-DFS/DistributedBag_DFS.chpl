@@ -75,10 +75,10 @@ module DistributedBag_DFS
     conditions; this is required to ensure maximized parallelism at all times, and
     critical to good performance, especially when a node is oversubscribed.
   */
-  private param REMOVE_SIMPLE        = 1;
-  private param REMOVE_LOCAL_STEAL   = 2;
-  private param REMOVE_GLOBAL_STEAL  = 3;
-  private param PERFORMANCE_PATCH    = 4;
+  private param REMOVE_SIMPLE       = 1;
+  private param REMOVE_LOCAL_STEAL  = 2;
+  private param REMOVE_GLOBAL_STEAL = 3;
+  private param PERFORMANCE_PATCH   = 4;
 
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
