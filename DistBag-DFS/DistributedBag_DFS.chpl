@@ -41,10 +41,11 @@
   _______
 
   A parallel-safe distributed multi-pool implementation that scales in terms of
-  nodes, processors per node (PPN), and workload; The more PPN, the more segments
+  nodes, processors per node (PPN), and workload; the more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
-  locality (see: const:`distributedBagInitialBlockCap`). This data structure is
-  unordered and employs its own work stealing algorithm to balance work across nodes.
+  locality (see: const:`distributedBagInitialSegmentCap`). This data structure is
+  locally ordered and employs its own work stealing (WS) algorithm to balance work
+  across nodes.
 
   .. note::
 
@@ -54,22 +55,22 @@
   _____
 
   To use: record:`DistBag_DFS`, the initializer must be invoked explicitly to
-  properly initialize the structure. Using the default state without initializing
-  will result in a halt.
+  properly initialize the data structure. Using the default state without
+  initializing will result in a halt.
 
   .. code-block:: chapel
 
     var bag = new DistBag_DFS(int, targetLocales=ourTargetLocales);
 
   While the bag is safe to use in a distributed manner, each node always operates
-  on its privatized instance. This means that it is easy to add data in bulk, expecting
-  it to be distributed, when in reality it is not; if another node needs data, it
-  will steal work on-demand.
+  on its privatized instance. This means that it is easy to add data in bulk,
+  expecting it to be distributed, when in reality it is not; if another node needs
+  data, it will steal work on-demand.
 
   .. code-block:: chapel
 
-    bag.addBulk(1..N);
-    bag.balance();
+    bag.addBulk(1..N, 0); // inserted in segment 0
+    bag.remove(0);
 
   Methods
   _______
@@ -103,41 +104,40 @@ module DistributedBag_DFS
   private param REMOVE_FAIL      = -1;
 
   /*
-    The initial amount of elements in an unroll block. Each successive unroll block
-    is double the size of it's predecessor, allowing for better locality for when
-    there are larger numbers of elements. The better the locality, the better raw
-    performance and easier it is to redistribute work.
+    The initial capacity of the segments. When a segment is full, we double its
+    capacity.
   */
-  config const distributedBagInitialBlockCap: int = 1024;
+  config const distributedBagInitialSegmentCap: int = 1024;
   /*
-    The maximum amount of elements in an unroll block. This is crucial to ensure memory
-    usage does not rapidly grow out of control.
+    The maximum capacity of the segments. This is crucial to ensure memory usage
+    does not grow out of control.
   */
-  config const distributedBagMaxBlockCap: int = 1024 * 1024;
+  config const distributedBagMaxSegmentCap: int = 1024 * 1024;
   /*
-    The minimum number of elements a horizontal segment must have to become eligible
-    to be stolen from. This may be useful if some segments produce less elements than
+    The minimum number of elements a segment must have to become eligible to be
+    stolen from. This may be useful if some segments contain less elements than
     others and should not be stolen from.
   */
   config const distributedBagWorkStealingMinElts: int = 1;
   /*
-    To prevent stealing too many elements (horizontally) from another node's segment
-    (hence creating an artificial load imbalance), if the other node's segment has
-    less than a certain threshold (see :const:`distributedBagWorkStealingMemCap`) but above
-    another threshold (see :const:`distributedBagWorkStealingMinElems`), we steal a percentage of their
-    elements, leaving them with majority of their elements. This way, the amount the
-    other segment loses is proportional to how much it owns, ensuring a balance.
-  */
-  config const distributedBagWorkStealingRatio: real = 0.25;
-  /*
-    The maximum amount of work to steal from a horizontal node's segment. This
-    should be set to a value, in megabytes, that determines the maximum amount of
-    data that should be sent in bulk at once. The maximum number of elements is
-    determined by: (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(eltType).
+    The maximum amount of work to steal from a segment. This should be set to a
+    value, in megabytes, that determines the maximum amount of data that should
+    be sent in bulk at once. The maximum number of elements is determined by:
+    (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(eltType).
     For example, if we are storing 8-byte integers and have a 1MB limit, we would
     have a maximum of 125,000 elements stolen at once.
   */
   config const distributedBagWorkStealingMemCap: real = 1.0;
+  /*
+    To prevent stealing too many elements from another segment (hence creating an
+    artificial load imbalance), if the segment has less than a certain threshold
+    (see :const:`distributedBagWorkStealingMemCap`) but above another threshold
+    (see :const:`distributedBagWorkStealingMinElts`), we steal a percentage of
+    their elements, leaving them with majority of their elements. This way, the
+    amount the other segment loses is proportional to how much it owns, ensuring
+    a balance.
+  */
+  config const distributedBagWorkStealingRatio: real = 0.25;
 
   /*
     Reference counter for DistributedBag_DFS.
@@ -157,12 +157,13 @@ module DistributedBag_DFS
   }
 
   /*
-    A parallel-safe distributed multiset implementation that scales in terms of
+    A parallel-safe distributed multi-pool implementation that scales in terms of
     nodes, processors per node (PPN), and workload; The more PPN, the more segments
     we allocate to increase raw parallelism, and the larger the workload the better
-    locality (see :const:`distributedBagInitialBlockCap`). This data structure is unordered and employs
-    its own work-stealing algorithm, and provides a means to obtain a privatized instance of
-    the data structure for maximized performance.
+    locality (see :const:`distributedBagInitialSegmentCap`). This data structure
+    is locally ordered and employs its own work-stealing algorithm, and provides
+    a means to obtain a privatized instance of the data structure for maximized
+    performance.
   */
   pragma "always RVF"
   record DistBag_DFS
@@ -309,7 +310,7 @@ module DistributedBag_DFS
 
     /*
       Insert elements in bulk in segment ``taskId``. If the bag instance rejects
-      an element (e.g., when :const:distributedBagMaxBlockCap reached), we cease
+      an element (e.g., when :const:`distributedBagMaxSegmentCap` reached), we cease
       to offer more. We return the number of elements successfully inserted.
     */
     proc addBulk(elts, taskId: int): int
@@ -381,7 +382,7 @@ module DistributedBag_DFS
           segment.lock_block$.readFE();
 
           delete segment.block;
-          segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+          segment.block = new unmanaged Block(eltType, distributedBagInitialSegmentCap);
           segment.nElts_shared.write(0);
           segment.head.write(0);
           segment.split.write(0);
@@ -481,7 +482,7 @@ module DistributedBag_DFS
   } // end 'DistributedBagImpl' class
 
   /*
-    We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
+    We maintain a multiset 'bag' per node. Each bag keeps a handle to its parent,
     which is required for work stealing.
   */
   @chpldoc.nodoc
@@ -511,7 +512,8 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation.
+      Insert an element in segment ``taskId``. The ordering is guaranteed to be
+      preserved.
     */
     proc add(elt: eltType, const taskId: int): bool
     {
@@ -519,7 +521,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation in bulk.
+      Insert elements in bulk in segment ``taskId``. If the bag instance rejects
+      an element (e.g., when :const:distributedBagMaxSegmentCap reached), we cease
+      to offer more. We return the number of elements successfully inserted.
     */
     proc addBulk(elts, const taskId: int): int
     {
@@ -562,7 +566,7 @@ module DistributedBag_DFS
             id += 1;
           }
         }
-        otherwise halt("DistributedBag_DFS internal error: Wrong victim choice policy");
+        otherwise halt("DistributedBag_DFS internal error: Unknown victim choice policy");
       }
     }
 
@@ -697,7 +701,7 @@ module DistributedBag_DFS
                   //var sharedElts: int = targetSegment.nElems_shared.read();
                   // if the shared region contains enough elements to be stolen...
                   targetSegment.lock_block$.readFE();
-                  if (1 < targetSegment.nElts_shared.read()) {
+                  if (distributedBagWorkStealingMinElts < targetSegment.nElts_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
                       var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
@@ -745,7 +749,7 @@ module DistributedBag_DFS
   } // end 'Bag' class
 
   /*
-    A Segment is, in and of itself an unrolled linked list. We maintain one per core
+    A bag segment is, in and of itself an unrolled linked list. We maintain one per core
     to ensure maximum parallelism.
   */
   @chpldoc.nodoc
@@ -777,7 +781,7 @@ module DistributedBag_DFS
     proc init(type eltType)
     {
       this.eltType = eltType;
-      this.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+      this.block = new unmanaged Block(eltType, distributedBagInitialSegmentCap);
     }
 
     /*
@@ -805,16 +809,16 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation, only executed by the segment's owner.
+      Insert an element in the segment.
     */
     inline proc addElement(elt: eltType): bool
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
-        if (block.cap == distributedBagMaxBlockCap) then
+        if (block.cap == distributedBagMaxSegmentCap) then
           return false;
         lock_block$.readFE();
-        block.cap = min(distributedBagMaxBlockCap, 2*block.cap);
+        block.cap = min(distributedBagMaxSegmentCap, 2*block.cap);
         block.dom = {0..#block.cap};
         lock_block$.writeEF(true);
       }
@@ -841,6 +845,11 @@ module DistributedBag_DFS
       return true;
     }
 
+    /*
+      Insert elements in the segment. If the bag instance rejects an element (e.g.,
+      when :const:distributedBagMaxSegmentCap reached), we cease to offer more. We
+      return the number of elements successfully inserted.
+    */
     inline proc addElements(elts): int
     {
       const size = elts.size;
@@ -850,11 +859,11 @@ module DistributedBag_DFS
       if (block.tailId + size > block.cap) {
         //TODO: use divceilpos?
         const neededCap = block.cap*2**divceil(block.tailId + size, block.cap);
-        if (neededCap >= distributedBagMaxBlockCap) {
-          realSize = distributedBagMaxBlockCap - block.tailId;
+        if (neededCap >= distributedBagMaxSegmentCap) {
+          realSize = distributedBagMaxSegmentCap - block.tailId;
         }
         lock_block$.readFE();
-        block.cap = min(distributedBagMaxBlockCap, neededCap);
+        block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
         lock_block$.writeEF(true);
       }
@@ -877,7 +886,7 @@ module DistributedBag_DFS
     // TODO: implement 'addElementsPtr'
 
     /*
-      Retrieve operation, only executed by the segment's owner.
+      Remove an element from the segment.
     */
     inline proc takeElement(): (bool, eltType)
     {
@@ -919,7 +928,12 @@ module DistributedBag_DFS
 
     // TODO: implement 'transferElements'
 
-    inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
+    /*
+      Perform simultaneously two 'compareAndSwap' operations. This ensures that
+      both atomic variables 'A' and 'B' are accessed at the same time.
+    */
+    inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
+      desA: int, desB: int): bool
     {
       var casA, casB: bool;
       lock$.readFE(); // set locked (empty)
@@ -939,7 +953,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Stealing operation, only executed by thieves.
+      Steal an element in that segment.
     */
     inline proc stealElement(): (bool, eltType)
     {
@@ -979,7 +993,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Grow operation that increases the shared space of the deque.
+      Increase the shared region of the segment (and decrease the private one).
     */
     inline proc split_release(): void
     {
@@ -1004,7 +1018,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Shrink operation that reduces the shared space of the deque.
+      Decrease the shared region of the segment (and increase the private one).
     */
     inline proc split_reacquire(): bool
     {
@@ -1060,7 +1074,7 @@ module DistributedBag_DFS
     type eltType;
     var dom: domain(1);
     var elts: [dom] eltType;
-    var cap: int; // capacity of the block
+    var cap: int;    // capacity of the block
     var headId: int; // index of the head element
     var tailId: int; // index of the tail element
 
