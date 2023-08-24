@@ -223,7 +223,7 @@ module DistributedBag_DFS
     forwarding _value;
   } // end 'DistBag_DFS' record
 
-  class DistributedBagImpl : CollectionImpl(?)
+  class DistributedBagImpl : CollectionImpl
   {
     @chpldoc.nodoc
     var targetLocDom: domain(1);
@@ -386,17 +386,16 @@ module DistributedBag_DFS
       return size.read();
     }
 
-    // TODO: visit only this bag instance or the whole bag?
     /*
-      Perform a lookup to determine if the requested element exists in this bag.
-      This method is best-effort and can be non-deterministic for concurrent
-      updates across nodes, and may miss elements resulting from any concurrent
-      insertion or removal operations.
+      Perform a lookup to determine if the requested element exists in this
+      DistBag_DFS. This method is best-effort and can be non-deterministic for
+      concurrent updates across nodes, and may miss elements resulting from any
+      concurrent insertion or removal operations.
 
       :arg elt: An element to search for.
       :type elt: `eltType`
 
-      :return: `true` if this bag contains `elt`.
+      :return: `true` if this DistBag_DFS contains `elt`.
       :rtype: `bool`
     */
     override proc contains(elt: eltType): bool
@@ -927,7 +926,39 @@ module DistributedBag_DFS
       return realSize;
     }
 
-    // TODO: implement 'addElementsPtr'
+    /*
+      Insert elements in the segment using pointer. If the bag instance rejects
+      an element (e.g., when :const:distributedBagMaxSegmentCap reached), we cease
+      to offer more. We return the number of elements successfully inserted.
+    */
+    /* inline proc addElementsPtr(eltsPtr, n, locId = here.id): int
+    {
+      var realSize = n;
+
+      // allocate a larger block.
+      if (block.tailId + n > block.cap) {
+        //TODO: use divceilpos?
+        const neededCap = block.cap*2**divceil(block.tailId + n, block.cap);
+        if (neededCap >= distributedBagMaxSegmentCap) {
+          realSize = distributedBagMaxSegmentCap - block.tailId;
+        }
+        lock_block$.readFE();
+        block.cap = min(distributedBagMaxSegmentCap, neededCap);
+        block.dom = {0..#block.cap};
+        lock_block$.writeEF(true);
+      }
+
+      writeln(realSize);
+      writeln(block.tailId);
+      writeln(block.cap);
+      __primitive("chpl_comm_array_get", block.elts[block.tailId], locId, eltsPtr[0], realSize);
+      tail += realSize;
+
+      // if there is a split request...
+      if split_request.read() then split_release();
+
+      return realSize;
+    } */
 
     /*
       Remove an element from the segment.
