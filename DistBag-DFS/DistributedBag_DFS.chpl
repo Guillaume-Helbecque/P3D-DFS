@@ -44,8 +44,9 @@
   nodes, processors per node (PPN), and workload; the more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
   locality (see :const:`distributedBagInitialSegmentCap`). This data structure is
-  locally ordered (ensuring DFS) and employs its own work stealing algorithm to
-  balance work across nodes.
+  locally ordered (ensuring DFS), employs its own work stealing algorithm to
+  balance work across nodes, and provides a means to obtain a privatized instance
+  of the data structure for maximized performance.
 
   .. note::
 
@@ -69,8 +70,9 @@
 
   .. code-block:: chapel
 
-    bag.addBulk(1..N, 0); // inserted in segment 0
-    bag.remove(0);
+    bag.add(1, i);        // inserted in segment i
+    bag.addBulk(2..N, j); // inserted in segment j
+    bag.remove(k);        // removed from segment k
 
   Methods
   _______
@@ -97,19 +99,19 @@ module DistributedBag_DFS
 
   /*
     The output phases of the 'remove' operation. They are used to indicate the
-    state of the bag instance: 'empty', waiting for stealing, and not empty.
+    final state of the operation: success, steal in progress, or fail.
   */
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
   private param REMOVE_FAIL      = -1;
 
   /*
-    The initial capacity of the segments. When a segment is full, we double its
+    The initial capacity of each segment. When a segment is full, we double its
     capacity.
   */
   config const distributedBagInitialSegmentCap: int = 1024;
   /*
-    The maximum capacity of the segments. This is crucial to ensure memory usage
+    The maximum capacity of each segment. This is crucial to ensure memory usage
     does not grow out of control.
   */
   config const distributedBagMaxSegmentCap: int = 1024 * 1024;
@@ -158,18 +160,18 @@ module DistributedBag_DFS
 
   /*
     A parallel-safe distributed multi-pool implementation that scales in terms of
-    nodes, processors per node (PPN), and workload; The more PPN, the more segments
+    nodes, processors per node (PPN), and workload; the more PPN, the more segments
     we allocate to increase raw parallelism, and the larger the workload the better
     locality (see :const:`distributedBagInitialSegmentCap`). This data structure
-    is locally ordered and employs its own work-stealing algorithm, and provides
-    a means to obtain a privatized instance of the data structure for maximized
-    performance.
+    is locally ordered (ensuring DFS), employs its own work-stealing algorithm to
+    balance work across nodes, and provides a means to obtain a privatized instance
+    of the data structure for maximized performance.
   */
   pragma "always RVF"
   record DistBag_DFS
   {
     /*
-      Type of the elements to store.
+      The type of the elements contained in this DistBag_DFS.
     */
     type eltType;
 
@@ -208,7 +210,7 @@ module DistributedBag_DFS
       compilerError("Reading a DistBag_DFS is not supported");
     }
 
-    // Write the contents of DistBag_DFS to a channel.
+    // Write the contents of this DistBag_DFS to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
@@ -244,7 +246,7 @@ module DistributedBag_DFS
     var bag: unmanaged Bag(eltType)?;
 
     /*
-      Initialize an empty :record:`DistBag_DFS`.
+      Initialize an empty DistBag_DFS.
     */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
@@ -325,8 +327,8 @@ module DistributedBag_DFS
 
     /*
       Insert elements in bulk in segment `taskId`. If the bag instance rejects
-      an element (e.g., when :const:`distributedBagMaxSegmentCap` reached), we cease
-      to offer more. We return the number of elements successfully inserted.
+      an element (e.g., when :const:`distributedBagMaxSegmentCap` is reached), we
+      cease to offer more. We return the number of elements successfully inserted.
 
       :arg elts: The elements to insert.
 
@@ -342,7 +344,7 @@ module DistributedBag_DFS
     }
 
     // TODO: detail WS mechanism and scenarios.
-    // TODO: how to write return in that case ?
+    // TODO: how to better write :return: in that case ?
     /*
       Remove an element from segment ``taskId``. The order in which elements are
       removed is guaranteed to be the same order they have been inserted. If this
@@ -352,10 +354,8 @@ module DistributedBag_DFS
       :arg taskId: The index of the segment from which the element is removed.
       :type taskId: `int`
 
-      :return: Three outputs are possible:
-        -
-        -
-        -
+      :return: 2-tuple containing the final status of the operation: success (=1),
+      fast exit (=0) or fail (=-1), and the retrieved element, if any.
       :rtype: `(int, eltType)`
     */
     proc remove(taskId: int): (int, eltType)
@@ -366,10 +366,10 @@ module DistributedBag_DFS
     // TODO: implement 'removeBulk'
 
     /*
-      Obtain the number of elements held in all bag instances across all nodes.
-      This method is best-effort and can be non-deterministic for concurrent
-      updates across nodes, and may miss elements or even count duplicates
-      resulting from any concurrent insertion or removal operations.
+      Obtain the number of elements held in this DistBag_DFS. This method is
+      best-effort and can be non-deterministic for concurrent updates across
+      nodes, and may miss elements or even count duplicates resulting from any
+      concurrent insertion or removal operations.
 
       :return: The current number of elements contained in this DistBag_DFS.
       :rtype: `int`
@@ -409,9 +409,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Clear all bag instances across all nodes in a best-effort approach. Elements
-      added or moved around from concurrent additions or removals may be missed
-      while clearing.
+      Clear this DistBag_DFS. This method is best-effort and can be
+      non-deterministic for concurrent updates across nodes, and may miss elements
+      resulting from any concurrent insertion or removal operations.
     */
     override proc clear(): void
     {
@@ -443,7 +443,7 @@ module DistributedBag_DFS
     // TODO: is 'balance' needed?
 
     /*
-      Iterate over each bag instance in each node. To avoid holding onto locks,
+      Iterate over the elements of this DistBag_DFS. To avoid holding onto locks,
       we take a snapshot approach, increasing memory consumption but also
       increasing parallelism. This allows other concurrent, even mutating,
       operations while iterating, but opens the possibility to iterating over
@@ -484,7 +484,7 @@ module DistributedBag_DFS
       }
     }
 
-    // UNUSED (these)
+    @chpldoc.nodoc
     /* iter these(param tag : iterKind) where tag == iterKind.leader
     {
       coforall loc in targetLocales do on loc {
@@ -514,7 +514,7 @@ module DistributedBag_DFS
       }
     } */
 
-    // UNUSED (these)
+    @chpldoc.nodoc
     /* iter these(param tag : iterKind, followThis) where tag == iterKind.follower
     {
       var (bufferSz, buffer) = followThis;
@@ -525,7 +525,7 @@ module DistributedBag_DFS
   } // end 'DistributedBagImpl' class
 
   /*
-    We maintain a multiset 'bag' per node. Each bag keeps a handle to its parent,
+    We maintain a multi-pool 'bag' per node. Each bag keeps a handle to its parent,
     which is required for work stealing.
   */
   @chpldoc.nodoc
@@ -545,7 +545,7 @@ module DistributedBag_DFS
       this.eltType = eltType;
       this.parentHandle = parentHandle;
       // KNOWN ISSUE: 'this.complete' produces an error when 'eltType' is a Chapel
-      // array (see Github issue #19859)
+      // array (see Github issue #19859).
     }
 
     proc deinit()
@@ -565,8 +565,8 @@ module DistributedBag_DFS
 
     /*
       Insert elements in bulk in segment ``taskId``. If the bag instance rejects
-      an element (e.g., when :const:distributedBagMaxSegmentCap reached), we cease
-      to offer more. We return the number of elements successfully inserted.
+      an element (e.g., when :const:distributedBagMaxSegmentCap isreached), we
+      cease to offer more. We return the number of elements successfully inserted.
     */
     proc addBulk(elts, const taskId: int): int
     {
@@ -574,12 +574,13 @@ module DistributedBag_DFS
     }
 
     /*
-      This iterator is intented to select victim(s) in work-stealing strategies,
-      according to the specified policy. By default, the 'rand' strategy is chosen and
-      the calling thread/locale cannot be chosen. We can specify how many tries we want,
-      by default, only 1 is performed.
+      Iterate over the segments/locales eligible to be stolen from, according to
+      the specified policy. By default, the random strategy is chosen and the
+      calling thread/locale cannot be chosen. We can specify how many tries we
+      want, by default, only 1 is performed.
     */
-    iter victim(const N: int, const callerId: int, const policy: string = "rand", const tries: int = 1): int
+    iter victim(const N: int, const callerId: int, const policy: string = "rand",
+      const tries: int = 1): int
     {
       var count: int;
       var limit: int = if (callerId == -1) then N else N-1;
@@ -614,11 +615,10 @@ module DistributedBag_DFS
     }
 
     /*
-      Retrieval operation that succeeds when one of the three successives case
-      succeeds. In BEST CASE, the caller try to remove an element from its segment.
-      In AVERAGE CASE, the caller try to steal another segment of its bag instance.
-      In WORST CASE, the caller try to steal another segment of another bag instance.
-      The operation fails if all cases failed.
+      Remove an element from segment ``taskId``. The order in which elements are
+      removed is guaranteed to be the same order they have been inserted. If this
+      bag instance is empty, it will attempt to steal elements from bags of other
+      nodes.
     */
     proc remove(const taskId: int): (int, eltType)
     {
@@ -642,15 +642,11 @@ module DistributedBag_DFS
           }
 
           /*
-            SIMPLE:
-            We try to retrieve an element in segment 'threadId'. Retrieval is done
-            at the tail of the segment's block. This try fails if the private region
-            is empty.
+            Try to remove an element in segment 'taskId'. This fails if its private
+            region is empty.
           */
           when REMOVE_SIMPLE {
-            // if the private region contains at least one element to be removed...
             if (segment.nElts_private > 0) {
-              // attempt to remove an element
               var (hasWork, elt): (bool, eltType) = segment.takeElement();
 
               if hasWork then return (REMOVE_SUCCESS, elt);
@@ -662,41 +658,28 @@ module DistributedBag_DFS
           }
 
           /*
-            LOCAL STEAL: intra-node work stealing
-            It seems that segment 'threadId' is empty so we try to steal another one.
-            The victim selection is set in the 'victim' iterator, and defaults to random.
-            The work stealing fails when all segments don't satisfied the condition to be
-            a victim, or when a shared region becomes empty due to a concurrent operation.
+            Try a local work stealing. This fails if all the eligible victims
+            cannot release elements, or fast exits if a global work stealing is
+            in progress in the bag instance.
           */
           when REMOVE_LOCAL_STEAL {
             var splitreq: bool = false;
 
-            // fast exit if: (1) a segment of our bag instance is doing a global steal
-            // (2) a global steal is performed on our segment (priority is given).
-            // if globalStealInProgress.read() then return (REMOVE_FAST_EXIT, default);
+            if globalStealInProgress.read() then return (REMOVE_FAST_EXIT, default);
 
-            if globalStealInProgress.read() {
-              return (REMOVE_FAST_EXIT, default);
-            }
-
-            // selection of the victim segment
             for victimTaskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
               ref targetSegment = segments[victimTaskId];
 
               if !targetSegment.globalSteal.read() {
                 targetSegment.lock_block$.readFE();
-                // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
-                  // attempt to steal an element
                   var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
 
-                  // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
                     targetSegment.lock_block$.writeEF(true);
                     return (REMOVE_SUCCESS, elt);
                   }
                 }
-                // otherwise, if the private region has elements, we request for a split shifting
                 else if (targetSegment.nElts_private > 1) {
                   splitreq = true;
                   targetSegment.split_request.write(true);
@@ -711,13 +694,9 @@ module DistributedBag_DFS
           }
 
           /*
-            GLOBAL STEAL: inter-node work stealing
-            The caller fails to remove an element on its bag instance, so we try
-            to steal another bag. The victim selection of the locale is set in the
-            'victim' iterator, and the segments are then visited in a 'ring' fashion.
-            The inter-node work stealing fails when all segments of all locales don't
-            satisfied the condition to be a victim, or when a shared region becomes
-            empty due to a concurrent operation.
+            Try a global work stealing. This fails if all the eligible victims
+            cannot release elements, or fast exits if a global work stealing is
+            in progress in the bag instance.
           */
           when REMOVE_GLOBAL_STEAL {
             // fast exit for single-node execution
@@ -731,31 +710,22 @@ module DistributedBag_DFS
             const parentPid = parentHandle.pid;
             var stolenElts: list(eltType);
 
-            // selection of the victim locale
             for victimLocaleId in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
               on Locales[victimLocaleId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
-                // selection of the victim segment
                 for victimTaskId in victim(here.maxTaskPar, -1, "rand", here.maxTaskPar) { //0..#here.maxTaskPar {
                   ref targetSegment = targetBag!.segments[victimTaskId];
 
                   targetSegment.globalSteal.write(true);
 
-                  //var sharedElts: int = targetSegment.nElems_shared.read();
-                  // if the shared region contains enough elements to be stolen...
                   targetSegment.lock_block$.readFE();
                   if (distributedBagWorkStealingMinElts < targetSegment.nElts_shared.read()) {
-                    //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
-                      // attempt to steal an element
-                      var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
+                    var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
 
-                      // if the steal succeeds...
-                      if hasElt {
-                        stolenElts.insert(0, elt);
-                      }
-                  //  }
+                    if hasElt {
+                      stolenElts.insert(0, elt);
+                    }
                   }
-                  // otherwise, if the private region has elements, we request for a split shifting
                   else if (targetSegment.nElts_private > 1) {
                     targetSegment.split_request.write(true);
                   }
@@ -766,17 +736,12 @@ module DistributedBag_DFS
               }
             }
 
-            // if the global steal fails...
             if (stolenElts.size == 0) {
-              // "Unlock" the global steal operation
               globalStealInProgress.write(false);
               return (REMOVE_FAIL, default);
             }
             else {
               segment.addElements(stolenElts);
-              //segments[taskId].split.add((3*stolenElts.size/4):int);
-
-              // "Unlock" the global steal operation
               globalStealInProgress.write(false);
               return (REMOVE_SUCCESS, segment.takeElement()[1]);
             }
@@ -792,8 +757,8 @@ module DistributedBag_DFS
   } // end 'Bag' class
 
   /*
-    A bag segment is, in and of itself an unrolled linked list. We maintain one per core
-    to ensure maximum parallelism.
+    A bag segment is, in and of itself an unrolled linked list. We maintain one
+    per core to ensure maximum parallelism.
   */
   @chpldoc.nodoc
   record Segment
@@ -828,20 +793,24 @@ module DistributedBag_DFS
     }
 
     /*
-      Returns the size of the private region. This information is computed from the
-      tail and split pointers, and since the block is implemented as a  circular
-      array, two cases need to be distinguished.
+      Return the size of the private region of the segment only.
     */
     inline proc nElts_private
     {
       return tail - o_split;
     }
 
+    /*
+      Return the size of the segment.
+    */
     inline proc nElts
     {
       return nElts_private + nElts_shared.read();
     }
 
+    /*
+      Check if the segment is empty.
+    */
     inline proc isEmpty
     {
       lock_n$.readFE();
@@ -890,8 +859,8 @@ module DistributedBag_DFS
 
     /*
       Insert elements in the segment. If the bag instance rejects an element (e.g.,
-      when :const:distributedBagMaxSegmentCap reached), we cease to offer more. We
-      return the number of elements successfully inserted.
+      when :const:distributedBagMaxSegmentCap is reached), we cease to offer more.
+      We return the number of elements successfully inserted.
     */
     inline proc addElements(elts): int
     {
@@ -928,8 +897,8 @@ module DistributedBag_DFS
 
     /*
       Insert elements in the segment using pointer. If the bag instance rejects
-      an element (e.g., when :const:distributedBagMaxSegmentCap reached), we cease
-      to offer more. We return the number of elements successfully inserted.
+      an element (e.g., when :const:distributedBagMaxSegmentCap is reached), we
+      cease to offer more. We return the number of elements successfully inserted.
     */
     /* inline proc addElementsPtr(eltsPtr, n, locId = here.id): int
     {
@@ -1005,7 +974,7 @@ module DistributedBag_DFS
 
     /*
       Perform simultaneously two 'compareAndSwap' operations. This ensures that
-      both atomic variables 'A' and 'B' are accessed at the same time.
+      both atomic variables are accessed at the same time.
     */
     inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
       desA: int, desB: int): bool
