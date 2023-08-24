@@ -485,43 +485,31 @@ module DistributedBag_DFS
     }
 
     @chpldoc.nodoc
-    /* iter these(param tag : iterKind) where tag == iterKind.leader
+    iter these(param tag: iterKind) where tag == iterKind.leader
     {
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
-        coforall segmentIdx in 0..#here.maxTaskPar {
-          ref segment = instance.bag!.segments[segmentIdx];
-          if segment.acquireIfNonEmpty(STATUS_LOOKUP) {
-            // Create a snapshot...
-            var block = segment.headBlock;
-            var bufferSz = segment.nElems.read():int;
-            var buffer = c_malloc(eltType, bufferSz);
-            var bufferOffset = 0;
-            while (block != nil) {
-              if (bufferOffset + block!.size > bufferSz) {
-                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
-              }
-              __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
-              bufferOffset += block!.size;
-              block = block!.next;
-            }
-            // Yield this chunk to be process...
-            segment.releaseStatus();
-            yield (bufferSz, buffer);
-            c_free(buffer);
-          }
+        coforall taskId in 0..#here.maxTaskPar {
+          ref segment = instance.bag!.segments[taskId];
+
+          // Create a snapshot
+          var block = segment.block;
+          var bufferSize = segment.nElts;
+
+          // Yield this chunk to be process
+          yield (bufferSize, block.elts[block.headId..block.tailId]);
         }
       }
-    } */
+    }
 
     @chpldoc.nodoc
-    /* iter these(param tag : iterKind, followThis) where tag == iterKind.follower
+    iter these(param tag: iterKind, followThis) where tag == iterKind.follower
     {
-      var (bufferSz, buffer) = followThis;
-      foreach i in 0..#bufferSz {
+      var (bufferSize, buffer) = followThis;
+      foreach i in 0..#bufferSize {
         yield buffer[i];
       }
-    } */
+    }
   } // end 'DistributedBagImpl' class
 
   /*
