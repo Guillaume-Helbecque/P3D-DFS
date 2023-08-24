@@ -884,40 +884,6 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert elements in the segment using pointer. If the bag instance rejects
-      an element (e.g., when :const:distributedBagMaxSegmentCap is reached), we
-      cease to offer more. We return the number of elements successfully inserted.
-    */
-    /* inline proc addElementsPtr(eltsPtr, n, locId = here.id): int
-    {
-      var realSize = n;
-
-      // allocate a larger block.
-      if (block.tailId + n > block.cap) {
-        //TODO: use divceilpos?
-        const neededCap = block.cap*2**divceil(block.tailId + n, block.cap);
-        if (neededCap >= distributedBagMaxSegmentCap) {
-          realSize = distributedBagMaxSegmentCap - block.tailId;
-        }
-        lock_block.readFE();
-        block.cap = min(distributedBagMaxSegmentCap, neededCap);
-        block.dom = {0..#block.cap};
-        lock_block.writeEF(true);
-      }
-
-      writeln(realSize);
-      writeln(block.tailId);
-      writeln(block.cap);
-      __primitive("chpl_comm_array_get", block.elts[block.tailId], locId, eltsPtr[0], realSize);
-      tail += realSize;
-
-      // if there is a split request...
-      if split_request.read() then split_release();
-
-      return realSize;
-    } */
-
-    /*
       Remove an element from the segment.
     */
     inline proc takeElement(): (bool, eltType)
