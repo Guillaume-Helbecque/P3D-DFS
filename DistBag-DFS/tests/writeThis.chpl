@@ -6,21 +6,21 @@ use DistributedBag_DFS;
 
 var bag = new DistBag_DFS(int);
 
-// Check for multiple values inserted concurrently.
+// Insert multiple values concurrently.
 forall taskId in 0..#here.maxTaskPar do
   bag.add(taskId, taskId);
 
-writeln(bag);
+writeln("single-locale: ", bag);
 
-// Check for empty bag.
+// Clear the bag.
 bag.clear();
 
-writeln(bag);
+writeln("empty:         ", bag);
 
-// Check for multiple values inserted concurrently on different locales.
-coforall loc in Locales do on loc {
+// Insert multiple values concurrently from different locales.
+coforall locId in 0..#numLocales do on Locales[locId] {
   forall taskId in 0..#here.maxTaskPar do
-    bag.add(taskId, taskId);
+    bag.add(taskId + locId * here.maxTaskPar, taskId);
 }
 
-writeln(bag);
+writeln("multi-locale:  ", bag);
