@@ -857,8 +857,7 @@ module DistributedBag_DFS
 
       // allocate a larger block.
       if (block.tailId + size > block.cap) {
-        //TODO: use divceilpos?
-        const neededCap = block.cap*divceil(block.tailId + size, block.cap);
+        const neededCap = block.cap*2**ceil(log2(block.tailId + size / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) {
           realSize = distributedBagMaxSegmentCap - block.tailId;
           block.cap = distributedBagMaxSegmentCap;
