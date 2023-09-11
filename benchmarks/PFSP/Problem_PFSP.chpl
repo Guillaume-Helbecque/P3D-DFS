@@ -277,7 +277,7 @@ module Problem_PFSP
       else inst = new Instance_VRF(this.name);
 
       if (this.ub_init == "inf") {
-        return 999999;
+        return max(int);
       }
       else {
         return inst.get_ub();
@@ -294,7 +294,7 @@ module Problem_PFSP
       writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
       writeln("Initial upper bound: ", setInitUB());
       writeln("Lower bound function: ", this.lb_name);
-      writeln("Branching rules: ", this.branching);
+      writeln("Branching rule: ", this.branching);
       writeln("=================================================");
     }
 
@@ -318,8 +318,8 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_pfsp_", splitExt(this.name)[0], "_", this.lb_name, "_", this.branching, ".txt");
-      return "".join(tup);
+      return "./chpl_pfsp_" + splitExt(this.name)[0] + "_" + this.lb_name +
+              "_" + this.branching + ".txt";
     }
 
     override proc help_message(): void

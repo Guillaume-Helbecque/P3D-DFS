@@ -154,8 +154,7 @@ class Problem_Knapsack : Problem
 
   override proc output_filepath(): string
   {
-    var tup = ("./chpl_knapsack_", splitExt(this.name)[0], ".txt");
-    return "".join(tup);
+    return "./chpl_knapsack_" + splitExt(this.name)[0] + ".txt";
   }
 
   override proc help_message(): void

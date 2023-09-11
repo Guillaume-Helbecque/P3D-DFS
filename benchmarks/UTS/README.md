@@ -21,4 +21,4 @@ where:
 
 ### References
 
-[1] S. Olivier, J. Huan, J. Liu, *et al*. (2007) UTS: An Unbalanced Tree Search Benchmark. *19th International Workshop on Languages and Compilers for Parallel Computing* (LCPC). DOI: [10.1007/978-3-540-72521-3\_18](https://doi.org/10.1007/978-3-540-72521-3_18).
+1. S. Olivier, J. Huan, J. Liu, *et al*. (2007) UTS: An Unbalanced Tree Search Benchmark. *19th International Workshop on Languages and Compilers for Parallel Computing* (LCPC). DOI: [10.1007/978-3-540-72521-3\_18](https://doi.org/10.1007/978-3-540-72521-3_18).

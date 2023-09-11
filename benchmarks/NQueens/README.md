@@ -55,4 +55,4 @@ The exact number of N-Queens solutions is only known for $N < 28$ [1]. In the fo
 
 ### References
 
-[1] Preußer, T. (2019). A Brute-Force Solution to the 27-Queens Puzzle Using a Distributed Computation. In: Hinze, T., Rozenberg, G., Salomaa, A., Zandron, C. (eds) Membrane Computing. CMC 2018. Lecture Notes in Computer Science(), vol 11399. Springer, Cham. DOI: [10.1007/978-3-030-12797-8_3](https://doi.org/10.1007/978-3-030-12797-8_3)
+1. T. Preußer. (2019) A Brute-Force Solution to the 27-Queens Puzzle Using a Distributed Computation. *Membrane Computing*, pp. 23-29. DOI: [10.1007/978-3-030-12797-8_3](https://doi.org/10.1007/978-3-030-12797-8_3)

@@ -33,6 +33,7 @@ module Problem_NQueens
           return false;
         }
       }
+
       return true;
     }
 
@@ -95,13 +96,12 @@ module Problem_NQueens
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_nqueens_", this.N:string, ".txt");
-      return "".join(tup);
+      return "./chpl_nqueens_" + this.N:string + ".txt";
     }
 
     override proc help_message(): void
     {
-      writeln("\n  NQueens Benchmark Parameters:\n");
+      writeln("\n  N-Queens Benchmark Parameter:\n");
       writeln("   --N   int   problem size (number of queens)\n");
     }
 

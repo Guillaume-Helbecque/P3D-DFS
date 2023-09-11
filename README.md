@@ -60,8 +60,7 @@ Fig.2 - P3D-DFS vs. MPI-PUTS on UTS.
 </td></tr></table>
 
 ## Future improvements
-- Perform low-level investigations and optimizations of the `DistBag-DFS` distributed data structure, as well as the underlying WS mechanism.
-- Make PFSP more flexible, *e.g.* considering advanced B&B branching techniques.
+- Perform low-level investigations and optimizations of the `DistBag-DFS` distributed data structure, as well as the underlying WS mechanism;
 - Extend the list of supported problems, *e.g.* the Quadratic Assignment Problem (QAP), the Traveling Salesman Problem (TSP).
 
 ## Contributors

@@ -28,4 +28,4 @@ https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
 
 ### References
 
-[1] Pisinger, D. (2005) Where are the hard knapsack problems?. *Computers & Operations Research*, 32(9):2271-2284. DOI: [10.1016/j.cor.2004.03.002](https://doi.org/10.1016/j.cor.2004.03.002).
+1. D. Pisinger. (2005) Where are the hard knapsack problems?. *Computers & Operations Research*, 32(9):2271-2284. DOI: [10.1016/j.cor.2004.03.002](https://doi.org/10.1016/j.cor.2004.03.002).
