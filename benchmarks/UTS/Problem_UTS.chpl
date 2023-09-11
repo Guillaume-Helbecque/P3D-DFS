@@ -23,8 +23,8 @@ module Problem_UTS
      *   root and binomial distributions towards the leaves.
      */
     var treeType: c_int;
-    var b_0: c_double;
-    var rootId: c_int;
+    var b_0: c_double; // b
+    var rootId: c_int; // r
 
     /*  Tree type BIN (BINOMIAL)
      *  The branching factor at the root is specified by b_0.
@@ -48,14 +48,14 @@ module Problem_UTS
      *     for nodes at depth i as a function of the root branching
      *     factor b_0 and a maximum depth gen_mx.
      */
-    var gen_mx: c_int;
-    var shape_fn: c_int;
+    var gen_mx: c_int; // d
+    var shape_fn: c_int; // a
 
     /*  In type HYBRID trees, each node is either type BIN or type
      *  GEO, with the generation strategy changing from GEO to BIN
      *  at a fixed depth, expressed as a fraction of gen_mx
      */
-    var shiftDepth: c_double;
+    var shiftDepth: c_double; // f
 
     /* compute granularity - number of rng evaluations per tree node */
     var computeGranularity: c_int;
@@ -162,9 +162,19 @@ module Problem_UTS
 
     override proc output_filepath(): string
     {
-      var tup = ("./chpl_uts_bin_b", this.b_0:int:string, "_r", this.rootId:string, "_m", this.nonLeafBF:string,
-        "_q", this.nonLeafProb:string, "_g", this.computeGranularity:string, ".txt");
-      return "".join(tup);
+      var path = "./chpl_uts_" + uts_trees_str[this.treeType]:string +
+                  "_b" + this.b_0:int:string + "_r" + this.rootId:string;
+
+      if (this.treeType == BIN || this.treeType == HYBRID) then
+        path += "_m" + this.nonLeafBF:string + "_q" + this.nonLeafProb:string;
+      if (this.treeType == GEO || this.treeType == HYBRID) then
+        path += "_a" + this.shape_fn:string + "_d" + this.gen_mx:string;
+      if (this.treeType == HYBRID) then
+        path += "_f" + this.shiftDepth:string;
+      if (this.treeType == BALANCED) then
+        path += "_d" + this.gen_mx:string;
+
+      return path + "_g" + this.computeGranularity:string + ".txt";
     }
 
     override proc help_message(): void
