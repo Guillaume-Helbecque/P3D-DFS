@@ -20,11 +20,15 @@ class Problem_Knapsack : Problem
     this.name = fileName;
 
     var path_dir = "./benchmarks/Knapsack/instances/";
-    if (fileName[0..5] == "knapPI") then
-      //TODO: differentiate small_coeff from large_coeff etc.
-      path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/";
-    var tup = (path_dir, fileName);
-    var path = "".join(tup);
+    if (fileName[0..5] == "knapPI") {
+      var instanceType = fileName.split("_");
+      if (instanceType[1]:int <= 9) then
+      //TODO: differentiate small_coeff from large_coeff.
+        path_dir += "data_Pisinger/small_coeff/";
+      else
+        path_dir += "data_Pisinger/small_coeff_hard/";
+    }
+    var path = path_dir + fileName;
 
     var f = open(path, ioMode.r);
     var channel = f.reader();
@@ -121,9 +125,17 @@ class Problem_Knapsack : Problem
       return 0;
     }
     else {
+      // TODO: read the optimum from a file.
       if (this.name == "default.txt") then return 1458;
+      // TODO: add support for user defined instances.
       else { // Pisinger's instances
-        const path = "./benchmarks/Knapsack/instances/data_Pisinger/small_coeff/knapPI_optimal.txt";
+        var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
+        var instanceType = this.name.split("_");
+        //TODO: differentiate small_coeff from large_coeff.
+        if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
+        else path_dir += "small_coeff_hard/";
+
+        const path = path_dir + "knapPI_optimal.txt";
 
         var f = open(path, ioMode.r);
         var channel = f.reader();
