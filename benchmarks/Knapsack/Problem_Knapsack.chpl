@@ -1,6 +1,5 @@
 use IO;
 use List;
-use CTypes;
 use Path;
 
 use Problem;
@@ -9,9 +8,9 @@ class Problem_Knapsack : Problem
 {
   var name: string;         // file name
   var N: int;               // number of items
-  var W: real;              // maximum weight of the bag
-  var profit: [0..#N] real; // items' profit
-  var weight: [0..#N] real; // items' weight
+  var W: int;               // maximum weight of the bag
+  var profit: [0..#N] int;  // items' profit
+  var weight: [0..#N] int;  // items' weight
 
   var ub_init: string;
 
@@ -35,6 +34,12 @@ class Problem_Knapsack : Problem
     this.profit = channel.read([0..#this.N] int);
     this.weight = channel.read([0..#this.N] int);
 
+    /*
+      NOTE: The bounding operator assumes that the items are sorted in decreasing
+      order according to the ratio profit / weight.
+    */
+    sortItems(this.weight, this.profit);
+
     channel.close();
     f.close();
 
@@ -43,8 +48,8 @@ class Problem_Knapsack : Problem
   }
 
   // initialisation from parameters
-  proc init(const file_name: string, const n: int, const w: real, const pr: [] real,
-    const we: [] real, const ub: string): void
+  proc init(const file_name: string, const n: int, const w: int, const pr: [] int,
+    const we: [] int, const ub: string): void
   {
     this.name    = file_name;
     this.N       = n;
@@ -60,11 +65,22 @@ class Problem_Knapsack : Problem
       this.ub_init);
   }
 
-  inline proc arrMultSom(const c_a: c_array, const chpl_a: [], const depth: int)
+  proc computeBound(type Node, const n: Node)
   {
-    var res: real;
-    for i in 0..#depth do res += c_a[i] * chpl_a[i];
-    return res;
+    var remainingWeight = this.W - n.weight;
+    var bound = n.profit:real;
+
+    for i in n.depth..this.N-1 {
+      if (remainingWeight >= this.weight[i]) {
+        bound += this.profit[i];
+        remainingWeight -= this.weight[i];
+      } else {
+        bound += remainingWeight * (this.profit[i]:real / this.weight[i]:real);
+        break;
+      }
+    }
+
+    return bound;
   }
 
   override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -72,22 +88,26 @@ class Problem_Knapsack : Problem
   {
     var children: list(Node);
 
-    for i in 0..1 by -1 {
+    for i in 0..1 {
       var child = new Node(parent);
-      child.items[parent.depth] = i:c_int;
       child.depth += 1;
-      if (arrMultSom(child.items, this.weight, child.depth) <= this.W) {
-        if (child.depth == N - 1) {
+      child.items[parent.depth] = i;
+      child.weight += i*this.weight[parent.depth];
+      child.profit += i*this.profit[parent.depth];
+
+      if (child.weight <= this.W) {
+        if (child.depth == this.N) { // leaf
           num_sol += 1;
-          var eval = arrMultSom(child.items, this.profit, child.depth):int;
-          if (best_task <= eval) {
-            best_task = eval;
-            best.write(eval);
+          if ((best_task < child.profit) && (best.read() < child.profit)) { // improve optimum
+            best_task = child.profit;
+            best.write(child.profit);
           }
         }
         else {
-          children.pushBack(child);
-          tree_loc += 1;
+          if (best_task < /* child.profit + */ computeBound(Node, child)) { // bounding and pruning
+            children.pushBack(child);
+            tree_loc += 1;
+          }
         }
       }
     }
@@ -165,3 +185,22 @@ class Problem_Knapsack : Problem
   }
 
 } // end class
+
+/*
+  This function is used to sort the items in decreasing order according to the
+  ratio profit / weight.
+*/
+proc sortItems(ref w, ref p)
+{
+  var r: [p.domain] real;
+  for i in r.domain do r[i] = p[i]:real / w[i]:real;
+
+  for i in r.domain {
+    var max = (max reduce r[i..]);
+    var max_id = r[i..].find(max);
+    r[i] <=> r[max_id];
+    w[i] <=> w[max_id];
+    p[i] <=> p[max_id];
+  }
+
+}

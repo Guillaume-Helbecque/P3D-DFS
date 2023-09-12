@@ -7,7 +7,9 @@ module Node_Knapsack
   record Node_Knapsack
   {
     var depth: int;
-    var items: c_array(c_int, maxItems);
+    var items: c_array(int, maxItems);
+    var weight: int;
+    var profit: int;
 
     // default-initializer
     proc init()
@@ -24,6 +26,8 @@ module Node_Knapsack
     {
       this.depth = other.depth;
       this.items = other.items;
+      this.weight = other.weight;
+      this.profit = other.profit;
     }
 
     proc deinit()
