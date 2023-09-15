@@ -59,7 +59,6 @@ class Instance_user : Instance
 
     channel.close();
     f.close();
-    if (this.name == "default.txt") then return 1458;
 
     return ub;
   }

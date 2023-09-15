@@ -11,39 +11,30 @@
 
 /*
  *
- * The current code generates randomly generated instances and
- * writes them to a file. Different capacities are considered
- * to ensure proper testing.
+ * The current code generates randomly generated instances. Different
+ * capacities are considered to ensure proper testing.
  *
  * The code conforms with the ANSI-C standard.
  *
- * The code is run by issuing the command
- *
- *   genhard n r type i S
- *
- * where n: number of items,
- *       r: range of coefficients,
- *       type: 1=uncorrelated, 2=weakly corr, 3=strongly corr,
- *             4=inverse str.corr, 5=almost str.corr, 6=subset-sum,
- *             7=even-odd subset-sum, 8=even-odd knapsack,
- *             9=uncorrelated, similar weights,
+ * Inputs n: number of items,
+ *        r: range of coefficients,
+ *        t: 1=uncorrelated,
+ *           2=weakly corr,
+ *           3=strongly corr,
+ *           4=inverse str.corr,
+ *           5=almost str.corr,
+ *           6=subset-sum,
+ *           7=even-odd subset-sum,
+ *           8=even-odd knapsack,
+ *           9=uncorrelated, similar weights,
  *           11=uncorr. span(2,10)
  *           12=weak. corr. span(2,10)
  *           13=str. corr. span(2,10)
  *           14=mstr(3R/10,2R/10,6)
  *           15=pceil(3)
  *           16=circle(2/3)
- *       i: instance no
- *       S: number of tests in series (typically 1000)
- *
- * output will be written to the file "test.in".
- * format of output is
- *     n
- *     0 p[0] w[0]
- *     1 p[1] w[1]
- *     :
- *     n-1 p[n-1] w[n-1]
- *     c
+ *        i: instance number
+ *        S: number of tests in series (typically 1000)
  *
  */
 
@@ -116,34 +107,34 @@ int primelarger(int i)
                                 generator
    ====================================================================== */
 
-long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
+long long generator(int n, int *pp, int *ww, int t, int r, int v, int tests)
 {
   int i, p, w, r1, r2, k1, k2;
   long long wsum, psum, c;
   FILE *out;
   int sp[100], sw[100], span;
 
-  /* printf("generator %d %d %d %d %d\n", n, type, r, v, tests); */
+  /* printf("generator %d %d %d %d %d\n", n, t, r, v, tests); */
   srand(v);
   r1 = r / 10;
   r2 = r / 2;
   wsum = 0;
   span = 0;
-  if (type == 11) span = 2;
-  if (type == 12) span = 2;
-  if (type == 13) span = 2;
+  if (t == 11) span = 2;
+  if (t == 12) span = 2;
+  if (t == 13) span = 2;
   for (i = 0; i < span; i++) {
     sw[i] = randm(r) + 1;
-    if (type == 11) sp[i] = randm(r) + 1;                /* uncorr */
-    if (type == 12) sp[i] = randm(2*r1+1)+sw[i]-r1;      /* wekcorr */
-    if (type == 13) sp[i] = sw[i] + r1;                  /* strcorr */
+    if (t == 11) sp[i] = randm(r) + 1;                /* uncorr */
+    if (t == 12) sp[i] = randm(2*r1+1)+sw[i]-r1;      /* wekcorr */
+    if (t == 13) sp[i] = sw[i] + r1;                  /* strcorr */
     if (sp[i] <= 0) sp[i] = 1;
     sw[i] = (sw[i] + SPAN2 - 1) / SPAN2;
     sp[i] = (sp[i] + SPAN2 - 1) / SPAN2;
   }
   for (i = 0; i < n; ) {
     w = randm(r) + 1;
-    switch (type) {
+    switch (t) {
       case  1: p = randm(r) + 1; /* uncorrelated */
                break;
       case  2: p = randm(2*r1+1) + w - r1; /* weakly corr */
@@ -197,7 +188,7 @@ long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
   c = (v * (long long) wsum) / (tests + 1);
   for (i = 0; i < n; i++) if (ww[i] > c) c = ww[i];
 
-  switch (type) {
+  switch (t) {
     case  1: return c;
     case  2: return c;
     case  3: return c;
@@ -218,65 +209,3 @@ long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
     default: perror("undefined capacity type");
   }
 }
-
-
-/* ======================================================================
-                                showitems
-   ====================================================================== */
-
-void showitems(int n, int *pp, int *ww, long long c)
-{
-  int i;
-  long long ps, ws;
-  FILE *out;
-
-  out = fopen("test.in", "w");
-  if (out == NULL) perror("no file");
-  fprintf(out,"%d\n", n);
-  for (i = 0; i < n; i++) {
-    fprintf(out, "%5d %5d %5d\n", i, pp[i], ww[i]);
-  }
-  fprintf(out,"%lld\n", c);
-  fclose(out);
-}
-
-
-/* ======================================================================
-                                main
-   ====================================================================== */
-
-// void main(int argc, char *argv[])
-// {
-//   int *pp, *ww;
-//   int n, r, type, i, S;
-//   int ok;
-//   long long c;
-//
-//   if (argc == 6) {
-//     n = atoi(argv[1]);
-//     r = atoi(argv[2]);
-//     type = atoi(argv[3]);
-//     i = atoi(argv[4]);
-//     S = atoi(argv[5]);
-//     printf("generator2 %d %d %d %d %d\n", n, r, type, i, S);
-//   } else {
-//     printf("generator2\n");
-//     printf("n = ");
-//     ok = scanf("%d", &n);
-//     printf("r = ");
-//     ok = scanf("%d", &r);
-//     printf("t = ");
-//     ok = scanf("%d", &type);
-//     printf("i = ");
-//     ok = scanf("%d", &i);
-//     printf("S = ");
-//     ok = scanf("%d", &S);
-//   }
-//
-//   pp = (int *) malloc(n * sizeof(int));
-//   ww = (int *) malloc(n * sizeof(int));
-//   c = generator(n, pp, ww, type, r, i, S);
-//   showitems(n, pp, ww, c);
-//   free(pp);
-//   free(ww);
-// }

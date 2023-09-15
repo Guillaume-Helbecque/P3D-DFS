@@ -11,6 +11,4 @@ int primelarger(int i);
 
 long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests);
 
-void showitems(int n, int *pp, int *ww, long long c);
-
 #endif
