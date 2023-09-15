@@ -37,7 +37,7 @@ class Instance_user : Instance
     return this.c;
   }
 
-  override proc get_profits(): [0..#this.n] int
+  override proc get_profits(): [] int
   {
     return this.profits;
   }
@@ -49,9 +49,18 @@ class Instance_user : Instance
 
   override proc get_ub(): int
   {
-    // TODO: read the optimum from a file + allow the user to specific the file
-    // where the ub is stored.
+    const path_dir = "./benchmarks/Knapsack/instances/data/";
+    const (name, ext) = splitExt(this.name);
+    // TODO: allow the user to specific the file where the ub is stored.
+    var f = open(path_dir + name + "_optimal" + ext, ioMode.r);
+    var channel = f.reader();
+
+    var ub = channel.read(int);
+
+    channel.close();
+    f.close();
     if (this.name == "default.txt") then return 1458;
-    return 1458;
+
+    return ub;
   }
 }

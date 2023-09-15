@@ -153,6 +153,7 @@ module Problem_Knapsack
       writeln("  capacity of the bag: ", this.W);
       writeln("  items's profit: ", this.profit);
       writeln("  items's weight: ", this.weight);
+      // TODO: Find a way to avoid calling setInitUB
       writeln("\n  initial upper bound: ", setInitUB());
       writeln("=================================================");
     }

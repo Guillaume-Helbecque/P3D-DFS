@@ -56,22 +56,21 @@ class Instance_Pisinger : Instance
 
   override proc get_ub(): int
   {
-    var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
-    var instanceType = splitExt(this.name)[0].split("_");
-    //TODO: differentiate small_coeff from large_coeff.
-    if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
-    else path_dir += "small_coeff_hard/";
-
-    const path = path_dir + "knapPI_optimal.txt";
-
-    var f = open(path, ioMode.r);
+    var f = open("./benchmarks/Knapsack/instances/data/Pisinger_optimals.txt", ioMode.r);
     var channel = f.reader();
 
-    var file = channel.read([0..480, 0..1] string);
+    var file = channel.read([0..#31800, 0..1] string);
 
     channel.close();
     f.close();
 
-    return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+    var idx = file[..,0].find(splitExt(this.name)[0]);
+
+    if (idx == -1) {
+      warning("Optimal not found; setting it to 0 (\"inf\"). ");
+      return 0;
+    }
+
+    return file[idx, 1]:int;
   }
 }
