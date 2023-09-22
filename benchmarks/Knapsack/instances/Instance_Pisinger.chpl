@@ -6,7 +6,7 @@ use Instance;
 require "../c_sources/Pisinger_genhard.c", "../c_headers/Pisinger_genhard.h";
 extern proc generator(n: int, pp: c_ptr(c_int), ww: c_ptr(c_int), t: int, r: int, v: int, tests: int): int(64);
 
-const s: c_int = 1000;
+const s: c_int = 100;
 
 class Instance_Pisinger : Instance
 {
