@@ -830,7 +830,7 @@ module DistributedBag_DFS
           return false;
         }
         lock_block.readFE();
-        block.cap = min(distributedBagMaxSegmentCap, 2*block.cap);
+        block.cap *= 2;
         block.dom = {0..#block.cap};
         lock_block.writeEF(true);
       }
@@ -852,15 +852,14 @@ module DistributedBag_DFS
     */
     inline proc addElements(elts): int
     {
-      const size = elts.size;
-      var realSize = size;
+      var size = elts.size;
 
       // allocate a larger block.
       if (block.tailId + size > block.cap) {
         const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) {
           warning("maximum capacity reached: some elements may have been missed.");
-          realSize = distributedBagMaxSegmentCap - block.tailId;
+          size = distributedBagMaxSegmentCap - block.tailId;
         }
         lock_block.readFE();
         block.cap = min(distributedBagMaxSegmentCap, neededCap);
@@ -868,13 +867,13 @@ module DistributedBag_DFS
         lock_block.writeEF(true);
       }
 
-      for elt in elts[0..#realSize] do block.pushTail(elt);
-      tail += realSize;
+      for elt in elts[0..#size] do block.pushTail(elt);
+      tail += size;
 
       // if there is a split request...
       if split_request.read() then split_release();
 
-      return realSize;
+      return size;
     }
 
     /*
