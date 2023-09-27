@@ -19,7 +19,7 @@ This data structure has been derived from the `DistBag` data structure supplied 
 ./main.o --mode=distributed ${problem-specific options} -nl 2
 ```
 where:
-- `--mode` is the parallel execution mode, *i.e.* `multicore` or `distributed`;
+- `--mode` is the execution mode, *i.e.* `sequential`, `multicore`, or `distributed`;
 - For the list of supported problems and options, see below;
 - `-nl` is the number of Chapel's process(es), typically the number of computer nodes in distributed setting.
 
