@@ -2,6 +2,7 @@ module main_knapsack
 {
   // Common modules
   use aux;
+  use search_sequential;
   use search_multicore;
   use search_distributed;
 
@@ -10,7 +11,7 @@ module main_knapsack
   use Problem_Knapsack;
 
   // Common options
-  config const mode: string    = "multicore"; // multicore, distributed
+  config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
@@ -33,8 +34,12 @@ module main_knapsack
       }
     }
 
-    // Parallel search
+    // Search
     select mode {
+      when "sequential" {
+        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        search_sequential(Node_Knapsack, knapsack, saveTime);
+      }
       when "multicore" {
         search_multicore(Node_Knapsack, knapsack, saveTime, activeSet);
       }
@@ -42,7 +47,7 @@ module main_knapsack
         search_distributed(Node_Knapsack, knapsack, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown parallel execution mode");
+        halt("ERROR - Unknown execution mode");
       }
     }
 

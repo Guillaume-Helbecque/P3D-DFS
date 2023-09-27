@@ -2,6 +2,7 @@ module main_pfsp
 {
   // Common modules
   use aux;
+  use search_sequential;
   use search_multicore;
   use search_distributed;
 
@@ -10,7 +11,7 @@ module main_pfsp
   use Problem_PFSP;
 
   // Common options
-  config const mode: string    = "multicore"; // multicore, distributed
+  config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
@@ -35,8 +36,12 @@ module main_pfsp
       }
     }
 
-    // Parallel search
+    // Search
     select mode {
+      when "sequential" {
+        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        search_sequential(Node_PFSP, pfsp, saveTime);
+      }
       when "multicore" {
         search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
       }
@@ -44,7 +49,7 @@ module main_pfsp
         search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown parallel execution mode");
+        halt("ERROR - Unknown execution mode");
       }
     }
 
