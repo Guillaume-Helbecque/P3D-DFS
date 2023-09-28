@@ -82,7 +82,8 @@ module search_multicore
     // PARALLEL EXPLORATION
     // =====================
 
-    coforall taskId in 0..#numTasks {
+    coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
+      ref eachMaxDepth, ref eachTaskState) {
 
       // Task variables
       var best_task: int = best.read();

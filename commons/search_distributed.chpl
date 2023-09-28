@@ -17,7 +17,7 @@ module search_distributed
   {
     // Global variables (best solution found and termination)
     var best: atomic int = problem.setInitUB();
-    const PrivateSpace: domain(1) dmapped Private(); // map each index to a locale
+    const PrivateSpace: domain(1) dmapped privateDist(); // map each index to a locale
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
@@ -88,7 +88,8 @@ module search_distributed
     // PARALLEL EXPLORATION
     // =====================
 
-    coforall loc in Locales with (const ref problem) do on loc {
+    coforall loc in Locales with (const ref problem, ref eachLocaleState, ref eachExploredTree,
+      ref eachExploredSol, ref eachMaxDepth) do on loc {
 
       const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
@@ -103,7 +104,8 @@ module search_distributed
       var eachLocalExploredSol: [0..#numTasks] int;
       var eachLocalMaxDepth: [0..#numTasks] int;
 
-      coforall taskId in 0..#numTasks with (ref best_locale) {
+      coforall taskId in 0..#numTasks with (ref eachLocalExploredTree, ref eachLocalExploredSol,
+        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref best_locale) {
 
         // Task variables
         var best_task: int = best_locale;

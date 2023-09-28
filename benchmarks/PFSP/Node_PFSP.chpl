@@ -21,7 +21,7 @@ module Node_PFSP
     {
       this.limit1 = -1;
       this.limit2 = problem.jobs;
-      this.complete();
+      init this;
       for i in 0..#problem.jobs do this.prmu[i] = i:c_int;
     }
 

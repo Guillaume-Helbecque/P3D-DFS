@@ -134,7 +134,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
     {
       var children: list(Node);
 
@@ -165,7 +165,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
     {
       var children: list(Node);
 
@@ -220,7 +220,7 @@ module Problem_PFSP
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
     {
       var children: list(Node);
 
@@ -252,7 +252,7 @@ module Problem_PFSP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list
+      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
     {
       select this.lb_name {
         when "lb1" {

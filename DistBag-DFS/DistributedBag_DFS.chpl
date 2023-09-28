@@ -64,6 +64,7 @@
 module DistributedBag_DFS
 {
   public use Collection;
+  private use IO;
 
   use Random;
   use List;
@@ -147,7 +148,7 @@ module DistributedBag_DFS
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag_DFS
+  record DistBag_DFS : serializable
   {
     type eltType;
 
@@ -186,6 +187,17 @@ module DistributedBag_DFS
       compilerError("Reading a DistBag_DFS is not supported");
     }
 
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, reader: fileReader(?), ref deserializer) {
+      this.init(eltType);
+      compilerError("Deserializing a DistBag is not yet supported");
+    }
+
     // Write the contents of DistBag_DFS to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
@@ -198,10 +210,15 @@ module DistributedBag_DFS
       ch.write("]");
     }
 
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     forwarding _value;
   } // end 'DistBag_DFS' record
 
-  class DistributedBagImpl : CollectionImpl
+  class DistributedBagImpl : CollectionImpl(?)
   {
     @chpldoc.nodoc
     var targetLocDom: domain(1);
@@ -226,7 +243,7 @@ module DistributedBag_DFS
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      this.complete();
+      init this;
 
       this.pid = _newPrivatizedClass(this);
       this.bag = new unmanaged Bag(eltType, this);
@@ -241,7 +258,7 @@ module DistributedBag_DFS
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      this.complete();
+      init this;
 
       this.bag = new unmanaged Bag(eltType, this);
     }
@@ -353,7 +370,7 @@ module DistributedBag_DFS
         forall taskId in 0..#here.maxTaskPar {
           ref segment = instance.bag!.segments[taskId];
 
-          segment.lock_block$.readFE();
+          segment.lock_block.readFE();
 
           delete segment.block;
           segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
@@ -362,12 +379,12 @@ module DistributedBag_DFS
           segment.split.write(0);
           segment.globalSteal.write(false);
           segment.split_request.write(false);
-          segment.lock$.writeXF(true);
-          segment.lock_n$.writeXF(true);
+          segment.lock.writeXF(true);
+          segment.lock_n.writeXF(true);
           segment.tail = 0;
           segment.o_split = 0;
 
-          segment.lock_block$.writeEF(true);
+          segment.lock_block.writeEF(true);
         }
         instance.bag!.globalStealInProgress.write(false);
       }
@@ -613,7 +630,7 @@ module DistributedBag_DFS
               ref targetSegment = segments[victimTaskId];
 
               if !targetSegment.globalSteal.read() {
-                targetSegment.lock_block$.readFE();
+                targetSegment.lock_block.readFE();
                 // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
@@ -621,7 +638,7 @@ module DistributedBag_DFS
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
-                    targetSegment.lock_block$.writeEF(true);
+                    targetSegment.lock_block.writeEF(true);
                     return (REMOVE_SUCCESS, elt);
                   }
                 }
@@ -630,7 +647,7 @@ module DistributedBag_DFS
                   splitreq = true;
                   targetSegment.split_request.write(true);
                 }
-                targetSegment.lock_block$.writeEF(true);
+                targetSegment.lock_block.writeEF(true);
               }
             }
 
@@ -672,7 +689,7 @@ module DistributedBag_DFS
 
                   //var sharedElts: int = targetSegment.nElems_shared.read();
                   // if the shared region contains enough elements to be stolen...
-                  targetSegment.lock_block$.readFE();
+                  targetSegment.lock_block.readFE();
                   if (1 < targetSegment.nElts_shared.read()) {
                     //for i in 0..#(targetSegment.nElems_shared.read()/2):int {
                       // attempt to steal an element
@@ -689,7 +706,7 @@ module DistributedBag_DFS
                     targetSegment.split_request.write(true);
                   }
 
-                  targetSegment.lock_block$.writeEF(true);
+                  targetSegment.lock_block.writeEF(true);
                   targetSegment.globalSteal.write(false);
                 }
               }
@@ -713,7 +730,7 @@ module DistributedBag_DFS
 
           otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       halt("DistributedBag_DFS Internal Error: DEADCODE.");
@@ -746,9 +763,9 @@ module DistributedBag_DFS
     var nElts_shared: atomic int; // number of elements in the shared space
 
     // locks (initially unlocked)
-    var lock$: sync bool = true;
-    var lock_n$: sync bool = true;
-    var lock_block$: sync bool = true;
+    var lock: sync bool = true;
+    var lock_n: sync bool = true;
+    var lock_block: sync bool = true;
 
     proc init(type eltType)
     {
@@ -773,26 +790,26 @@ module DistributedBag_DFS
 
     inline proc isEmpty
     {
-      lock_n$.readFE();
+      lock_n.readFE();
       var n_shared = nElts_shared.read();
       var n_private = nElts_private;
-      lock_n$.writeEF(true);
+      lock_n.writeEF(true);
       return (n_shared + n_private) == 0;
     }
 
     /*
       Insertion operation, only executed by the segment's owner.
     */
-    inline proc addElement(elt: eltType): bool
+    inline proc ref addElement(elt: eltType): bool
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
         if (block.cap == distributedBagMaxBlockCap) then
           return false;
-        lock_block$.readFE();
+        lock_block.readFE();
         block.cap = min(distributedBagMaxBlockCap, 2*block.cap);
         block.dom = {0..#block.cap};
-        lock_block$.writeEF(true);
+        lock_block.writeEF(true);
       }
 
       // we add the element at the tail
@@ -803,10 +820,10 @@ module DistributedBag_DFS
       if split_request.read() then split_release();
 
       /* if o_allstolen {
-        lock$.readFE(); // block until its full and set locked (empty)
+        lock.readFE(); // block until its full and set locked (empty)
         head.write(tail - 1);
         split.write(tail);
-        lock$.writeEF(true); // set unlocked (full)
+        lock.writeEF(true); // set unlocked (full)
         o_split = tail;
         allstolen.write(false);
         o_allstolen = false;
@@ -817,7 +834,7 @@ module DistributedBag_DFS
       return true;
     }
 
-    inline proc addElements(elts): int
+    inline proc ref addElements(elts): int
     {
       const size = elts.size;
       var realSize = size;
@@ -829,10 +846,10 @@ module DistributedBag_DFS
         if (neededCap >= distributedBagMaxBlockCap) {
           realSize = distributedBagMaxBlockCap - block.tailId;
         }
-        lock_block$.readFE();
+        lock_block.readFE();
         block.cap = min(distributedBagMaxBlockCap, neededCap);
         block.dom = {0..#block.cap};
-        lock_block$.writeEF(true);
+        lock_block.writeEF(true);
       }
 
       // TODO: find a better way to do the following.
@@ -855,7 +872,7 @@ module DistributedBag_DFS
     /*
       Retrieve operation, only executed by the segment's owner.
     */
-    inline proc takeElement(): (bool, eltType)
+    inline proc ref takeElement(): (bool, eltType)
     {
 
       // if the segment is empty...
@@ -898,17 +915,17 @@ module DistributedBag_DFS
     inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
     {
       var casA, casB: bool;
-      lock$.readFE(); // set locked (empty)
+      lock.readFE(); // set locked (empty)
       casA = A.compareAndSwap(expA, desA);
       casB = B.compareAndSwap(expB, desB);
       if (casA && casB) {
-        lock$.writeEF(true); // set unlocked (full)
+        lock.writeEF(true); // set unlocked (full)
         return true;
       }
       else {
         if casA then A.write(expA);
         if casB then B.write(expB);
-        lock$.writeEF(true); // set unlocked (full)
+        lock.writeEF(true); // set unlocked (full)
         return false;
       }
       halt("DistributedBag_DFS Internal Error: DEADCODE");
@@ -917,7 +934,7 @@ module DistributedBag_DFS
     /*
       Stealing operation, only executed by thieves.
     */
-    inline proc stealElement(): (bool, eltType)
+    inline proc ref stealElement(): (bool, eltType)
     {
       var default: eltType;
 
@@ -927,19 +944,19 @@ module DistributedBag_DFS
       // Fast exit
       /* if allstolen.read() then return (false, default); */
 
-      lock$.readFE(); // set locked (empty)
+      lock.readFE(); // set locked (empty)
       var (h, s): (int, int) = (head.read(), split.read());
-      lock$.writeEF(true); // set unlocked (full)
+      lock.writeEF(true); // set unlocked (full)
 
       // if there are elements to steal...
       if (h < s) {
         // if we successfully moved the pointers...
         if simCAS(head, split, h, s, h+1, s) {
-          lock_n$.readFE();
+          lock_n.readFE();
           var elt = block.popHead();
 
           nElts_shared.sub(1);
-          lock_n$.writeEF(true);
+          lock_n.writeEF(true);
 
           return (true, elt);
         }
@@ -957,21 +974,21 @@ module DistributedBag_DFS
     /*
       Grow operation that increases the shared space of the deque.
     */
-    inline proc split_release(): void
+    inline proc ref split_release(): void
     {
       // fast exit
       if (nElts_private <= 1) then return;
 
       // compute the new split position
       var new_split: int = ((o_split + tail + 1) / 2): int;
-      lock$.readFE(); // block until its full and set locked (empty)
+      lock.readFE(); // block until its full and set locked (empty)
       split.write(new_split);
-      lock$.writeEF(true); // set unlocked (full)
+      lock.writeEF(true); // set unlocked (full)
 
       // updates the counters
-      lock_n$.readFE();
+      lock_n.readFE();
       nElts_shared.add(new_split - o_split);
-      lock_n$.writeEF(true);
+      lock_n.writeEF(true);
 
       o_split = new_split;
 
@@ -982,22 +999,22 @@ module DistributedBag_DFS
     /*
       Shrink operation that reduces the shared space of the deque.
     */
-    inline proc split_reacquire(): bool
+    inline proc ref split_reacquire(): bool
     {
       // fast exit
       if (nElts_shared.read() <= 1) then return false;
 
-      lock$.readFE(); // block until its full and set locked (empty)
+      lock.readFE(); // block until its full and set locked (empty)
       var (h, s): (int, int) = (head.read(), split.read()); // o_split ?
-      lock$.writeEF(true); // set unlocked (full)
+      lock.writeEF(true); // set unlocked (full)
       if (h != s) {
         var new_split: int = ((h + s) / 2): int;
-        lock$.readFE(); // block until its full and set locked (empty)
+        lock.readFE(); // block until its full and set locked (empty)
         split.write(new_split);
-        lock$.writeEF(true); // set unlocked (full)
-        lock_n$.readFE();
+        lock.writeEF(true); // set unlocked (full)
+        lock_n.readFE();
         nElts_shared.sub(new_split - o_split);
-        lock_n$.writeEF(true);
+        lock_n.writeEF(true);
         o_split = new_split;
         // ADD FENCE
         atomicFence();
@@ -1005,12 +1022,12 @@ module DistributedBag_DFS
         if (h != s) {
           if (h > new_split) {
             new_split = ((h + s) / 2): int;
-            lock$.readFE(); // block until its full and set locked (empty)
+            lock.readFE(); // block until its full and set locked (empty)
             split.write(new_split);
-            lock$.writeEF(true); // set unlocked (full)
-            lock_n$.readFE();
+            lock.writeEF(true); // set unlocked (full)
+            lock_n.readFE();
             nElts_shared.sub(new_split - o_split);
-            lock_n$.writeEF(true);
+            lock_n.writeEF(true);
             o_split = new_split;
           }
           return false;

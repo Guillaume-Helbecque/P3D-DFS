@@ -13,7 +13,7 @@
 module load GCC/11.3.0
 module load CMake/3.23.1-GCCcore-11.3.0
 
-export CHPL_VERSION="1.31.0"
+export CHPL_VERSION="1.32.0"
 export CHPL_HOME="$PWD/chapel-${CHPL_VERSION}MC"
 
 # Download Chapel if not found
@@ -34,4 +34,4 @@ export GASNET_PHYSMEM_MAX='64 GB'
 
 cd $CHPL_HOME
 make -j $SLURM_CPUS_PER_TASK
-cd ..
+cd ../..

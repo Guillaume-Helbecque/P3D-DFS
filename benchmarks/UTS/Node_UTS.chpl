@@ -16,7 +16,7 @@ module Node_UTS
     // root-initializer
     proc init(problem)
     {
-      this.complete();
+      init this;
       uts_initRoot(this, problem.treeType, problem.rootId);
     }
   }

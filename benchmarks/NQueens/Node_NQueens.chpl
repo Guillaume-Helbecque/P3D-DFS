@@ -20,7 +20,7 @@ module Node_NQueens
     // root-initializer
     proc init(problem)
     {
-      this.complete();
+      init this;
       for i in 0..#problem.N do this.board[i] = i:c_int;
     }
 
