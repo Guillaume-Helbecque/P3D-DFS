@@ -101,7 +101,7 @@ module Problem_UTS
     }
 
     // No bounding in UTS
-    override proc setInitUB(): int
+    override proc getInitBound(): int
     {
       return 0;
     }

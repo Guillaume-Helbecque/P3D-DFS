@@ -21,9 +21,9 @@ module Instance
       halt("Error - get_data() not implemented");
     }
 
-    proc get_ub(): int
+    proc get_best_ub(): int
     {
-      halt("Error - get_ub() not implemented");
+      halt("Error - get_best_ub() not implemented");
     }
   }
 }

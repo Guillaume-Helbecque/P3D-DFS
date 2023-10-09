@@ -13,9 +13,9 @@ module Problem
       halt("Error - decompose() not implemented");
     }
 
-    proc setInitUB(): int
+    proc getInitBound(): int
     {
-      halt("Error - setInitUB() not implemented");
+      halt("Error - getInitBound() not implemented");
     }
 
     // =======================

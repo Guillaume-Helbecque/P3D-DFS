@@ -33,7 +33,7 @@ class Instance_Taillard : Instance
     taillard_get_processing_times(d, this.id);
   }
 
-  override proc get_ub()
+  override proc get_best_ub()
   {
     var optimal: [1..120] int =  [1278, 1359, 1081, 1293, 1235, 1195, 1234, 1206, 1230, 1108,            // 20x5
                                   1582, 1659, 1496, 1377, 1419, 1397, 1484, 1538, 1593, 1591,            // 20x10

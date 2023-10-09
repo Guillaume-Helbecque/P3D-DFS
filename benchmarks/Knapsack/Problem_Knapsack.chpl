@@ -12,10 +12,11 @@ class Problem_Knapsack : Problem
   var profit: [0..#N] int;  // items' profit
   var weight: [0..#N] int;  // items' weight
 
-  var ub_init: string;
+  var lb_init: string;
+  var initLB: int;
 
   // initialisation from a file
-  proc init(const fileName: string, const ub: string): void
+  proc init(const fileName: string, const lb: string): void
   {
     this.name = fileName;
 
@@ -47,26 +48,52 @@ class Problem_Knapsack : Problem
     channel.close();
     f.close();
 
-    if (ub == "opt" || ub == "inf") then this.ub_init = ub;
-    else halt("Error - Unsupported initial upper bound");
+    this.lb_init = lb;
+    if (lb == "opt") {
+      // TODO: read the optimum from a file.
+      if (this.name == "default.txt") then this.initLB = 1458;
+      // TODO: add support for user defined instances.
+      else { // Pisinger's instances
+        var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
+        var instanceType = this.name.split("_");
+        //TODO: differentiate small_coeff from large_coeff.
+        if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
+        else path_dir += "small_coeff_hard/";
+
+        const path = path_dir + "knapPI_optimal.txt";
+
+        var f = open(path, ioMode.r);
+        var channel = f.reader();
+
+        var file = channel.read([0..480, 0..1] string);
+
+        channel.close();
+        f.close();
+
+        this.initLB = file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+      }
+    }
+    else if (lb == "inf") then this.initLB = 0;
+    else halt("Error - Unsupported initial lower bound");
   }
 
   // initialisation from parameters
   proc init(const file_name: string, const n: int, const w: int, const pr: [] int,
-    const we: [] int, const ub: string): void
+    const we: [] int, const lb: string, const init_lb: int): void
   {
     this.name    = file_name;
     this.N       = n;
     this.W       = w;
     this.profit  = pr;
     this.weight  = we;
-    this.ub_init = ub;
+    this.lb_init = lb;
+    this.initLB  = init_lb;
   }
 
   override proc copy()
   {
     return new Problem_Knapsack(this.name, this.N, this.W, this.profit, this.weight,
-      this.ub_init);
+      this.lb_init, this.initLB);
   }
 
   proc computeBound(type Node, const n: Node)
@@ -119,35 +146,9 @@ class Problem_Knapsack : Problem
     return children;
   }
 
-  override proc setInitUB(): int
+  override proc getInitBound(): int
   {
-    if (this.ub_init == "inf") {
-      return 0;
-    }
-    else {
-      // TODO: read the optimum from a file.
-      if (this.name == "default.txt") then return 1458;
-      // TODO: add support for user defined instances.
-      else { // Pisinger's instances
-        var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
-        var instanceType = this.name.split("_");
-        //TODO: differentiate small_coeff from large_coeff.
-        if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
-        else path_dir += "small_coeff_hard/";
-
-        const path = path_dir + "knapPI_optimal.txt";
-
-        var f = open(path, ioMode.r);
-        var channel = f.reader();
-
-        var file = channel.read([0..480, 0..1] string);
-
-        channel.close();
-        f.close();
-
-        return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
-      }
-    }
+    return this.initLB;
   }
 
   // =======================
@@ -162,7 +163,7 @@ class Problem_Knapsack : Problem
     writeln("  capacity of the bag: ", this.W);
     writeln("  items's profit: ", this.profit);
     writeln("  items's weight: ", this.weight);
-    writeln("\n  initial upper bound: ", setInitUB());
+    writeln("\n  initial lower bound: ", this.initLB);
     writeln("=================================================");
   }
 
@@ -174,7 +175,9 @@ class Problem_Knapsack : Problem
     var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
     writeln("\n=================================================");
-    writeln("Optimum found: ", best);
+    const is_better = if (best > this.initLB) then " (improved)"
+                                              else " (not improved)";
+    writeln("Optimum found: ", best, is_better);
     writeln("Size of the explored tree: ", treeSize);
     /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
     writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
@@ -192,8 +195,8 @@ class Problem_Knapsack : Problem
   override proc help_message(): void
   {
     writeln("\n  Knapsack Benchmark Parameters:\n");
-    writeln("   --name   str   file containing the data\n");
-    writeln("   --ub     str   upper bound initialization (opt, inf)\n");
+    writeln("   --inst   str   file containing the data");
+    writeln("   --lb     str   lower bound initialization (opt, inf)\n");
   }
 
 } // end class

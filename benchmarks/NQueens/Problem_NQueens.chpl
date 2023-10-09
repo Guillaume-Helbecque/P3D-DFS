@@ -61,7 +61,7 @@ module Problem_NQueens
     }
 
     // No bounding in NQueens
-    override proc setInitUB(): int
+    override proc getInitBound(): int
     {
       return 0;
     }

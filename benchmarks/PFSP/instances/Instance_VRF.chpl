@@ -54,7 +54,7 @@ class Instance_VRF : Instance
     for i in 0..#this.jobs*this.machines do d[i] = this.data[i];
   }
 
-  override proc get_ub(): int
+  override proc get_best_ub(): int
   {
     const path = "./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt";
 

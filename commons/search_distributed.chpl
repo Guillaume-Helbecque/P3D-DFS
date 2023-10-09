@@ -16,7 +16,7 @@ module search_distributed
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
-    var best: atomic int = problem.setInitUB();
+    var best: atomic int = problem.getInitBound();
     const PrivateSpace: domain(1) dmapped privateDist(); // map each index to a locale
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
@@ -95,7 +95,7 @@ module search_distributed
       var problem_loc = problem.copy();
 
       // Local variables
-      var best_locale: int = problem_loc.setInitUB();
+      var best_locale: int = problem_loc.getInitBound();
       var allTasksIdleFlag: atomic bool = false;
       var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 

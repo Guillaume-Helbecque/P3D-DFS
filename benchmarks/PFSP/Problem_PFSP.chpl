@@ -28,7 +28,9 @@ module Problem_PFSP
 
     var branching: string;
     var branchingSide: c_int;
+
     var ub_init: string;
+    var initUB: int;
 
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
@@ -63,7 +65,9 @@ module Problem_PFSP
       else if (rules == "bwd") then this.branchingSide = END;
       else this.branchingSide = BEGINEND;
 
-      if (ub == "opt" || ub == "inf") then this.ub_init = ub;
+      this.ub_init = ub;
+      if (ub == "opt") then this.initUB = inst.get_best_ub();
+      else if (ub == "inf") then this.initUB = max(int);
       else halt("Error - Unsupported initial upper bound");
     }
 
@@ -270,18 +274,9 @@ module Problem_PFSP
       }
     }
 
-    override proc setInitUB(): int
+    override proc getInitBound(): int
     {
-      var inst = new Instance();
-      if (this.name[0..1] == "ta") then inst = new Instance_Taillard(this.name);
-      else inst = new Instance_VRF(this.name);
-
-      if (this.ub_init == "inf") {
-        return max(int);
-      }
-      else {
-        return inst.get_ub();
-      }
+      return this.initUB;
     }
 
     // =======================
@@ -292,7 +287,7 @@ module Problem_PFSP
     {
       writeln("\n=================================================");
       writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
-      writeln("Initial upper bound: ", setInitUB());
+      writeln("Initial upper bound: ", this.initUB);
       writeln("Lower bound function: ", this.lb_name);
       writeln("Branching rule: ", this.branching);
       writeln("=================================================");
@@ -311,7 +306,9 @@ module Problem_PFSP
       writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
-      writeln("Optimal makespan: ", best);
+      const is_better = if (best < this.initUB) then " (improved)"
+                                                else " (not improved)";
+      writeln("Optimal makespan: ", best, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }

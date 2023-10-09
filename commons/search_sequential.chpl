@@ -9,7 +9,7 @@ module search_sequential
 
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
-    var best: int = problem.setInitUB();
+    var best: int = problem.getInitBound();
     var best_at: atomic int = best;
 
     // Statistics

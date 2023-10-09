@@ -16,7 +16,7 @@ module search_multicore
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
-    var best: atomic int = problem.setInitUB();
+    var best: atomic int = problem.getInitBound();
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
