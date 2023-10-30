@@ -87,6 +87,7 @@
 module DistributedBag_DFS
 {
   public use Collection;
+  private use IO;
 
   use Random;
   use List;
@@ -174,7 +175,7 @@ module DistributedBag_DFS
     of the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag_DFS
+  record DistBag_DFS : serializable
   {
     /*
       The type of the elements contained in this DistBag_DFS.
@@ -216,6 +217,17 @@ module DistributedBag_DFS
       compilerError("Reading a DistBag_DFS is not supported");
     }
 
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, reader: fileReader(?), ref deserializer) {
+      this.init(eltType);
+      compilerError("Deserializing a DistBag is not yet supported");
+    }
+
     // Write the contents of this DistBag_DFS to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
@@ -228,10 +240,15 @@ module DistributedBag_DFS
       ch.write("]");
     }
 
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     forwarding _value;
   } // end 'DistBag_DFS' record
 
-  class DistributedBagImpl : CollectionImpl
+  class DistributedBagImpl : CollectionImpl(?)
   {
     @chpldoc.nodoc
     var targetLocDom: domain(1);
@@ -261,7 +278,7 @@ module DistributedBag_DFS
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      this.complete();
+      init this;
 
       this.pid = _newPrivatizedClass(this);
       this.bag = new unmanaged Bag(eltType, this);
@@ -276,7 +293,7 @@ module DistributedBag_DFS
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      this.complete();
+      init this;
 
       this.bag = new unmanaged Bag(eltType, this);
     }
@@ -749,7 +766,7 @@ module DistributedBag_DFS
 
           otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       halt("DistributedBag_DFS Internal Error: DEADCODE.");
@@ -821,7 +838,7 @@ module DistributedBag_DFS
     /*
       Insert an element in the segment.
     */
-    inline proc addElement(elt: eltType): bool
+    inline proc ref addElement(elt: eltType): bool
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
@@ -850,7 +867,7 @@ module DistributedBag_DFS
       when :const:distributedBagMaxSegmentCap is reached), we cease to offer more.
       We return the number of elements successfully inserted.
     */
-    inline proc addElements(elts): int
+    inline proc ref addElements(elts): int
     {
       var size = elts.size;
 
@@ -859,7 +876,7 @@ module DistributedBag_DFS
         const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) {
           warning("maximum capacity reached: some elements may have been missed.");
-          size = distributedBagMaxSegmentCap - block.tailId;
+          size = distributedBagMaxSegmentCap - block.tailId - 1;
         }
         lock_block.readFE();
         block.cap = min(distributedBagMaxSegmentCap, neededCap);
@@ -879,7 +896,7 @@ module DistributedBag_DFS
     /*
       Remove an element from the segment.
     */
-    inline proc takeElement(): eltType
+    inline proc ref takeElement(): eltType
     {
       // if the private region is not empty...
       var elt = block.popTail();
@@ -922,7 +939,7 @@ module DistributedBag_DFS
     /*
       Steal an element in that segment.
     */
-    inline proc stealElement(): (bool, eltType)
+    inline proc ref stealElement(): (bool, eltType)
     {
       var default: eltType;
 
@@ -959,7 +976,7 @@ module DistributedBag_DFS
     /*
       Increase the shared region of the segment (and decrease the private one).
     */
-    inline proc split_release(): void
+    inline proc ref split_release(): void
     {
       // fast exit
       if (nElts_private <= 1) then return;
@@ -984,7 +1001,7 @@ module DistributedBag_DFS
     /*
       Decrease the shared region of the segment (and increase the private one).
     */
-    inline proc split_reacquire(): bool
+    inline proc ref split_reacquire(): bool
     {
       // fast exit
       if (nElts_shared.read() <= 1) then return false;
