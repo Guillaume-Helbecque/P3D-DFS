@@ -5,15 +5,16 @@ Chapel-based implementation of our Productivity- and Performance-aware Parallel 
 [Chapel](https://chapel-lang.org/) is a programming language designed for productive parallel computing on large-scale systems.
 Chapel supports a multi-threaded execution model via high-level abstractions for data parallelism, task parallelism, concurrency, and nested parallelism. Chapel's locale type enables users to specify and reason about the placement of data and tasks on a target architecture in order to tune for locality and affinity. Chapel supports global-view data aggregates with user-defined implementations, permitting operations on distributed data structures to be expressed in a natural manner.
 
-Our Chapel codes rely on version $1.32.0$. <br/>
-The corresponding Chapel's version is downloadable at: https://github.com/chapel-lang/chapel/releases.
+Our implementation relies on Chapel $1.32.0$ (latest release). It is not expected to
+compile and run on older versions.
 
 ## The `DistBag-DFS` distributed data structure
 The `DistBag-DFS` distributed data structure is a parallel-safe distributed multi-pool implementation that is unordered and incorporates a WS mechanism that balances workload across multiple locales, transparently to the user. It can contain either predefined-Chapel types, user-defined types or external ones (*e.g.* C structures).
 This data structure has been derived from the `DistBag` data structure supplied is the `DistributedBag` Chapel's module, and revised in two different ways: (1) we propose a new scheduling policy of its elements as well as a new synchronization mechanism using non-blocking split-deques, and (2) we redefine the underlying WS mechanism.
 
 ## Compilation & Execution
-- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html). Some predefined
+configuration scripts are provided in the [chpl_config](./chpl_config) directory.
 - **Step 2:** Compile with `make` and execute with:
 ```
 ./main.o --mode=distributed ${problem-specific options} -nl 2
@@ -71,6 +72,6 @@ Fig.2 - P3D-DFS vs. MPI-PUTS on UTS.
 - Pascal Bouvry, Université du Luxembourg, DCS-FSTM/SnT, Luxembourg
 
 ## Publications
-1. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computat Pract Exper*. 2023;e7874. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
+1. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computat Pract Exper*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
 2. G. Helbecque, J. Gmys, T. Carneiro, N. Melab, P. Bouvry. Towards a scalable load balancing for productivity-aware tree-search. *The 10th Annual Chapel Implementers and Users Workshop (CHIUW)*, June 2023, online.
 3. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Productivity-aware Parallel Distributed Tree-Search for Exact Optimization. *International Conference on Optimization and Learning (OLA)*, May 2023, Malaga, Spain.
