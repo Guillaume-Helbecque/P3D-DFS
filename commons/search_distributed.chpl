@@ -2,7 +2,6 @@ module search_distributed
 {
   use List;
   use Time;
-  use CTypes;
   use PrivateDist;
   use DistributedBag_DFS;
   use AllLocalesBarriers;
@@ -193,8 +192,8 @@ module search_distributed
     writeln("\nExploration terminated.");
 
     if saveTime {
-      var path = problem.output_filepath();
-      save_time(numLocales:c_int, globalTimer.elapsed():c_double, path.c_str());
+      const path = problem.output_filepath();
+      save_time(numLocales, globalTimer.elapsed(), path);
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(),

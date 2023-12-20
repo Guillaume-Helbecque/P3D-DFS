@@ -1,6 +1,5 @@
 module Problem_PFSP
 {
-  use aux;
   use List;
   use Path;
   use CTypes;
@@ -8,6 +7,9 @@ module Problem_PFSP
   use Problem;
   use Instances;
   use Header_chpl_c_PFSP;
+
+  require "../../commons/c_sources/aux.c", "../../commons/c_headers/aux.h";
+  extern proc swap(ref a: c_int, ref b: c_int): void;
 
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];

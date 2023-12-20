@@ -1,10 +1,12 @@
 module Problem_NQueens
 {
-  use aux;
   use List;
   use CTypes;
 
   use Problem;
+
+  require "../../commons/c_sources/aux.c", "../../commons/c_headers/aux.h";
+  extern proc swap(ref a: c_int, ref b: c_int): void;
 
   class Problem_NQueens : Problem
   {

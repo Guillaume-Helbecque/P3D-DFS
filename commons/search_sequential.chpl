@@ -2,7 +2,6 @@ module search_sequential
 {
   use List;
   use Time;
-  use CTypes;
 
   use aux;
   use Problem;
@@ -57,8 +56,8 @@ module search_sequential
     writeln("\nExploration terminated.");
 
     if saveTime {
-      var path = problem.output_filepath();
-      save_time(1, globalTimer.elapsed():c_double, path.c_str());
+      const path = problem.output_filepath();
+      save_time(1, globalTimer.elapsed(), path);
     }
 
     writeln("\n=================================================");

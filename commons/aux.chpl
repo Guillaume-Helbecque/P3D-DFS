@@ -1,13 +1,8 @@
 module aux
 {
-  use CTypes;
   use IO;
 
   const BUSY: bool = false;
-
-  require "c_sources/aux.c", "c_headers/aux.h";
-  extern proc swap(ref a: c_int, ref b: c_int): void;
-	extern proc save_time(numTasks: c_int, time: c_double, path: c_ptrConst(c_char)): void;
 
   // Take a boolean array and return false if it contains at least one "true", "true" if not
   inline proc all_idle(const arr: [] atomic bool): bool
@@ -46,23 +41,12 @@ module aux
     }
   }
 
-  proc allLocalesIdle_dbg(const arr: [] atomic bool, flag: atomic bool, cTerm: atomic int): bool
-  {
-    if flag.read() {
-      return true;
-    }
-    else {
-      cTerm.add(1);
-      return check_and_set(arr, flag);
-    }
-  }
-
-  proc save_tables(const path: string, const table: [] real): void
+  proc save_time(const numTasks: int, const time: real, const path: string): void
   {
     try! {
-      var f: file = open(path, ioMode.cw);
+      var f: file = open(path, ioMode.a);
       var channel = f.writer();
-      channel.write(table);
+      channel.writeln(numTasks, " ", time);
       channel.close();
       f.close();
     }

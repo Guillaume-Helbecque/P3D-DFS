@@ -2,7 +2,6 @@ module search_multicore
 {
   use List;
   use Time;
-  use CTypes;
   use DistributedBag_DFS;
 
   use aux;
@@ -153,8 +152,8 @@ module search_multicore
     writeln("\nExploration terminated.");
 
     if saveTime {
-      var path = problem.output_filepath();
-      save_time(numTasks:c_int, globalTimer.elapsed():c_double, path.c_str());
+      const path = problem.output_filepath();
+      save_time(numTasks, globalTimer.elapsed(), path);
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(),
