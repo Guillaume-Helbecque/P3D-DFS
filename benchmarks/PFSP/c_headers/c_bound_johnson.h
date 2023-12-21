@@ -15,19 +15,17 @@ extern "C" {
 //regroup (constant) bound data
 typedef struct johnson_bd_data
 {
-    int *johnson_schedules;
-    int *lags;
-    int *machine_pairs[2];
-    int *machine_pair_order;
+  int *johnson_schedules;
+  int *lags;
+  int *machine_pairs[2];
+  int *machine_pair_order;
 
-    int nb_machine_pairs;
-    int nb_jobs;
-    int nb_machines;
+  int nb_machine_pairs;
+  int nb_jobs;
+  int nb_machines;
 } johnson_bd_data;
 
 enum lb2_variant { LB2_FULL, LB2_NABESHIMA, LB2_LAGEWEG, LB2_LEARN };
-
-
 
 //-------prepare constant/precomputed data for johnson bound-------
 johnson_bd_data* new_johnson_bd_data(const bound_data *const lb1/*, enum lb2_variant lb2_type*/);

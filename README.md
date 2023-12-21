@@ -27,7 +27,7 @@ where:
 ## Supported problems
 
 ### Branch-and-Bound algorithms (B&B)
-B&B are exact optimization algorithms constructing implicity trees by successively applying *branching*, *bounding* and *pruning* operators. Each tree node corresponds to a subproblem (the initial problem defined on a restricted domain) and children nodes are obtained by further restricting the search space.
+B&B are exact optimization algorithms exploring implicitly constructed trees by successively applying *branching*, *bounding* and *pruning* operators. Each tree node corresponds to a subproblem (the initial problem defined on a restricted domain) and children nodes are obtained by further restricting the search space.
 
 - [The Permutation Flow-shop Scheduling problem](./benchmarks/PFSP) (PFSP)
 - [The 0/1-Knapsack problem](./benchmarks/Knapsack)

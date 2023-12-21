@@ -6,11 +6,11 @@ use Problem;
 
 class Problem_Knapsack : Problem
 {
-  var name: string;         // file name
-  var N: int;               // number of items
-  var W: int;               // maximum weight of the bag
-  var profit: [0..#N] int;  // items' profit
-  var weight: [0..#N] int;  // items' weight
+  var name: string;        // file name
+  var N: int;              // number of items
+  var W: int;              // maximum weight of the bag
+  var profit: [0..#N] int; // items' profit
+  var weight: [0..#N] int; // items' weight
 
   var lb_init: string;
   var initLB: int;

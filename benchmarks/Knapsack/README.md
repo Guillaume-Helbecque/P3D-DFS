@@ -1,6 +1,6 @@
 # The 0/1-Knapsack problem
 
-Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p_i}$, the problem is to determine which items to include in the collection so that the total weight is less than or equal to a given limit $W$ and the total profit is as large as possible. Some of the Pisinger's instances [1] are supported as test-cases. The initial lower bound `lb` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scracth.
+Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p_i}$, the problem is to determine which items to include in the collection so that the total weight is less than or equal to a given limit $W$ and the total profit is as large as possible. Some of the Pisinger's instances [1] are supported as test-cases. The initial lower bound `lb` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scratch.
 
 ### Launch & Command-line parameters
 

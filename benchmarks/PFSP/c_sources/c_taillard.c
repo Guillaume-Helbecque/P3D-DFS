@@ -29,66 +29,65 @@ long time_seeds[] =
     1368624604 /*ta111*/, 450181436 /*ta112*/,  1927888393 /*ta113*/, 1759567256 /*ta114*/, 606425239 /*ta115*/,
     19268348 /*ta116*/,   1298201670 /*ta117*/, 2041736264 /*ta118*/, 379756761 /*ta119*/,  28837162 /*ta120*/ };
 
-
 int taillard_get_nb_jobs(const int id)
 {
-    if (id > 110) return 500;
-    if (id > 90) return 200;
-    if (id > 60) return 100;
-    if (id > 30) return 50;
-    /*if(id>0)*/ return 20;
+  if (id > 110) return 500;
+  if (id > 90) return 200;
+  if (id > 60) return 100;
+  if (id > 30) return 50;
+  /*if(id>0)*/ return 20;
 }
 
 int taillard_get_nb_machines(const int id)
 {
-    if (id > 110) return 20;    //500x20
-    if (id > 100) return 20;    //200x20
-    if (id > 90) return 10; //200x10
-    if (id > 80) return 20; //100x20
-    if (id > 70) return 10; //100x10
-    if (id > 60) return 5;  //100x5
-    if (id > 50) return 20; //50x20
-    if (id > 40) return 10; //50x10
-    if (id > 30) return 5;  //50x5
-    if (id > 20) return 20; //20x20
-    if (id > 10) return 10; //20x10
-    /*if(id>0 )*/ return 5; //20x5
+  if (id > 110) return 20; //500x20
+  if (id > 100) return 20; //200x20
+  if (id > 90) return 10; //200x10
+  if (id > 80) return 20; //100x20
+  if (id > 70) return 10; //100x10
+  if (id > 60) return 5;  //100x5
+  if (id > 50) return 20; //50x20
+  if (id > 40) return 10; //50x10
+  if (id > 30) return 5;  //50x5
+  if (id > 20) return 20; //20x20
+  if (id > 10) return 10; //20x10
+  /*if(id>0 )*/ return 5; //20x5
 }
 
 long unif(long * seed, long low, long high)
 {
-    long m = 2147483647, a = 16807, b = 127773, c = 2836, k;
-    double value_0_1;
+  long m = 2147483647, a = 16807, b = 127773, c = 2836, k;
+  double value_0_1;
 
-    k       = (*seed) / b;
-    *(seed) = a * (*(seed) % b) - k * c;
-    if ((*seed) < 0)
-        *(seed) = *(seed) + m;
-    value_0_1 = (float)*seed / (float)m;
-    return low + (long)(value_0_1 * (high - low + 1));
+  k = (*seed) / b;
+  *(seed) = a * (*(seed) % b) - k * c;
+  if ((*seed) < 0)
+    *(seed) = *(seed) + m;
+  value_0_1 = (float)*seed / (float)m;
+  return low + (long)(value_0_1 * (high - low + 1));
 }
 
 void taillard_get_processing_times(int *ptm, const int id)
 {
-    int N = taillard_get_nb_jobs(id);
-    int M = taillard_get_nb_machines(id);
-    long time_seed = time_seeds[id - 1];
+  int N = taillard_get_nb_jobs(id);
+  int M = taillard_get_nb_machines(id);
+  long time_seed = time_seeds[id - 1];
 
-    if(!ptm){
-        ptm = malloc(N*M*sizeof(int));
-    }
+  if (!ptm) {
+    ptm = malloc(N*M*sizeof(int));
+  }
 
-    for(int i=0;i<M;i++){
-        for(int j=0;j<N;j++){
-            ptm[i*N+j] = (int)unif(&time_seed, 1, 99);
-        }
+  for (int i = 0; i < M; i++) {
+    for (int j = 0; j < N; j++) {
+      ptm[i*N+j] = (int)unif(&time_seed, 1, 99);
     }
+  }
 }
 
 void taillard_get_instance_data(int *ptm, int *N, int *M, const int id)
 {
-    *N = taillard_get_nb_jobs(id);
-    *M = taillard_get_nb_machines(id);
+  *N = taillard_get_nb_jobs(id);
+  *M = taillard_get_nb_machines(id);
 
-    taillard_get_processing_times(ptm, id);
+  taillard_get_processing_times(ptm, id);
 }

@@ -5,8 +5,6 @@
 //
 // E. Taillard, Benchmarks for basic scheduling problems, European Journal of Operational Research, Volume 64, Issue 2, 1993, Pages 278-285, ISSN 0377-2217, https://doi.org/10.1016/0377-2217(93)90182-M.
 
-// #include "../include/c_bound_simple.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

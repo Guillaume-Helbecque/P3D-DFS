@@ -9,9 +9,6 @@ module search_distributed
   use aux;
   use Problem;
 
-  const BUSY: bool = false;
-  const IDLE: bool = true;
-
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)

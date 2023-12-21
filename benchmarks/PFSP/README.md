@@ -1,10 +1,10 @@
 # The Permutation Flow-shop Scheduling problem (PFSP)
 
-The problem consists in finding an optimal processing order (a permutation) for $n$ jobs on $m$ machines, such that the completion time of the last job on the last machine (makespan) is minimized. The commonly used Taillard's [1] and VRF's [2] instances are supported as test-cases. The initial upper bound `ub` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scracth.
+The problem consists in finding an optimal processing order (a permutation) for $n$ jobs on $m$ machines, such that the completion time of the last job on the last machine (makespan) is minimized. The commonly used Taillard's [1] and VRF's [2] instances are supported as test-cases. The initial upper bound `ub` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scratch.
 
 Different B&B lower bounds are supported *via* `--lb`:
-- `lb1`: a simple one-machine bound which can be computed in $\mathcal{O}(mn)$ steps per supproblem;
-- `lb1_d`: a fast implementation of `lb1`, which can be compute in $\mathcal{O}(m)$ steps per supproblem;
+- `lb1`: a simple one-machine bound which can be computed in $\mathcal{O}(mn)$ steps per subproblem;
+- `lb1_d`: a fast implementation of `lb1`, which can be compute in $\mathcal{O}(m)$ steps per subproblem;
 - `lb2`: a two-machine bound which relies on the exact resolution of two-machine problems obtained by relaxing capacity constraints on all machines, with the exception of a pair of machines \(M<sub>u</sub>,M<sub>v</sub>\)<sub>1<=u<v<=m</sub>, and taking the maximum over all $\frac{m(m-1)}{2}$ machine-pairs. It can be computed in $\mathcal{O}(m^2n)$ steps per subproblem.
 
 In addition, different B&B branching rules are supported *via* `--br`: `fwd`, `bwd`, `alt`, `maxSum`, `minMin`, and `minBranch`. The latter are defined in [3].

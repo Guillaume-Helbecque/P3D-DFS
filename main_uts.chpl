@@ -18,15 +18,15 @@ module main_uts
   config const saveTime: bool  = false;
 
   // UTS-specific options
-  config const t: c_int     = 0; // BIN
-  config const b: c_double  = 2000.0;
-  config const r: c_int     = 0;
-  config const a: c_int     = 0; // LINEAR
-  config const d: c_int     = 6;
-  config const q: c_double  = 0.499995;
-  config const m: c_int     = 2;
-  config const f: c_double  = 0.5;
-  config const g: c_int     = 1;
+  config const t: c_int    = 0; // BIN
+  config const b: c_double = 2000.0;
+  config const r: c_int    = 0;
+  config const a: c_int    = 0; // LINEAR
+  config const d: c_int    = 6;
+  config const q: c_double = 0.499995;
+  config const m: c_int    = 2;
+  config const f: c_double = 0.5;
+  config const g: c_int    = 1;
 
   proc main(args: [] string): int
   {

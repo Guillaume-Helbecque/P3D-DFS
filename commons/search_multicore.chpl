@@ -7,9 +7,6 @@ module search_multicore
   use aux;
   use Problem;
 
-  const BUSY: bool = false;
-  const IDLE: bool = true;
-
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     const numTasks = here.maxTaskPar;

@@ -3,6 +3,7 @@ module aux
   use IO;
 
   const BUSY: bool = false;
+  const IDLE: bool = true;
 
   // Take a boolean array and return false if it contains at least one "true", "true" if not
   inline proc all_idle(const arr: [] atomic bool): bool
@@ -56,8 +57,8 @@ module aux
   {
     writeln("\n    usage:  main.o [parameter value] ...");
     writeln("\n  General Parameters:\n");
-    writeln("   --mode                str   parallel execution mode (multicore, distributed)");
-    writeln("   --activeSet           bool  computes and distributes an initial set of elements");
+    writeln("   --mode                str   parallel execution mode (sequential, multicore, distributed)");
+    writeln("   --activeSet           bool  compute and distribute an initial set of elements");
     writeln("   --saveTime            bool  save processing time in a file");
     writeln("   --help (or -h)              this message");
   }
