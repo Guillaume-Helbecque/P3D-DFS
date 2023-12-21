@@ -65,13 +65,16 @@ Fig.2 - P3D-DFS vs. MPI-PUTS on UTS.
 - Extend the list of supported problems, *e.g.* the Quadratic Assignment Problem (QAP), the Traveling Salesman Problem (TSP).
 
 ## Contributors
-- Guillaume Helbecque, Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France
-- Jan Gmys, Centre Inria de l'Université de Lille, France
-- Tiago Carneiro, Université du Luxembourg, FSTM, Luxembourg
-- Nouredine Melab, Université de Lille, CNRS/CRIStAL UMR 9189, Centre Inria de l'Université de Lille, France
-- Pascal Bouvry, Université du Luxembourg, DCS-FSTM/SnT, Luxembourg
+- Guillaume Helbecque, [Université de Lille](https://www.univ-lille.fr/) (France) & [Université du Luxembourg](https://www.uni.lu/en/) (Luxembourg)
+- Jan Gmys, [Université de Lille](https://www.univ-lille.fr/) (France)
+- Tiago Carneiro, [Université du Luxembourg](https://www.uni.lu/en/) (Luxembourg)
+- Nouredine Melab, [Université de Lille](https://www.univ-lille.fr/) (France)
+- Pascal Bouvry, [Université du Luxembourg](https://www.uni.lu/en/) (Luxembourg)
 
 ## Publications
 1. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computat Pract Exper*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
 2. G. Helbecque, J. Gmys, T. Carneiro, N. Melab, P. Bouvry. Towards a scalable load balancing for productivity-aware tree-search. *The 10th Annual Chapel Implementers and Users Workshop (CHIUW)*, June 2023, online.
 3. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Productivity-aware Parallel Distributed Tree-Search for Exact Optimization. *International Conference on Optimization and Learning (OLA)*, May 2023, Malaga, Spain.
+
+## Acknowledgements
+This work is supported by the Agence Nationale de la Recherche (ref. ANR-22-CE46-0011) and the Luxembourg National Research Fund (ref. INTER/ANR/22/17133848), under the UltraBO project.
