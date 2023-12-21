@@ -5,10 +5,10 @@ module Problem_UTS
   use Problem;
   use Header_chpl_c_UTS;
 
-  const BIN: c_int      = 0;
-  const GEO: c_int      = 1;
-  const HYBRID: c_int   = 2;
-  const BALANCED: c_int = 3;
+  param BIN: c_int      = 0;
+  param GEO: c_int      = 1;
+  param HYBRID: c_int   = 2;
+  param BALANCED: c_int = 3;
 
   class Problem_UTS : Problem
   {

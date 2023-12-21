@@ -14,9 +14,9 @@ module Problem_PFSP
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
-  const BEGIN: c_int = -1;
-  const BEGINEND: c_int = 0;
-  const END: c_int = 1;
+  param BEGIN: c_int    =-1;
+  param BEGINEND: c_int = 0;
+  param END: c_int      = 1;
 
   class Problem_PFSP : Problem
   {

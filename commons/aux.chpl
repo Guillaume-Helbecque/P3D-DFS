@@ -2,8 +2,8 @@ module aux
 {
   use IO;
 
-  const BUSY: bool = false;
-  const IDLE: bool = true;
+  param BUSY: bool = false;
+  param IDLE: bool = true;
 
   // Take a boolean array and return false if it contains at least one "true", "true" if not
   inline proc all_idle(const arr: [] atomic bool): bool
