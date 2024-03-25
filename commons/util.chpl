@@ -1,4 +1,4 @@
-module aux
+module util
 {
   use IO;
 

@@ -5,7 +5,7 @@ module Problem_NQueens
 
   use Problem;
 
-  require "../../commons/c_sources/aux.c", "../../commons/c_headers/aux.h";
+  require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
   class Problem_NQueens : Problem

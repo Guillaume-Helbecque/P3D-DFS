@@ -1,7 +1,7 @@
 module main_queens
 {
   // Common modules
-  use aux;
+  use util;
   use search_sequential;
   use search_multicore;
   use search_distributed;

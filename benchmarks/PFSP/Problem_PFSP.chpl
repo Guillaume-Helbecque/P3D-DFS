@@ -8,7 +8,7 @@ module Problem_PFSP
   use Instances;
   use Header_chpl_c_PFSP;
 
-  require "../../commons/c_sources/aux.c", "../../commons/c_headers/aux.h";
+  require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];

@@ -1,4 +1,4 @@
-#include "../c_headers/aux.h"
+#include "../c_headers/util.h"
 
 // Swap two integers
 void swap(int *a, int *b)

@@ -3,7 +3,7 @@ module main_uts
   // Common modules
   use CTypes;
 
-  use aux;
+  use util;
   use search_sequential;
   use search_multicore;
   use search_distributed;

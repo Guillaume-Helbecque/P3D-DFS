@@ -6,7 +6,7 @@ module search_distributed
   use DistributedBag_DFS;
   use AllLocalesBarriers;
 
-  use aux;
+  use util;
   use Problem;
 
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void

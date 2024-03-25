@@ -3,7 +3,7 @@ module search_sequential
   use List;
   use Time;
 
-  use aux;
+  use util;
   use Problem;
 
   proc search_sequential(type Node, problem, const saveTime: bool): void

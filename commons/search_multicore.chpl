@@ -4,7 +4,7 @@ module search_multicore
   use Time;
   use DistributedBag_DFS;
 
-  use aux;
+  use util;
   use Problem;
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
