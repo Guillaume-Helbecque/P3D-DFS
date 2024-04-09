@@ -16,7 +16,7 @@ class Instance_VRF : Instance
     var path = "".join(tup);
 
     var f = open(path, ioMode.r);
-    var channel = f.reader();
+    var channel = f.reader(locking=false);
 
     this.jobs = channel.read(c_int);
     this.machines = channel.read(c_int);
@@ -59,7 +59,7 @@ class Instance_VRF : Instance
     const path = "./benchmarks/PFSP/instances/data_VRF/VFR_upper_lower_bounds.txt";
 
     var f = open(path, ioMode.r);
-    var channel = f.reader();
+    var channel = f.reader(locking=false);
 
     var file = channel.read([0..240, 0..2] string);
 

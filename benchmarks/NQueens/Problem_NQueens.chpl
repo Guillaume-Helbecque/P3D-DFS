@@ -22,7 +22,7 @@ module Problem_NQueens
       return new Problem_NQueens(this.N);
     }
 
-    proc isSafe(const board: c_ptr(c_int), const queen_num: int, const row_pos: c_int): bool
+    proc isSafe(const board: c_ptrConst(c_int), const queen_num: int, const row_pos: c_int): bool
     {
       // For each queen before this one
       for i in 0..#queen_num {

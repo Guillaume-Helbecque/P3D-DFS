@@ -46,7 +46,7 @@ module util
   {
     try! {
       var f: file = open(path, ioMode.a);
-      var channel = f.writer();
+      var channel = f.writer(locking=false);
       channel.writeln(numTasks, " ", time);
       channel.close();
       f.close();

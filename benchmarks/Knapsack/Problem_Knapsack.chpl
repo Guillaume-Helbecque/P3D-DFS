@@ -32,7 +32,7 @@ class Problem_Knapsack : Problem
     var path = path_dir + fileName;
 
     var f = open(path, ioMode.r);
-    var channel = f.reader();
+    var channel = f.reader(locking=false);
 
     this.N = channel.read(int);
     this.W = channel.read(int);
@@ -63,7 +63,7 @@ class Problem_Knapsack : Problem
         const path = path_dir + "knapPI_optimal.txt";
 
         var f = open(path, ioMode.r);
-        var channel = f.reader();
+        var channel = f.reader(locking=false);
 
         var file = channel.read([0..480, 0..1] string);
 
