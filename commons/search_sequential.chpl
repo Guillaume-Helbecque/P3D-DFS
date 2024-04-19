@@ -9,7 +9,8 @@ module search_sequential
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
     var best: int = problem.getInitBound();
-    var best_at: atomic int = best;
+    /* Not needed in sequential mode, but we use it only to match the generic template. */
+    var lockBest: sync bool = true;
 
     // Statistics
     var exploredTree: int;
@@ -42,7 +43,7 @@ module search_sequential
 
       // Decompose the element
       var children = problem.decompose(Node, parent, exploredTree, exploredSol,
-        maxDepth, best_at, best);
+        maxDepth, best, lockBest, best);
 
       pool.pushBack(children);
     }

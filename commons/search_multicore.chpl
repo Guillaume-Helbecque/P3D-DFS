@@ -12,7 +12,8 @@ module search_multicore
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
-    var best: atomic int = problem.getInitBound();
+    var best: int = problem.getInitBound();
+    var lockBest: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
@@ -40,7 +41,7 @@ module search_multicore
       var initList: list(Node);
       initList.pushBack(root);
 
-      var best_task: int = best.read();
+      var best_task: int = best;
       ref tree_loc = eachExploredTree[0];
       ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
@@ -51,7 +52,7 @@ module search_multicore
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, best_task);
+            max_depth, best, lockBest, best_task);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -79,10 +80,10 @@ module search_multicore
     // =====================
 
     coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
-      ref eachMaxDepth, ref eachTaskState) {
+      ref eachMaxDepth, ref eachTaskState, ref best) {
 
       // Task variables
-      var best_task: int = best.read();
+      var best_task: int = best;
       var taskState: bool = BUSY;
       var counter: int = 0;
       ref tree_loc = eachExploredTree[taskId];
@@ -127,15 +128,15 @@ module search_multicore
 
         // Decompose an element
         var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, best, best_task);
+          max_depth, best, lockBest, best_task);
 
         bag.addBulk(children, taskId);
 
         // Read the best solution found so far
-        if (taskId == 0) {
+        /* if (taskId == 0) {
           counter += 1;
           if (counter % 10000 == 0) then best_task = best.read();
-        }
+        } */
 
       }
     }
@@ -153,7 +154,7 @@ module search_multicore
       save_time(numTasks, globalTimer.elapsed(), path);
     }
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best.read(),
+    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
       globalTimer.elapsed());
   }
 }

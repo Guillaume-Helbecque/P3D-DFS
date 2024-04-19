@@ -140,27 +140,36 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
 
-      for i in parent.limit1+1..parent.limit2-1 {
-        var child = new Node(parent);
-        swap(child.prmu[child.depth], child.prmu[i]);
-        child.depth  += 1;
-        child.limit1 += 1;
+      /* If the parent node is a leaf, we evaluate its permutation and compare it
+      against the best evaluation found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best evaluation found so far. */
+      if (parent.depth + 1 == jobs) {
+        const eval = eval_solution(lbound1, parent.prmu);
 
-        var lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
 
-        if (child.depth == jobs) { // if child leaf
-          num_sol += 1;
+        num_sol += 1;
+      }
+      else {
+        for i in parent.limit1+1..parent.limit2-1 {
+          var child = new Node(parent);
+          swap(child.prmu[child.depth], child.prmu[i]);
+          child.depth  += 1;
+          child.limit1 += 1;
 
-          if (lowerbound < best_task) { // if child feasible
-            best_task = lowerbound;
-            best.write(lowerbound);
-          }
-        } else { // if not leaf
-          if (lowerbound < best_task) { // if child feasible
+          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+
+          if (lowerbound < best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -171,36 +180,45 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
 
-      var lb_begin = allocate(c_int, this.jobs);
-      var lb_end = allocate(c_int, this.jobs);
-      /* var prio_begin = allocate(c_int, this.jobs);
-      var prio_end = allocate(c_int, this.jobs); */
-      var beginEnd = this.branchingSide;
+      /* If the parent node is a leaf, we evaluate its permutation and compare it
+      against the best evaluation found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best evaluation found so far. */
+      if (parent.depth + 1 == jobs) {
+        const eval = eval_solution(lbound1, parent.prmu);
 
-      lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
-        lb_begin, lb_end, nil, nil, beginEnd);
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
 
-      if (this.branchingSide == BEGINEND) {
-        beginEnd = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+        num_sol += 1;
       }
+      else {
+        var lb_begin = allocate(c_int, this.jobs);
+        var lb_end = allocate(c_int, this.jobs);
+        /* var prio_begin = allocate(c_int, this.jobs);
+        var prio_end = allocate(c_int, this.jobs); */
+        var beginEnd = this.branchingSide;
 
-      for i in parent.limit1+1..parent.limit2-1 {
-        const job = parent.prmu[i];
-        const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
+        lb1_children_bounds(this.lbound1, parent.prmu, parent.limit1:c_int, parent.limit2:c_int,
+          lb_begin, lb_end, nil, nil, beginEnd);
 
-        if (parent.depth + 1 == jobs) { // if child leaf
-          num_sol += 1;
+        if (this.branchingSide == BEGINEND) {
+          beginEnd = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+        }
 
-          if (lb < best_task) { // if child feasible
-            best_task = lb;
-            best.write(lb);
-          }
-        } else { // if not leaf
-          if (lb < best_task) { // if child feasible
+        for i in parent.limit1+1..parent.limit2-1 {
+          const job = parent.prmu[i];
+          const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
+
+          if (lb < best_task) {
             var child = new Node(parent);
             child.depth += 1;
 
@@ -217,58 +235,65 @@ module Problem_PFSP
           }
         }
 
+        deallocate(lb_begin); deallocate(lb_end);
+        /* deallocate(prio_begin); deallocate(prio_end); */
       }
-
-      deallocate(lb_begin); deallocate(lb_end);
-      /* deallocate(prio_begin); deallocate(prio_end); */
 
       return children;
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
 
-      for i in parent.limit1+1..parent.limit2-1 {
-        var child = new Node(parent);
-        swap(child.prmu[child.depth], child.prmu[i]);
-        child.depth  += 1;
-        child.limit1 += 1;
+      /* If the parent node is a leaf, we evaluate its permutation and compare it
+      against the best evaluation found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best evaluation found so far. */
+      if (parent.depth + 1 == jobs) {
+        const eval = eval_solution(lbound1, parent.prmu);
 
-        var lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
 
-        if (child.depth == jobs) { // if child leaf
-          num_sol += 1;
+        num_sol += 1;
+      }
+      else {
+        for i in parent.limit1+1..parent.limit2-1 {
+          var child = new Node(parent);
+          swap(child.prmu[child.depth], child.prmu[i]);
+          child.depth  += 1;
+          child.limit1 += 1;
 
-          if (lowerbound < best_task) { // if child feasible
-            best_task = lowerbound;
-            best.write(lowerbound);
-          }
-        } else { // if not leaf
-          if (lowerbound < best_task) { // if child feasible
+          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+
+          if (lowerbound < best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
         }
-
       }
 
       return children;
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       select this.lb_name {
         when "lb1" {
-          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "lb1_d" {
-          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "lb2" {
-          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, best_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
