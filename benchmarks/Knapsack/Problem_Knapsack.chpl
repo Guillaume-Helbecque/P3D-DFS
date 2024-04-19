@@ -115,7 +115,7 @@ class Problem_Knapsack : Problem
   }
 
   override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-    ref max_depth: int, best: atomic int, ref best_task: int): list(?)
+    ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
   {
     var children: list(Node);
 
@@ -129,10 +129,13 @@ class Problem_Knapsack : Problem
       if (child.weight <= this.W) {
         if (child.depth == this.N) { // leaf
           num_sol += 1;
-          if ((best_task < child.profit) && (best.read() < child.profit)) { // improve optimum
+
+          lock.readFE();
+          if ((best_task < child.profit) && (best < child.profit)) { // improve optimum
             best_task = child.profit;
-            best.write(child.profit);
+            best = child.profit;
           }
+          lock.writeEF(true);
         }
         else {
           if (best_task < /* child.profit + */ computeBound(Node, child)) { // bounding and pruning

@@ -63,6 +63,11 @@ module Problem_PFSP
       if (allowedBranchingRules.find(rules) != -1) then this.branching = rules;
       else halt("Error - Unsupported branching rule");
 
+      if ((lb != "lb1_d") && (rules != "fwd")) {
+        warning("Branching rules other than `fwd` are only supported by the `lb1_d` bounding function. `fwd` applies.");
+        this.branching = "fwd";
+      }
+
       if (rules == "fwd") then this.branchingSide = BEGIN;
       else if (rules == "bwd") then this.branchingSide = END;
       else this.branchingSide = BEGINEND;

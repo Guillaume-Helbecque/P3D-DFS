@@ -82,7 +82,7 @@ module Problem_UTS
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, best: atomic int, ref best_task: int): [] Node
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): [] Node
     {
       var numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
         this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
