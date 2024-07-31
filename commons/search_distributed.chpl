@@ -14,7 +14,6 @@ module search_distributed
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
-    const PrivateSpace: domain(1) dmapped privateDist(); // map each index to a locale
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
