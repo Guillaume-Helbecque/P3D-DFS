@@ -112,13 +112,18 @@ module Problem_UTS
 
     override proc print_settings(): void
     {
+      var tree_type, shape_fct: string;
+      try! {
+        tree_type = string.createCopyingBuffer(uts_trees_str[this.treeType]);
+        shape_fct = string.createCopyingBuffer(uts_geoshapes_str[this.shape_fn]);
+      }
       writeln("\n=================================================");
       writeln("UTS - Unbalanced Tree Search");
-      writeln("Tree type: ", this.treeType, " (", uts_trees_str[this.treeType]:string, ")");
+      writeln("Tree type: ", this.treeType, " (", tree_type, ")");
       writeln("Tree shape parameters:");
       writeln("  root branching factor b_0 = ", this.b_0:int, ", root seed r = ", this.rootId);
       if (this.treeType == GEO || this.treeType == HYBRID) {
-        writeln("  GEO parameters: gen_mx = ", this.gen_mx, ", shape function = ", this.shape_fn, " (", uts_geoshapes_str[this.shape_fn]:string, ")");
+        writeln("  GEO parameters: gen_mx = ", this.gen_mx, ", shape function = ", this.shape_fn, " (", shape_fct, ")");
       }
       if (this.treeType == BIN || this.treeType == HYBRID) {
         var q = this.nonLeafProb;
@@ -135,7 +140,7 @@ module Problem_UTS
         writeln("  BALANCED parameters gen_mx = ", this.gen_mx);
         writeln("    Expected size: ", exp_nodes, ", ", exp_leaves);
       }
-      writeln("Random number generator: "); // TO COMPLETE
+      //writeln("Random number generator: "); // TO COMPLETE
       writeln("Compute granularity: ", this.computeGranularity);
       writeln("=================================================");
     }
