@@ -1,5 +1,7 @@
 Instance optimal
 
+knapPI_3_100_1000_15 11777
+knapPI_3_100_1000_83 53897
 knapPI_1_50_1000_1 8373
 knapPI_1_50_1000_2 5847
 knapPI_1_50_1000_3 5962
