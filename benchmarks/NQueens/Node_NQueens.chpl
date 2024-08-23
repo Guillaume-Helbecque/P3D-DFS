@@ -1,7 +1,5 @@
 module Node_NQueens
 {
-  use CTypes;
-
   /*
     Maximum size of the problem. The exact number of N-Queens solutions is only
     known for N < 28.
@@ -10,7 +8,7 @@ module Node_NQueens
 
   record Node_NQueens
   {
-    var board: c_array(c_int, NMax);
+    var board: NMax*int(32);
     var depth: int;
 
     // default-initializer
@@ -21,7 +19,7 @@ module Node_NQueens
     proc init(problem)
     {
       init this;
-      for i in 0..#problem.N do this.board[i] = i:c_int;
+      for i in 0..#problem.N do this.board[i] = i:int(32);
     }
 
     // copy-initializer

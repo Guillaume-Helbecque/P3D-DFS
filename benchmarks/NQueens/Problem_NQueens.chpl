@@ -1,12 +1,8 @@
 module Problem_NQueens
 {
   use List;
-  use CTypes;
 
   use Problem;
-
-  require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
-  extern proc swap(ref a: c_int, ref b: c_int): void;
 
   class Problem_NQueens : Problem
   {
@@ -22,7 +18,7 @@ module Problem_NQueens
       return new Problem_NQueens(this.N);
     }
 
-    proc isSafe(const board: c_ptrConst(c_int), const queen_num: int, const row_pos: c_int): bool
+    proc isSafe(const board, const queen_num: int, const row_pos: int(32)): bool
     {
       // For each queen before this one
       for i in 0..#queen_num {
@@ -52,7 +48,7 @@ module Problem_NQueens
       for j in depth..this.N-1 {
         if isSafe(parent.board, depth, parent.board[j]) {
           var child = new Node(parent);
-          swap(child.board[depth], child.board[j]);
+          child.board[depth] <=> child.board[j];
           child.depth += 1;
           children.pushBack(child);
           tree_loc += 1;
