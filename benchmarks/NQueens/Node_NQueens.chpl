@@ -8,8 +8,8 @@ module Node_NQueens
 
   record Node_NQueens
   {
-    var board: NMax*int(32);
-    var depth: int;
+    var board: NMax*uint(8);
+    var depth: uint(8);
 
     // default-initializer
     proc init()
@@ -19,7 +19,7 @@ module Node_NQueens
     proc init(problem)
     {
       init this;
-      for i in 0..#problem.N do this.board[i] = i:int(32);
+      for i in 0..#problem.N do this.board[i] = i:uint(8);
     }
 
     // copy-initializer
