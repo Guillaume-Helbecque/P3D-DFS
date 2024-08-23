@@ -130,12 +130,13 @@ class Problem_Knapsack : Problem
         if (child.depth == this.N) { // leaf
           num_sol += 1;
 
-          lock.readFE();
-          if ((best_task < child.profit) && (best < child.profit)) { // improve optimum
+          if (best_task < child.profit) {
             best_task = child.profit;
-            best = child.profit;
+            lock.readFE();
+            if (best < child.profit) then best = child.profit;
+            else best_task = best;
+            lock.writeEF(true);
           }
-          lock.writeEF(true);
         }
         else {
           if (best_task < /* child.profit + */ computeBound(Node, child)) { // bounding and pruning
