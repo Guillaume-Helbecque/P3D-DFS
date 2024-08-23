@@ -122,7 +122,7 @@ class Problem_Knapsack : Problem
     for i in 0..1 {
       var child = new Node(parent);
       child.depth += 1;
-      child.items[parent.depth] = i;
+      child.items[parent.depth] = i:uint(32);
       child.weight += i*this.weight[parent.depth];
       child.profit += i*this.profit[parent.depth];
 

@@ -1,13 +1,11 @@
 module Node_Knapsack
 {
-  use CTypes;
-
   config param maxItems: int = 50;
 
   record Node_Knapsack
   {
     var depth: int;
-    var items: c_array(int, maxItems);
+    var items: maxItems*uint(32);
     var weight: int;
     var profit: int;
 
