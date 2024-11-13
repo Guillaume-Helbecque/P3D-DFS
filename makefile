@@ -14,7 +14,7 @@ CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 # Build Chapel codes
 # ==========================
 
-all: main_pfsp.o main_uts.o main_nqueens.o main_knapsack.o
+all: main_pfsp.out main_uts.out main_nqueens.out main_knapsack.out
 
 # ==========
 # PFSP
@@ -23,8 +23,8 @@ all: main_pfsp.o main_uts.o main_nqueens.o main_knapsack.o
 CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
 CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instances
 
-main_pfsp.o: main_pfsp.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) main_pfsp.chpl -o main_pfsp.o
+main_pfsp.out: main_pfsp.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) main_pfsp.chpl -o main_pfsp.out
 
 # ==========
 # UTS
@@ -56,8 +56,8 @@ C_OPTS = --ccflags $(RNG_DEF)
 
 CHPL_UTS_OPTS = -M $(CHPL_UTS_MODULES_DIR) $(C_OPTS) $(C_FILES)
 
-main_uts.o: main_uts.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) main_uts.chpl -o main_uts.o
+main_uts.out: main_uts.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) main_uts.chpl -o main_uts.out
 
 # ==========
 # NQueens
@@ -66,8 +66,8 @@ main_uts.o: main_uts.chpl
 CHPL_NQUEENS_MODULES_DIR = ./benchmarks/NQueens
 CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
 
-main_nqueens.o: main_nqueens.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) main_nqueens.chpl -o main_nqueens.o
+main_nqueens.out: main_nqueens.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) main_nqueens.chpl -o main_nqueens.out
 
 # ==========
 # Knapsack
@@ -76,8 +76,8 @@ main_nqueens.o: main_nqueens.chpl
 CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
 CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR)
 
-main_knapsack.o: main_knapsack.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) main_knapsack.chpl -o main_knapsack.o
+main_knapsack.out: main_knapsack.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) main_knapsack.chpl -o main_knapsack.out
 
 # ==========================
 # Utilities
@@ -86,5 +86,5 @@ main_knapsack.o: main_knapsack.chpl
 .PHONY: clean
 
 clean:
-	rm main_*.o
-	rm main_*.o_real
+	rm -f main_*.out
+	rm -f main_*.out_real
