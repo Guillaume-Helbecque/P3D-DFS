@@ -911,7 +911,7 @@ module DistributedBag_DFS
 
     // TODO: implement 'transferElements'
 
-    inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
+    inline proc ref simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
     {
       var casA, casB: bool;
       lock.readFE(); // set locked (empty)
