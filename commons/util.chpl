@@ -52,14 +52,4 @@ module util
       f.close();
     }
   }
-
-  proc common_help_message(): void
-  {
-    writeln("\n    usage:  main.o [parameter value] ...");
-    writeln("\n  General Parameters:\n");
-    writeln("   --mode                str   parallel execution mode (sequential, multicore, distributed)");
-    writeln("   --activeSet           bool  compute and distribute an initial set of elements");
-    writeln("   --saveTime            bool  save processing time in a file");
-    writeln("   --help (or -h)              this message");
-  }
 }

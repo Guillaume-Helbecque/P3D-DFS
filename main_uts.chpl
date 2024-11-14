@@ -1,21 +1,11 @@
 module main_uts
 {
-  // Common modules
+  use launcher;
   use CTypes;
-
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
 
   // UTS-specific modules
   use Node_UTS;
   use Problem_UTS;
-
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // UTS-specific options
   config const t: c_int    = 0; // BIN
@@ -32,33 +22,7 @@ module main_uts
   {
     // Initialization of the problem
     var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
-
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message();
-        uts.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_UTS, uts, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_UTS, uts, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_UTS, uts, saveTime, activeSet);
-      }
-      otherwise {
-        halt("ERROR - Unknown execution mode");
-      }
-    }
+    launcher(args, Node_UTS, uts);
 
     return 0;
   }
