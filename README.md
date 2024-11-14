@@ -38,28 +38,6 @@ Backtracking is an algorithmic technique for solving problems recursively by try
 - [The Unbalanced Tree-Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
 
-## Experimental results
-
-The following figures show the absolute speed-up achieved by P3D-DFS and MPI+X baseline implementations on large unbalanced tree-based
-problems, considering different granularities (fine, medium, coarse). For each figure, most coarse-grained is top-right, most
-fine-grained is bottom-left.
-
-<table><tr><td>
-
-![results_pfsp_dist](https://github.com/Guillaume-Helbecque/P3D-DFS/assets/72358009/b8a99db2-9b3c-49ec-8fad-33d6e5020af1)
-<p align = "center">
-Fig.1 - P3D-DFS vs. MPI-PBB on B&B applied to PFSP.
-</p>
-
-</td><td>
-
-![results_uts_dist](https://github.com/Guillaume-Helbecque/P3D-DFS/assets/72358009/bd603a08-46d1-4829-a92f-7f15cf72970b)
-<p align = "center">
-Fig.2 - P3D-DFS vs. MPI-PUTS on UTS.
-</p>
-
-</td></tr></table>
-
 ## Related publications
 1. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024* (ICCS). vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
 2. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computation Practice Experience*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
