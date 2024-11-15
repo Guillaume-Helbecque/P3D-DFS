@@ -7,8 +7,10 @@ module search_multicore
   use util;
   use Problem;
 
-  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(root, problem, const saveTime: bool, const activeSet: bool): void
   {
+    type nodeType = root.type;
+
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
@@ -29,8 +31,7 @@ module search_multicore
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node);
-    var root = new Node(problem);
+    var bag = new DistBag_DFS(nodeType);
 
     if activeSet {
       /*
@@ -38,7 +39,7 @@ module search_multicore
         We require at least 2 elements per task.
       */
       var initSize: int = 2 * numTasks;
-      var initList: list(Node);
+      var initList: list(nodeType);
       initList.pushBack(root);
 
       var best_task: int = best;
@@ -51,7 +52,7 @@ module search_multicore
         var parent = initList.popBack();
 
         {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+          var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
             max_depth, best, lockBest, best_task);
 
           for elt in children do initList.insert(0, elt);
@@ -94,7 +95,7 @@ module search_multicore
       while true do {
 
         // Try to remove an element
-        var (hasWork, parent): (int, Node) = bag.remove(taskId);
+        var (hasWork, parent): (int, nodeType) = bag.remove(taskId);
 
         /*
           Check (or not) the termination condition regarding the value of 'hasWork':
@@ -127,7 +128,7 @@ module search_multicore
         }
 
         // Decompose an element
-        var children = problem.decompose(Node, parent, tree_loc, num_sol,
+        var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
           max_depth, best, lockBest, best_task);
 
         bag.addBulk(children, taskId);

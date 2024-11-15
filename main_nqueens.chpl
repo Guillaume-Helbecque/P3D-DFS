@@ -13,7 +13,8 @@ module main_queens
   {
     // Initialization of the problem
     var nqueens = new Problem_NQueens(N);
-    launcher(args, Node_NQueens, nqueens);
+    var root = new Node_NQueens(nqueens);
+    launcher(args, root, nqueens);
 
     return 0;
   }

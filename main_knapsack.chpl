@@ -14,7 +14,8 @@ module main_knapsack
   {
     // Initialization of the problem
     var knapsack = new Problem_Knapsack(inst, lb);
-    launcher(args, Node_Knapsack, knapsack);
+    var root = new Node_Knapsack(knapsack);
+    launcher(args, root, knapsack);
 
     return 0;
   }

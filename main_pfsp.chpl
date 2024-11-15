@@ -16,7 +16,8 @@ module main_pfsp
   {
     // Initialization of the problem
     var pfsp = new Problem_PFSP(inst, lb, br, ub);
-    launcher(args, Node_PFSP, pfsp);
+    var root = new Node_PFSP(pfsp);
+    launcher(args, root, pfsp);
 
     return 0;
   }

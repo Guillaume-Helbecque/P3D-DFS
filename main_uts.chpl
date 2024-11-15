@@ -22,7 +22,8 @@ module main_uts
   {
     // Initialization of the problem
     var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
-    launcher(args, Node_UTS, uts);
+    var root = new Node_UTS(uts);
+    launcher(args, root, uts);
 
     return 0;
   }

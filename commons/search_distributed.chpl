@@ -9,8 +9,10 @@ module search_distributed
   use util;
   use Problem;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(root, problem, const saveTime: bool, const activeSet: bool): void
   {
+    type nodeType = root.type;
+
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
@@ -30,8 +32,7 @@ module search_distributed
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node, targetLocales = Locales);
-    var root = new Node(problem);
+    var bag = new DistBag_DFS(nodeType, targetLocales = Locales);
 
     if activeSet {
       /*
@@ -39,7 +40,7 @@ module search_distributed
         We require at least 2 elements per task.
       */
       var initSize: int = 2 * here.maxTaskPar * numLocales;
-      var initList: list(Node);
+      var initList: list(nodeType);
       initList.pushBack(root);
 
       var best_task: int = best;
@@ -52,7 +53,7 @@ module search_distributed
         var parent = initList.popBack();
 
         {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+          var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
             max_depth, best, lockBest, best_task);
 
           for elt in children do initList.insert(0, elt);
@@ -117,7 +118,7 @@ module search_distributed
         while true do {
 
           // Try to remove an element
-          var (hasWork, parent): (int, Node) = bag.remove(taskId);
+          var (hasWork, parent): (int, nodeType) = bag.remove(taskId);
 
           /*
             Check (or not) the termination condition regarding the value of 'hasWork':
@@ -160,7 +161,7 @@ module search_distributed
           }
 
           // Decompose an element
-          var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
+          var children = problem_loc.decompose(nodeType, parent, tree_loc, num_sol,
             max_depth, best, lockBest, best_task);
 
           bag.addBulk(children, taskId);

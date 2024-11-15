@@ -22,7 +22,7 @@ module launcher
     writeln("   --help (or -h)              this message");
   }
 
-  proc launcher(args: [] string, type Node, problem): int
+  proc launcher(args: [] string, root, problem): int
   {
     // Helper
     for a in args[1..] {
@@ -38,13 +38,13 @@ module launcher
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node, problem, saveTime);
+        search_sequential(root, problem, saveTime);
       }
       when "multicore" {
-        search_multicore(Node, problem, saveTime, activeSet);
+        search_multicore(root, problem, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node, problem, saveTime, activeSet);
+        search_distributed(root, problem, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
