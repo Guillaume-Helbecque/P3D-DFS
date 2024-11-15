@@ -16,10 +16,10 @@ module Node_NQueens
     {}
 
     // root-initializer
-    proc init(problem)
+    proc init(const N: int)
     {
       init this;
-      for i in 0..#problem.N do this.board[i] = i:uint(8);
+      for i in 0..#N do this.board[i] = i:uint(8);
     }
 
     // copy-initializer

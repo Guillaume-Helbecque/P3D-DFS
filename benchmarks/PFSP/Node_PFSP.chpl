@@ -17,12 +17,12 @@ module Node_PFSP
     {}
 
     // root-initializer
-    proc init(problem)
+    proc init(const numJobs: int)
     {
       this.limit1 = -1;
-      this.limit2 = problem.jobs;
+      this.limit2 = numJobs;
       init this;
-      for i in 0..#problem.jobs do this.prmu[i] = i:c_int;
+      for i in 0..#numJobs do this.prmu[i] = i:c_int;
     }
 
     // copy-initializer

@@ -21,8 +21,8 @@ module main_uts
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
-    var root = new Node_UTS(uts);
+    const uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
+    const root = new Node_UTS(t, r);
     launcher(args, root, uts);
 
     return 0;

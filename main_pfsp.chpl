@@ -15,8 +15,8 @@ module main_pfsp
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var pfsp = new Problem_PFSP(inst, lb, br, ub);
-    var root = new Node_PFSP(pfsp);
+    const pfsp = new Problem_PFSP(inst, lb, br, ub);
+    const root = new Node_PFSP(pfsp.jobs);
     launcher(args, root, pfsp);
 
     return 0;

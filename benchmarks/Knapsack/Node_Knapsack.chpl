@@ -13,12 +13,6 @@ module Node_Knapsack
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
-    {
-      this.init();
-    }
-
     // copy-initializer
     proc init(other: Node_Knapsack)
     {

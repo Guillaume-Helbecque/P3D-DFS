@@ -12,8 +12,8 @@ module main_queens
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var nqueens = new Problem_NQueens(N);
-    var root = new Node_NQueens(nqueens);
+    const nqueens = new Problem_NQueens(N);
+    const root = new Node_NQueens(N);
     launcher(args, root, nqueens);
 
     return 0;

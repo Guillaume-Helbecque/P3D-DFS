@@ -13,8 +13,8 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, lb);
-    var root = new Node_Knapsack(knapsack);
+    const knapsack = new Problem_Knapsack(inst, lb);
+    const root = new Node_Knapsack();
     launcher(args, root, knapsack);
 
     return 0;
