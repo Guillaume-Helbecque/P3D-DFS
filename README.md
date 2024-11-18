@@ -1,5 +1,5 @@
 # P3D-DFS
-Chapel-based implementation of our Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag-DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
+Chapel-based implementation of a Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag-DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
 
 ## Chapel
 [Chapel](https://chapel-lang.org/) is a programming language designed for productive parallel computing on large-scale systems.
