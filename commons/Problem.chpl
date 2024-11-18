@@ -22,26 +22,16 @@ module Problem
     // Utility functions
     // =======================
 
-    proc print_settings(): void
-    {
-      halt("Error - print_settings() not implemented");
-    }
+    proc print_settings(): void {}
 
     proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
-    {
-      halt("Error - print_results() not implemented");
+      const subDepthReached: [] int, const best: int, const elapsedTime: real): void {}
+
+    proc output_filepath(): string {
+      return "";
     }
 
-    proc output_filepath(): string
-    {
-      halt("Error - output_filepath() not implemented");
-    }
-
-    proc help_message(): void
-    {
-      halt("Error - help_message() not implemented");
-    }
+    proc help_message(): void {}
   } // end class
 
 } // end module
