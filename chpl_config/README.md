@@ -3,6 +3,7 @@
 This directory contains some predefined Chapel configuration scripts targeting
 the following systems:
 - laptop (Linux);
+- the [Grid'5000](https://www.grid5000.fr/w/Grid5000:Home) testbed;
 - the [Aion](https://hpc-docs.uni.lu/systems/aion/) supercomputer;
 - the [MeluXina](https://docs.lxp.lu/) supercomputer.
 
