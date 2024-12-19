@@ -5,7 +5,7 @@ Chapel-based implementation of a Productivity- and Performance-aware Parallel Di
 [Chapel](https://chapel-lang.org/) is a programming language designed for productive parallel computing on large-scale systems.
 Chapel supports a multi-threaded execution model via high-level abstractions for data parallelism, task parallelism, concurrency, and nested parallelism. Chapel's locale type enables users to specify and reason about the placement of data and tasks on a target architecture in order to tune for locality and affinity. Chapel supports global-view data aggregates with user-defined implementations, permitting operations on distributed data structures to be expressed in a natural manner.
 
-Our implementation relies on Chapel 2.2.0 and might not compile and run for other versions.
+Our implementation relies on Chapel 2.3.0 and might not compile and run for other versions.
 
 ## The `DistBag-DFS` distributed data structure
 The `DistBag-DFS` distributed data structure is a parallel-safe distributed multi-pool implementation that is unordered and incorporates a WS mechanism that balances workload across multiple locales, transparently to the user. It can contain either predefined-Chapel types, user-defined types or external ones (*e.g.* C structures).
