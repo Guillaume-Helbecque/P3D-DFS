@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7328540.svg)](https://doi.org/10.5281/zenodo.7328540)
+
 # P3D-DFS
 Chapel-based implementation of our Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag-DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
 
@@ -10,7 +12,7 @@ This data structure has been derived from the `DistBag` data structure supplied 
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
-### Compilation & Execution
+### Compilation and execution
 - **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 - **Step 2:** Compile with `make` and execute with:
 ```
@@ -29,6 +31,8 @@ where:
 - [The N-Queens problem](./benchmarks/NQueens)
 
 ### Plug your own problem
+
+To come...
 
 ### Related publications
 1. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024* (ICCS). vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
