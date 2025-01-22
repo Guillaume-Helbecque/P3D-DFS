@@ -1,10 +1,10 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7328540.svg)](https://doi.org/10.5281/zenodo.7328540)
 
-# P3D-DFS
-Chapel-based implementation of our Productivity- and Performance-aware Parallel Distributed Depth-First Search algorithm, namely P3D-DFS. The latter is a generic and general algorithm that can be instantiated on numerous tree-based problems. It is based on the `DistBag_DFS` distributed data structure, which employs an underlying Work Stealing (WS) mechanism to balance workload across multiple Chapel's locales.
+# Productivity- and Performance-aware Parallel Distributed Depth-First Search (P3D-DFS)
 
-The `DistBag_DFS` distributed data structure is a parallel-safe distributed multi-pool implementation that is unordered and incorporates a WS mechanism that balances workload across multiple locales, transparently to the user. It can contain either predefined-Chapel types, user-defined types or external ones (*e.g.* C structures).
-This data structure has been derived from the `DistBag` data structure supplied is the `DistributedBag` Chapel's module, and revised in two different ways: (1) we propose a new scheduling policy of its elements as well as a new synchronization mechanism using non-blocking split-deques, and (2) we redefine the underlying WS mechanism.
+Set of parallel Branch-and-Bound (B&B) skeletons in Chapel targeting CPU-based systems at every scale. This project aims to study the Partitioned Global Address Space (PGAS) programming model (as alternative to MPI+X) for implementing parallel optimization algorithms and to promote the extensibility of the approaches to make them accessible to the community.
+
+The parallelization relies on the parallel tree exploration model, in which several CPU threads explore disjoint sub-spaces of solutions (branches of the B&B tree). In this scheme, each CPU thread manages a separate pool of work in a Depth-First Search (DFS) order, and dynamic load balancing (work stealing) occurs to manage irregular trees. The efficient implementation of these mechanisms, as well as the genericity of the implementation, are guaranteed by our `distBag` data structure (also known as `DistBag_DFS`). The latter has been integrated into the Chapel language as the [`DistributedBag`](https://chapel-lang.org/docs/modules/packages/DistributedBag.html) package module.
 
 ### Prerequisites
 
@@ -25,6 +25,7 @@ where:
 
 ### Supported problems
 
+The B&B skeletons have already been tested on the following benchmark problems:
 - [The Permutation Flowshop Scheduling problem](./benchmarks/PFSP) (PFSP)
 - [The 0/1-Knapsack problem](./benchmarks/Knapsack)
 - [The Unbalanced Tree Search benchmark](./benchmarks/UTS) (UTS)
@@ -35,6 +36,7 @@ where:
 To come...
 
 ### Related publications
+
 1. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024 (ICCS)*. vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
 2. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computation Practice Experience*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
 3. G. Helbecque, J. Gmys, T. Carneiro, N. Melab, P. Bouvry. Towards a scalable load balancing for productivity-aware tree-search. *The 10th Annual Chapel Implementers and Users Workshop (CHIUW)*, June 2023, online.
