@@ -8,7 +8,7 @@ This data structure has been derived from the `DistBag` data structure supplied 
 
 ### Prerequisites
 
-[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.2.0)
+[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.3.0)
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
