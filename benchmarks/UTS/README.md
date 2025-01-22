@@ -1,4 +1,4 @@
-# The Unbalanced Tree-Search benchmark (UTS)
+# The Unbalanced Tree Search benchmark (UTS)
 
 The problem consists in counting the number of nodes in an implicitly constructed tree that is parameterized in shape, depth, size and imbalance [1]. UTS trees are generated using a process, in which the number of children of a node is a random variable with a given distribution.
 Our implementation supports binomial trees (`--t=0`), *i.e.* each node has `m` children with probability `q` and has no children with probability $1-q$, where $q\in [0,1]$. When $mq < 1$, this process generates a finite tree, and the variation of subtree sizes increases dramatically as $mq$ approaches $1$. The root-specific branching factor `b` can be set sufficiently high to generate an interesting variety of subtree sizes below the root.
@@ -21,4 +21,4 @@ where:
 
 ### References
 
-1. S. Olivier, J. Huan, J. Liu, *et al*. (2007) UTS: An Unbalanced Tree Search Benchmark. *19th International Workshop on Languages and Compilers for Parallel Computing* (LCPC). DOI: [10.1007/978-3-540-72521-3\_18](https://doi.org/10.1007/978-3-540-72521-3_18).
+1. S. Olivier, J. Huan, J. Liu, *et al*. (2007) UTS: An Unbalanced Tree Search Benchmark. *19th International Workshop on Languages and Compilers for Parallel Computing*. DOI: [10.1007/978-3-540-72521-3\_18](https://doi.org/10.1007/978-3-540-72521-3_18).
