@@ -3,7 +3,7 @@ use Instance;
 
 require "../c_sources/pisinger_genhard.c", "../c_headers/pisinger_genhard.h";
 extern proc generator(n: c_int, pp: c_ptr(c_int), ww: c_ptr(c_int), typ: c_int,
-  r: c_int, v: c_int, tests: c_int);
+  r: c_int, v: c_int, tests: c_int): c_int;
 
 class Instance_Pisinger : Instance
 {
@@ -17,8 +17,8 @@ class Instance_Pisinger : Instance
   {
     this.nb_items = n;
     this.typ = t;
-    this.profits = allocate(c_int, this.nb_items);
-    this.weights = allocate(c_int, this.nb_items);
+    this.profits = allocate(c_int, n);
+    this.weights = allocate(c_int, n);
 
     init this;
 
@@ -43,12 +43,14 @@ class Instance_Pisinger : Instance
 
   override proc get_profits(d: c_ptr(c_int))
   {
-    return this.profits;
+    for i in 0..#this.nb_items do
+      d[i] = this.profits[i];
   }
 
   override proc get_weights(d: c_ptr(c_int))
   {
-    return this.weights;
+    for i in 0..#this.nb_items do
+      d[i] = this.weights[i];
   }
 
   override proc get_best_lb(): int

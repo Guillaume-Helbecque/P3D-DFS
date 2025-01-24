@@ -1,17 +1,23 @@
 use IO;
+use CTypes;
 use List;
 use Path;
 
 use Problem;
 use Instances;
 
+require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
+extern proc swap(ref a: c_int, ref b: c_int): void;
+
 class Problem_Knapsack : Problem
 {
   var name: string;        // file name
   var N: int;              // number of items
   var W: int;              // maximum weight of the bag
-  var profit: [0..#N] int; // items' profit
-  var weight: [0..#N] int; // items' weight
+  var profit: c_ptr(c_int); //[0..#N] int; // items' profit
+  var weight: c_ptr(c_int); //[0..#N] int; // items' weight
+
+  // TODO: put an "s" at "profit" and "weight".
 
   var lb_init: string;
   var initLB: int;
@@ -44,7 +50,7 @@ class Problem_Knapsack : Problem
       NOTE: The bounding operator assumes that the items are sorted in decreasing
       order according to the ratio profit / weight.
     */
-    sortItems(this.weight, this.profit);
+    sortItems(this.N, this.weight, this.profit);
 
     channel.close();
     f.close();
@@ -79,8 +85,8 @@ class Problem_Knapsack : Problem
   }
 
   // initialisation from parameters
-  proc init(const file_name: string, const n: int, const w: int, const pr: [] int,
-    const we: [] int, const lb: string, const init_lb: int): void
+  proc init(const file_name: string, const n: int, const w: int, const pr: c_ptr(c_int),
+    const we: c_ptr(c_int), const lb: string, const init_lb: int): void
   {
     this.name    = file_name;
     this.N       = n;
@@ -89,6 +95,28 @@ class Problem_Knapsack : Problem
     this.weight  = we;
     this.lb_init = lb;
     this.initLB  = init_lb;
+  }
+
+  // initialisation from parameters (pisinger)
+  proc init(const n, const r, const t, const id, const s, const lb: string): void
+  {
+    this.name = "test_pi.txt";
+    const inst = new Instance_Pisinger(n, r, t, id, s);
+
+    this.N       = inst.get_nb_items();
+    this.W       = inst.get_capacity();
+    this.profit = allocate(c_int, n);
+    this.weight = allocate(c_int, n);
+    inst.get_profits(this.profit);
+    inst.get_weights(this.weight);
+    this.lb_init = lb;
+    this.initLB  = inst.get_best_lb();
+
+    /*
+      NOTE: The bounding operator assumes that the items are sorted in decreasing
+      order according to the ratio profit / weight.
+    */
+    sortItems(this.N, this.weight, this.profit);
   }
 
   override proc copy()
@@ -210,17 +238,17 @@ class Problem_Knapsack : Problem
   This function is used to sort the items in decreasing order according to the
   ratio profit / weight.
 */
-proc sortItems(ref w, ref p)
+proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int))
 {
-  var r: [p.domain] real;
-  for i in r.domain do r[i] = p[i]:real / w[i]:real;
+  var r: [0..#n] real;
+  for i in 0..#n do r[i] = p[i]:real / w[i]:real;
 
-  for i in r.domain {
+  for i in 0..#n {
     var max = (max reduce r[i..]);
     var max_id = r[i..].find(max);
     r[i] <=> r[max_id];
-    w[i] <=> w[max_id];
-    p[i] <=> p[max_id];
+    swap(w[i], w[max_id]);
+    swap(p[i], p[max_id]);
   }
 
 }
