@@ -1,4 +1,4 @@
-# The Permutation Flow-shop Scheduling problem (PFSP)
+# The Permutation Flowshop Scheduling Problem (PFSP)
 
 The problem consists in finding an optimal processing order (a permutation) for $n$ jobs on $m$ machines, such that the completion time of the last job on the last machine (makespan) is minimized. The commonly used Taillard's [1] and VRF's [2] instances are supported as test-cases. The initial upper bound `ub` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scratch.
 
