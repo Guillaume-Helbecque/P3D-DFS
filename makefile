@@ -74,7 +74,7 @@ main_nqueens.out: main_nqueens.chpl
 # ==========
 
 CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
-CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR)
+CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR) -M $(CHPL_KNAPSACK_MODULES_DIR)/instances
 
 main_knapsack.out: main_knapsack.chpl
 	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) main_knapsack.chpl -o main_knapsack.out

@@ -3,6 +3,7 @@ use List;
 use Path;
 
 use Problem;
+use Instances;
 
 class Problem_Knapsack : Problem
 {
