@@ -2,9 +2,9 @@
 
 # Productivity- and Performance-aware Parallel Distributed Depth-First Search (P3D-DFS)
 
-Set of parallel Branch-and-Bound (B&B) skeletons in Chapel targeting CPU-based systems at every scale. This project aims to study the Partitioned Global Address Space (PGAS) programming model (as alternative to MPI+X) for implementing parallel optimization algorithms and to promote the extensibility of the approaches to make them accessible to the community.
+Set of parallel Branch-and-Bound (B&B) skeletons in Chapel targeting CPU-based systems at every scale. This project aims to investigate the Partitioned Global Address Space (PGAS) programming model (as alternative to MPI+X) for implementing parallel optimization algorithms and to promote the extensibility of the approaches to make them accessible to the community.
 
-The parallelization relies on the parallel tree exploration model, in which several CPU threads explore disjoint sub-spaces of solutions (branches of the B&B tree). In this scheme, each CPU thread manages a separate pool of work in a Depth-First Search (DFS) order, and dynamic load balancing (work stealing) occurs to manage irregular trees. The efficient implementation of these mechanisms, as well as the genericity of the implementation, are guaranteed by our `distBag` data structure (also known as `DistBag_DFS`). The latter has been integrated into the Chapel language as the [`DistributedBag`](https://chapel-lang.org/docs/modules/packages/DistributedBag.html) package module.
+The parallelization relies on the parallel tree exploration model, in which several CPU threads explore disjoint sub-spaces of solutions (branches of the B&B tree) in parallel. In this scheme, each CPU thread manages a separate pool of work in a Depth-First Search (DFS) order, and dynamic load balancing (work stealing) occurs to manage irregular trees. The efficient implementation of these mechanisms, as well as the genericity of the implementations, are managed by our high-level and highly parallel `distBag` data structure (also known as `DistBag_DFS`). The latter has been integrated into the Chapel language as the [`DistributedBag`](https://chapel-lang.org/docs/modules/packages/DistributedBag.html) package module.
 
 ### Prerequisites
 
@@ -13,15 +13,16 @@ The parallelization relies on the parallel tree exploration model, in which seve
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
 ### Compilation and execution
+
 - **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 - **Step 2:** Compile with `make` and execute with:
 ```
-./main.o --mode=distributed ${problem-specific options} -nl 2
+./main.o --mode={MODE} ${problem-specific options} -nl {NL}
 ```
 where:
-- `--mode` is the execution mode, *i.e.* `sequential`, `multicore`, or `distributed`;
+- `{MODE}` is the execution mode, *i.e.* `sequential`, `multicore`, or `distributed`;
 - For the list of supported problems and options, see below;
-- `-nl` is the number of Chapel's process(es), typically the number of computer nodes in distributed setting.
+- `{NL}` is the number of Chapel's locale(s), typically the number of compute nodes in distributed mode.
 
 ### Supported problems
 
