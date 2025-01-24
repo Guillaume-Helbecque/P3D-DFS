@@ -100,20 +100,20 @@ int  lrand48x(void)
 }
 
 
-int isprime(int i)
-{
-  int j;
-  for (j = 2; j*j <= i; j++) {
-    if (i % j == 0) return FALSE;
-  }
-  return TRUE;
-}
-
-
-int primelarger(int i)
-{
-  for (;; i++) if (isprime(i)) return i;
-}
+// int isprime(int i)
+// {
+//   int j;
+//   for (j = 2; j*j <= i; j++) {
+//     if (i % j == 0) return FALSE;
+//   }
+//   return TRUE;
+// }
+//
+//
+// int primelarger(int i)
+// {
+//   for (;; i++) if (isprime(i)) return i;
+// }
 
 
 /* ======================================================================
@@ -249,38 +249,38 @@ void showitems(int n, int *pp, int *ww, long long c)
                                 main
    ====================================================================== */
 
-void main(int argc, char *argv[])
-{
-  int *pp, *ww;
-  int n, r, type, i, S;
-  int ok;
-  long long c;
-
-  if (argc == 6) {
-    n = atoi(argv[1]);
-    r = atoi(argv[2]);
-    type = atoi(argv[3]);
-    i = atoi(argv[4]);
-    S = atoi(argv[5]);
-    printf("generator2 %d %d %d %d %d\n", n, r, type, i, S);
-  } else {
-    printf("generator2\n");
-    printf("n = ");
-    ok = scanf("%d", &n);
-    printf("r = ");
-    ok = scanf("%d", &r);
-    printf("t = ");
-    ok = scanf("%d", &type);
-    printf("i = ");
-    ok = scanf("%d", &i);
-    printf("S = ");
-    ok = scanf("%d", &S);
-  }
-
-  pp = (int *) malloc(n * sizeof(int));
-  ww = (int *) malloc(n * sizeof(int));
-  c = generator(n, pp, ww, type, r, i, S);
-  showitems(n, pp, ww, c);
-  free(pp);
-  free(ww);
-}
+// void main(int argc, char *argv[])
+// {
+//   int *pp, *ww;
+//   int n, r, type, i, S;
+//   int ok;
+//   long long c;
+//
+//   if (argc == 6) {
+//     n = atoi(argv[1]);
+//     r = atoi(argv[2]);
+//     type = atoi(argv[3]);
+//     i = atoi(argv[4]);
+//     S = atoi(argv[5]);
+//     printf("generator2 %d %d %d %d %d\n", n, r, type, i, S);
+//   } else {
+//     printf("generator2\n");
+//     printf("n = ");
+//     ok = scanf("%d", &n);
+//     printf("r = ");
+//     ok = scanf("%d", &r);
+//     printf("t = ");
+//     ok = scanf("%d", &type);
+//     printf("i = ");
+//     ok = scanf("%d", &i);
+//     printf("S = ");
+//     ok = scanf("%d", &S);
+//   }
+//
+//   pp = (int *) malloc(n * sizeof(int));
+//   ww = (int *) malloc(n * sizeof(int));
+//   c = generator(n, pp, ww, type, r, i, S);
+//   showitems(n, pp, ww, c);
+//   free(pp);
+//   free(ww);
+// }
