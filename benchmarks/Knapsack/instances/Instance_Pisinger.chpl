@@ -17,9 +17,7 @@ class Instance_Pisinger : Instance
 
   proc init(const n: c_int, const r: c_int, const t: c_int, const id: c_int, const s: c_int)
   {
-    this.name = "knapPI_" + t:string + "_" + n:string + "_" + r:string +
-      "_" + id:string + ".txt";
-
+    this.name = "knapPI_" + t:string + "_" + n:string + "_" + r:string + "_" + id:string;
     this.nb_items = n;
     this.typ = t;
     this.profits = allocate(c_int, n);
@@ -76,6 +74,6 @@ class Instance_Pisinger : Instance
     channel.close();
     f.close();
 
-    return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
+    return file[file[..,0].find(this.name),1]:int;
   }
 }

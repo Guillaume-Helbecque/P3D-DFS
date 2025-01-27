@@ -22,39 +22,63 @@ class Problem_Knapsack : Problem
   var lb_init: string;
   var initLB: int;
 
-  // initialisation from a file (user-defined instances)
-  proc init(const fileName: string, const lb: string): void
+  // initialisation
+  proc init(const fileName: string, const n, const r, const t, const id, const s,
+    const lb: string): void
   {
-    this.name = fileName;
+    if (fileName == "") {
+      // initialisation from parameters (Pisinger's instances)
+      const inst = new Instance_Pisinger(n, r, t, id, s);
 
-    var path_dir = "./benchmarks/Knapsack/instances/";
-    var path = path_dir + fileName;
+      this.name = inst.name;
+      this.N = inst.get_nb_items();
+      this.W = inst.get_capacity();
+      this.profit = allocate(c_int, n);
+      this.weight = allocate(c_int, n);
+      inst.get_profits(this.profit);
+      inst.get_weights(this.weight);
 
-    var f = open(path, ioMode.r);
-    var channel = f.reader(locking=false);
+      this.lb_init = lb;
 
-    this.N = channel.read(int);
-    this.W = channel.read(int);
-    this.profit = channel.read([0..#this.N] int);
-    this.weight = channel.read([0..#this.N] int);
+      if (lb == "opt") then this.initLB  = inst.get_best_lb();
+      else if (lb == "inf") then this.initLB = 0;
+      else halt("Error - Unsupported initial lower bound");
+    }
+    else {
+      // initialisation from a file (user-defined instances)
+      this.name = fileName;
 
-    channel.close();
-    f.close();
+      var path_dir = "./benchmarks/Knapsack/instances/";
+      var path = path_dir + fileName;
+
+      var f = open(path, ioMode.r);
+      var channel = f.reader(locking=false);
+
+      this.N = channel.read(int);
+      this.W = channel.read(int);
+      var a = channel.read([0..#this.N] c_int);
+      var b = channel.read([0..#this.N] c_int);
+      this.profit = c_ptrTo(a);
+      this.weight = c_ptrTo(b);
+
+      channel.close();
+      f.close();
+
+      this.lb_init = lb;
+      if (lb == "opt") {
+        // TODO: read the optimum from a file.
+        if (this.name == "default.txt") then this.initLB = 1458;
+        // TODO: add support for user defined instances.
+      }
+      else if (lb == "inf") then this.initLB = 0;
+      else halt("Error - Unsupported initial lower bound");
+    }
 
     /*
       NOTE: The bounding operator assumes that the items are sorted in decreasing
       order according to the ratio profit / weight.
     */
     sortItems(this.N, this.weight, this.profit);
-
-    this.lb_init = lb;
-    if (lb == "opt") {
-      // TODO: read the optimum from a file.
-      if (this.name == "default.txt") then this.initLB = 1458;
-      // TODO: add support for user defined instances.
-    }
-    else if (lb == "inf") then this.initLB = 0;
-    else halt("Error - Unsupported initial lower bound");
   }
 
   // copy-initialisation
@@ -68,32 +92,6 @@ class Problem_Knapsack : Problem
     this.weight  = we;
     this.lb_init = lb;
     this.initLB  = init_lb;
-  }
-
-  // initialisation from parameters (Pisinger's instances)
-  proc init(const n, const r, const t, const id, const s, const lb: string): void
-  {
-    const inst = new Instance_Pisinger(n, r, t, id, s);
-
-    this.name = inst.name;
-    this.N = inst.get_nb_items();
-    this.W = inst.get_capacity();
-    this.profit = allocate(c_int, n);
-    this.weight = allocate(c_int, n);
-    inst.get_profits(this.profit);
-    inst.get_weights(this.weight);
-
-    /*
-      NOTE: The bounding operator assumes that the items are sorted in decreasing
-      order according to the ratio profit / weight.
-    */
-    sortItems(this.N, this.weight, this.profit);
-
-    this.lb_init = lb;
-
-    if (lb == "opt") then this.initLB  = inst.get_best_lb();
-    else if (lb == "inf") then this.initLB = 0;
-    else halt("Error - Unsupported initial lower bound");
   }
 
   override proc copy()
@@ -205,8 +203,15 @@ class Problem_Knapsack : Problem
   override proc help_message(): void
   {
     writeln("\n  Knapsack Benchmark Parameters:\n");
-    writeln("   --inst   str   file containing the data");
     writeln("   --lb     str   lower bound initialization (opt, inf)\n");
+    writeln("   For user-defined instances:\n");
+    writeln("    --inst   str   file containing the data\n");
+    writeln("   For Pisinger's instances:\n");
+    writeln("    --n      int   number of items");
+    writeln("    --r      int   range of coefficients");
+    writeln("    --t      int   type of instance (between 1 and 16, except 10)");
+    writeln("    --id     int   instance index");
+    writeln("    --s      int   number of tests in series\n");
   }
 
 } // end class
@@ -227,5 +232,4 @@ proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int))
     swap(w[i], w[max_id]);
     swap(p[i], p[max_id]);
   }
-
 }
