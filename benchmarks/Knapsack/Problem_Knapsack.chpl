@@ -22,20 +22,12 @@ class Problem_Knapsack : Problem
   var lb_init: string;
   var initLB: int;
 
-  // initialisation from a file
+  // initialisation from a file (user-defined instances)
   proc init(const fileName: string, const lb: string): void
   {
     this.name = fileName;
 
     var path_dir = "./benchmarks/Knapsack/instances/";
-    if (fileName[0..5] == "knapPI") {
-      var instanceType = fileName.split("_");
-      if (instanceType[1]:int <= 9) then
-      //TODO: differentiate small_coeff from large_coeff.
-        path_dir += "data_Pisinger/small_coeff/";
-      else
-        path_dir += "data_Pisinger/small_coeff_hard/";
-    }
     var path = path_dir + fileName;
 
     var f = open(path, ioMode.r);
@@ -46,45 +38,26 @@ class Problem_Knapsack : Problem
     this.profit = channel.read([0..#this.N] int);
     this.weight = channel.read([0..#this.N] int);
 
+    channel.close();
+    f.close();
+
     /*
       NOTE: The bounding operator assumes that the items are sorted in decreasing
       order according to the ratio profit / weight.
     */
     sortItems(this.N, this.weight, this.profit);
 
-    channel.close();
-    f.close();
-
     this.lb_init = lb;
     if (lb == "opt") {
       // TODO: read the optimum from a file.
       if (this.name == "default.txt") then this.initLB = 1458;
       // TODO: add support for user defined instances.
-      else { // Pisinger's instances
-        var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
-        var instanceType = this.name.split("_");
-        //TODO: differentiate small_coeff from large_coeff.
-        if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
-        else path_dir += "small_coeff_hard/";
-
-        const path = path_dir + "knapPI_optimal.txt";
-
-        var f = open(path, ioMode.r);
-        var channel = f.reader(locking=false);
-
-        var file = channel.read([0..480, 0..1] string);
-
-        channel.close();
-        f.close();
-
-        this.initLB = file[file[..,0].find(splitExt(this.name)[0]),1]:int;
-      }
     }
     else if (lb == "inf") then this.initLB = 0;
     else halt("Error - Unsupported initial lower bound");
   }
 
-  // initialisation from parameters
+  // copy-initialisation
   proc init(const file_name: string, const n: int, const w: int, const pr: c_ptr(c_int),
     const we: c_ptr(c_int), const lb: string, const init_lb: int): void
   {
@@ -97,26 +70,30 @@ class Problem_Knapsack : Problem
     this.initLB  = init_lb;
   }
 
-  // initialisation from parameters (pisinger)
+  // initialisation from parameters (Pisinger's instances)
   proc init(const n, const r, const t, const id, const s, const lb: string): void
   {
-    this.name = "test_pi.txt";
     const inst = new Instance_Pisinger(n, r, t, id, s);
 
-    this.N       = inst.get_nb_items();
-    this.W       = inst.get_capacity();
+    this.name = inst.name;
+    this.N = inst.get_nb_items();
+    this.W = inst.get_capacity();
     this.profit = allocate(c_int, n);
     this.weight = allocate(c_int, n);
     inst.get_profits(this.profit);
     inst.get_weights(this.weight);
-    this.lb_init = lb;
-    this.initLB  = inst.get_best_lb();
 
     /*
       NOTE: The bounding operator assumes that the items are sorted in decreasing
       order according to the ratio profit / weight.
     */
     sortItems(this.N, this.weight, this.profit);
+
+    this.lb_init = lb;
+
+    if (lb == "opt") then this.initLB  = inst.get_best_lb();
+    else if (lb == "inf") then this.initLB = 0;
+    else halt("Error - Unsupported initial lower bound");
   }
 
   override proc copy()

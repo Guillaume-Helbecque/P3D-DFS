@@ -1,3 +1,5 @@
+use IO;
+use Path;
 use CTypes;
 use Instance;
 
@@ -15,6 +17,9 @@ class Instance_Pisinger : Instance
 
   proc init(const n: c_int, const r: c_int, const t: c_int, const id: c_int, const s: c_int)
   {
+    this.name = "knapPI_" + t:string + "_" + n:string + "_" + r:string +
+      "_" + id:string + ".txt";
+
     this.nb_items = n;
     this.typ = t;
     this.profits = allocate(c_int, n);
@@ -55,6 +60,22 @@ class Instance_Pisinger : Instance
 
   override proc get_best_lb(): int
   {
-    return 0;
+    var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
+    var instanceType = this.name.split("_");
+    //TODO: differentiate small_coeff from large_coeff.
+    if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
+    else path_dir += "small_coeff_hard/";
+
+    const path = path_dir + "knapPI_optimal.txt";
+
+    var f = open(path, ioMode.r);
+    var channel = f.reader(locking=false);
+
+    var file = channel.read([0..480, 0..1] string);
+
+    channel.close();
+    f.close();
+
+    return file[file[..,0].find(splitExt(this.name)[0]),1]:int;
   }
 }
