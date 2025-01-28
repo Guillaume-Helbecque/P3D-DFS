@@ -25,7 +25,7 @@ module main_knapsack
   config const r: c_int  = 10000;
   config const t: c_int  = 1;
   config const id: c_int = 1;
-  config const s: c_int  = 1000;
+  config const s: c_int  = 100;
 
   proc main(args: [] string): int
   {
