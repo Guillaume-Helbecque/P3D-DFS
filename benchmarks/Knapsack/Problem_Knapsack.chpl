@@ -11,9 +11,9 @@ extern proc swap(ref a: c_int, ref b: c_int): void;
 
 class Problem_Knapsack : Problem
 {
-  var name: string;        // file name
-  var N: int;              // number of items
-  var W: int;              // maximum weight of the bag
+  var name: string;         // file name
+  var N: c_int;             // number of items
+  var W: c_longlong;        // maximum weight of the bag
   var profit: c_ptr(c_int); //[0..#N] int; // items' profit
   var weight: c_ptr(c_int); //[0..#N] int; // items' weight
 
@@ -26,6 +26,8 @@ class Problem_Knapsack : Problem
   proc init(const fileName: string, const n, const r, const t, const id, const s,
     const lb: string): void
   {
+    // TODO: Is id > s allowed?
+
     if (fileName == "") {
       // initialisation from parameters (Pisinger's instances)
       const inst = new Instance_Pisinger(n, r, t, id, s);
@@ -54,8 +56,8 @@ class Problem_Knapsack : Problem
       var f = open(path, ioMode.r);
       var channel = f.reader(locking=false);
 
-      this.N = channel.read(int);
-      this.W = channel.read(int);
+      this.N = channel.read(c_int);
+      this.W = channel.read(c_longlong);
       var a = channel.read([0..#this.N] c_int);
       var b = channel.read([0..#this.N] c_int);
       this.profit = c_ptrTo(a);
@@ -82,7 +84,7 @@ class Problem_Knapsack : Problem
   }
 
   // copy-initialisation
-  proc init(const file_name: string, const n: int, const w: int, const pr: c_ptr(c_int),
+  proc init(const file_name: string, const n, const w, const pr: c_ptr(c_int),
     const we: c_ptr(c_int), const lb: string, const init_lb: int): void
   {
     this.name    = file_name;

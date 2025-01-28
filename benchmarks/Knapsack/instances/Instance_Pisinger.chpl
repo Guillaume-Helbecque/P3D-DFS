@@ -5,7 +5,7 @@ use Instance;
 
 require "../c_sources/pisinger_genhard.c", "../c_headers/pisinger_genhard.h";
 extern proc generator(n: c_int, pp: c_ptr(c_int), ww: c_ptr(c_int), typ: c_int,
-  r: c_int, v: c_int, tests: c_int): c_int;
+  r: c_int, v: c_int, tests: c_int): c_longlong;
 
 class Instance_Pisinger : Instance
 {
@@ -13,7 +13,7 @@ class Instance_Pisinger : Instance
   var typ: c_int;
   var profits: c_ptr(c_int);
   var weights: c_ptr(c_int);
-  var capacity: c_int;
+  var capacity: c_longlong;
 
   proc init(const n: c_int, const r: c_int, const t: c_int, const id: c_int, const s: c_int)
   {
@@ -34,12 +34,12 @@ class Instance_Pisinger : Instance
     deallocate(this.weights);
   }
 
-  override proc get_nb_items(): int
+  override proc get_nb_items()
   {
     return this.nb_items;
   }
 
-  override proc get_capacity(): int
+  override proc get_capacity()
   {
     return this.capacity;
   }
@@ -69,11 +69,18 @@ class Instance_Pisinger : Instance
     var f = open(path, ioMode.r);
     var channel = f.reader(locking=false);
 
+    // TODO: how to read a file of undetermined length?
     var file = channel.read([0..480, 0..1] string);
 
     channel.close();
     f.close();
 
-    return file[file[..,0].find(this.name),1]:int;
+    const pos = file[..,0].find(this.name);
+
+    if (pos == -1) then
+      // best lower-bound not found
+      return 0;
+    else
+      return file[pos, 1]:int;
   }
 }

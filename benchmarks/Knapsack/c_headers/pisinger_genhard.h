@@ -27,21 +27,8 @@ void srand48x(int  s);
 int  lrand48x(void);
 
 
-int isprime(int i);
-
-
-int primelarger(int i);
-
-
 /* ======================================================================
                                 generator
    ====================================================================== */
 
 long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests);
-
-
-/* ======================================================================
-                                showitems
-   ====================================================================== */
-
-void showitems(int n, int *pp, int *ww, long long c);

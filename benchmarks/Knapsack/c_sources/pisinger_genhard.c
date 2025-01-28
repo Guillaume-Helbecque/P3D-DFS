@@ -1,4 +1,10 @@
-// Taken from: http://hjemmesider.diku.dk/~pisinger/genhard.c
+/* Source: http://hjemmesider.diku.dk/~pisinger/genhard.c
+ *
+ * Archives containing instances' data:
+ *    http://hjemmesider.diku.dk/~pisinger/smallcoeff_pisinger.tgz
+ *    http://hjemmesider.diku.dk/~pisinger/largecoeff_pisinger.tgz
+ *    http://hjemmesider.diku.dk/~pisinger/hardinstances_pisinger.tgz
+ */
 
 /* ======================================================================
 	     genhard.c, David Pisinger   2002, jan 2004
@@ -98,22 +104,6 @@ int  lrand48x(void)
   _l48 = _l48 & 0xFFFF;
   return (_h48 >> 1);
 }
-
-
-// int isprime(int i)
-// {
-//   int j;
-//   for (j = 2; j*j <= i; j++) {
-//     if (i % j == 0) return FALSE;
-//   }
-//   return TRUE;
-// }
-//
-//
-// int primelarger(int i)
-// {
-//   for (;; i++) if (isprime(i)) return i;
-// }
 
 
 /* ======================================================================
@@ -222,65 +212,3 @@ long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
     default: error("undefined capacity type");
   }
 }
-
-
-/* ======================================================================
-                                showitems
-   ====================================================================== */
-
-void showitems(int n, int *pp, int *ww, long long c)
-{
-  int i;
-  long long ps, ws;
-  FILE *out;
-
-  out = fopen("test.in", "w");
-  if (out == NULL) error("no file");
-  fprintf(out,"%d\n", n);
-  for (i = 0; i < n; i++) {
-    fprintf(out, "%5d %5d %5d\n", i, pp[i], ww[i]);
-  }
-  fprintf(out,"%lld\n", c);
-  fclose(out);
-}
-
-
-/* ======================================================================
-                                main
-   ====================================================================== */
-
-// void main(int argc, char *argv[])
-// {
-//   int *pp, *ww;
-//   int n, r, type, i, S;
-//   int ok;
-//   long long c;
-//
-//   if (argc == 6) {
-//     n = atoi(argv[1]);
-//     r = atoi(argv[2]);
-//     type = atoi(argv[3]);
-//     i = atoi(argv[4]);
-//     S = atoi(argv[5]);
-//     printf("generator2 %d %d %d %d %d\n", n, r, type, i, S);
-//   } else {
-//     printf("generator2\n");
-//     printf("n = ");
-//     ok = scanf("%d", &n);
-//     printf("r = ");
-//     ok = scanf("%d", &r);
-//     printf("t = ");
-//     ok = scanf("%d", &type);
-//     printf("i = ");
-//     ok = scanf("%d", &i);
-//     printf("S = ");
-//     ok = scanf("%d", &S);
-//   }
-//
-//   pp = (int *) malloc(n * sizeof(int));
-//   ww = (int *) malloc(n * sizeof(int));
-//   c = generator(n, pp, ww, type, r, i, S);
-//   showitems(n, pp, ww, c);
-//   free(pp);
-//   free(ww);
-// }
