@@ -11,13 +11,11 @@ extern proc swap(ref a: c_int, ref b: c_int): void;
 
 class Problem_Knapsack : Problem
 {
-  var name: string;         // file name
-  var N: c_int;             // number of items
-  var W: c_longlong;        // maximum weight of the bag
-  var profit: c_ptr(c_int); //[0..#N] int; // items' profit
-  var weight: c_ptr(c_int); //[0..#N] int; // items' weight
-
-  // TODO: put an "s" at "profit" and "weight".
+  var name: string;          // instance name
+  var N: c_int;              // number of items
+  var W: c_longlong;         // maximum weight of the bag
+  var profits: c_ptr(c_int); // items' profit
+  var weights: c_ptr(c_int); // items' weight
 
   var lb_init: string;
   var initLB: int;
@@ -35,10 +33,10 @@ class Problem_Knapsack : Problem
       this.name = inst.name;
       this.N = inst.get_nb_items();
       this.W = inst.get_capacity();
-      this.profit = allocate(c_int, n);
-      this.weight = allocate(c_int, n);
-      inst.get_profits(this.profit);
-      inst.get_weights(this.weight);
+      this.profits = allocate(c_int, n);
+      this.weights = allocate(c_int, n);
+      inst.get_profits(this.profits);
+      inst.get_weights(this.weights);
 
       this.lb_init = lb;
 
@@ -50,23 +48,25 @@ class Problem_Knapsack : Problem
       // initialisation from a file (user-defined instances)
       this.name = fileName;
 
-      var path_dir = "./benchmarks/Knapsack/instances/";
-      var path = path_dir + fileName;
+      var path = "./benchmarks/Knapsack/instances/" + fileName;
 
       var f = open(path, ioMode.r);
       var channel = f.reader(locking=false);
 
       this.N = channel.read(c_int);
       this.W = channel.read(c_longlong);
-      var a = channel.read([0..#this.N] c_int);
-      var b = channel.read([0..#this.N] c_int);
-      this.profit = c_ptrTo(a);
-      this.weight = c_ptrTo(b);
+      this.profits = allocate(c_int, this.N);
+      this.weights = allocate(c_int, this.N);
+      for i in 0..#this.N do
+        this.profits[i] = channel.read(c_int);
+      for i in 0..#this.N do
+        this.weights[i] = channel.read(c_int);
 
       channel.close();
       f.close();
 
       this.lb_init = lb;
+
       if (lb == "opt") {
         // TODO: read the optimum from a file.
         if (this.name == "default.txt") then this.initLB = 1458;
@@ -80,7 +80,7 @@ class Problem_Knapsack : Problem
       NOTE: The bounding operator assumes that the items are sorted in decreasing
       order according to the ratio profit / weight.
     */
-    sortItems(this.N, this.weight, this.profit);
+    sortItems(this.N, this.weights, this.profits);
   }
 
   // copy-initialisation
@@ -90,15 +90,15 @@ class Problem_Knapsack : Problem
     this.name    = file_name;
     this.N       = n;
     this.W       = w;
-    this.profit  = pr;
-    this.weight  = we;
+    this.profits = pr;
+    this.weights = we;
     this.lb_init = lb;
     this.initLB  = init_lb;
   }
 
   override proc copy()
   {
-    return new Problem_Knapsack(this.name, this.N, this.W, this.profit, this.weight,
+    return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
       this.lb_init, this.initLB);
   }
 
@@ -108,11 +108,11 @@ class Problem_Knapsack : Problem
     var bound = n.profit:real;
 
     for i in n.depth..this.N-1 {
-      if (remainingWeight >= this.weight[i]) {
-        bound += this.profit[i];
-        remainingWeight -= this.weight[i];
+      if (remainingWeight >= this.weights[i]) {
+        bound += this.profits[i];
+        remainingWeight -= this.weights[i];
       } else {
-        bound += remainingWeight * (this.profit[i]:real / this.weight[i]:real);
+        bound += remainingWeight * (this.profits[i]:real / this.weights[i]:real);
         break;
       }
     }
@@ -129,8 +129,8 @@ class Problem_Knapsack : Problem
       var child = new Node(parent);
       child.depth += 1;
       child.items[parent.depth] = i:uint(32);
-      child.weight += i*this.weight[parent.depth];
-      child.profit += i*this.profit[parent.depth];
+      child.weight += i*this.weights[parent.depth];
+      child.profit += i*this.profits[parent.depth];
 
       if (child.weight <= this.W) {
         if (child.depth == this.N) { // leaf
@@ -171,8 +171,8 @@ class Problem_Knapsack : Problem
     writeln("Resolution of the 0/1-Knapsack instance: ", this.name);
     writeln("  number of items: ", this.N);
     writeln("  capacity of the bag: ", this.W);
-    writeln("  items's profit: ", this.profit);
-    writeln("  items's weight: ", this.weight);
+    writeln("  items's profit: ", this.profits);
+    writeln("  items's weight: ", this.weights);
     writeln("\n  initial lower bound: ", this.initLB);
     writeln("=================================================");
   }
