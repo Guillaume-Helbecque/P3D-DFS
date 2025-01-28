@@ -6,12 +6,12 @@ module Instance
   {
     var name: string;
 
-    proc get_nb_items(): int
+    proc get_nb_items(): c_int
     {
       halt("Error - get_nb_items() not implemented");
     }
 
-    proc get_capacity(): int
+    proc get_capacity(): c_longlong
     {
       halt("Error - get_capacity() not implemented");
     }
