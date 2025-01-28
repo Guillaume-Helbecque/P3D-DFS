@@ -43,7 +43,19 @@ module Problem_Knapsack
 
       if (lb == "opt") then this.initLB = inst.get_best_lb();
       else if (lb == "inf") then this.initLB = 0;
-      else halt("Error - Unsupported initial lower bound");
+      else {
+        try! this.initLB = lb:int;
+
+        // NOTE: If `lb` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // manage it as only catch-less try! statements are allowed in initializers.
+        // Ideally, we'd like to do this:
+
+        /* try {
+          this.initLB = lb:int;
+        } catch {
+          halt("Error - Unsupported initial lower bound");
+        } */
+      }
 
       /*
         NOTE: The bounding operator assumes that the items are sorted in decreasing
