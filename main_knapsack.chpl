@@ -1,5 +1,7 @@
 module main_knapsack
 {
+  use CTypes;
+
   // Common modules
   use util;
   use search_sequential;
@@ -16,13 +18,19 @@ module main_knapsack
   config const saveTime: bool  = false;
 
   // Knapsack-specific option
-  config const inst: string = "default.txt";
+  config const inst: string = "";
   config const lb: string   = "opt"; // opt, inf
+
+  config const n: c_int  = 100;
+  config const r: c_int  = 10000;
+  config const t: c_int  = 1;
+  config const id: c_int = 1;
+  config const s: c_int  = 100;
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, lb);
+    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, lb);
 
     // Helper
     for a in args[1..] {
