@@ -1,30 +1,59 @@
 # The 0/1-Knapsack problem
 
-Given a set of $N$ items, each item $i$ having a weight ${w_i}$ and a profit ${p_i}$, the problem is to determine which items to include in the collection so that the total weight is less than or equal to a given limit $W$ and the total profit is as large as possible. Some of the Pisinger's instances [1] are supported as test-cases. The initial lower bound `lb` is also configurable using `opt` to prove the optimality of the best-known optimal solution, or `inf` to search the optimal solution from scratch.
+### Formulation
 
-### Launch & Command-line parameters
+Given a set of $n$ items, where each item $i$ has a profit $p_i$ and weight $w_i$ associated with it. A binary decision variable $x_i$ is used to determine whether the item is selected or not. The goal is to choose a subset of items that maximizes the total profit, while ensuring the total weight of the selected items does not exceed a specified maximum weight $W$. Typically, the coefficients are scaled to integer values and are assumed to be positive. Formally, it is defined as:
+
+$$\text{maximize}\quad \sum_{i=1}^{n}p_{i}x_{i}$$
+$$\text{subject to }\quad \sum_{i=1}^{n}w_{i}x_{i}\leq W,$$
+$$\text{with }\quad x_{i}\in \\\{0,1\\\}, \forall i \in \\\{1,\ldots,n\\\}.$$
+
+### Configuration options
 
 ```
-./main_knapsack.o --inst=file --lb=opt
+./main_knapsack.out {...}
 ```
-where:
-- `inst` (`str`): file containing the data. Pisinger's instances can be specified using `knapPI_t_N_r_i.txt` where `t` is the instance type (1=uncorrelated, 2=weakly correlated, 3=strongly correlated), `N` the number of items, `r` the range of coefficients, and `i` the instance number ($1$ to $10$). User defined instances must be placed in the `./instances` folder and formatted as follows:
-```
-N W
-list of profits (delimited with spaces)
-list of weights (delimited with spaces)
-```
-By default, `default.txt` is solved:
-<!--
-"default.txt" corresponds to instance "p07" of:
-https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html
--->
-```
-15  750
-135 139 149 150 156 163 173 184 192 201 210 214 221 229 240
-70  73  77  80  82  87  90  94  98  106 110 113 115 118 120
-```
-- `lb` (`str`): initial lower bound (`opt` by default).
+where the available options are:
+- **`--inst`**: file containing the data
+  - must be placed in the `./instances` folder and formatted as follows:
+  ```
+  n W
+  list of profits (delimited with spaces)
+  list of weights (delimited with spaces)
+  ```
+
+- **`--lb`**: initial lower bound (LB)
+  - `opt`: initialize the LB to the best solution known (default)
+  - `inf`: initialize the LB to 0, leading to a search from scratch
+  - `{NUM}`: initialize the LB to the given number
+
+Specifically for targeting hard Pisinger's instances [1], the following parameters can be used (and `--inst` omitted):
+- **`--n`**: number of items
+  - any positive integer (`100` by default)
+
+- **`--r`**: range of coefficients
+  - any positive integer (`10000` by default)
+
+- **`--t`**: type of instance
+  - `1`: uncorrelated (default)
+  - `2`: weakly correlated
+  - `3`: strongly correlated
+  - `4`: inverse strongly correlated
+  - `5`: almost strongly correlated
+  - `6`: subset-sum
+  - `9`: uncorrelated, similar weights
+  - `11`: uncorrelated span(2,10)
+  - `12`: weakly correlated span(2,10)
+  - `13`: strongly correlated span(2,10)
+  - `14`: mstr(3R/10,2R/10,6)
+  - `15`: pceil(3)
+  - `16`: circle(2/3)
+
+- **`--id`**: index of the instance
+  - any positive integer (`1` by default)
+
+- **`--s`**: number of instances in series
+  - any positive integer (`100` by default)
 
 ### References
 

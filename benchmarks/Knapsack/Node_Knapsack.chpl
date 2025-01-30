@@ -1,6 +1,6 @@
 module Node_Knapsack
 {
-  config param maxItems: int = 50;
+  config param maxItems: int = 100;
 
   record Node_Knapsack
   {
