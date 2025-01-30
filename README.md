@@ -19,7 +19,7 @@ The [chpl_config](./chpl_config) directory contains predefined shell scripts for
 - **Step 2:** Compile with `make` and execute with:
 
 ```
-./main.o {...}
+./main.out {...}
 ```
 
 where the available options are:
