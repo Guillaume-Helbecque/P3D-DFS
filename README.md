@@ -12,17 +12,28 @@ The parallelization relies on the parallel tree exploration model, in which seve
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
-### Compilation and execution
+### Compilation and configuration options
 
 - **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+
 - **Step 2:** Compile with `make` and execute with:
+
 ```
-./main.o --mode={MODE} ${problem-specific options} -nl {NL}
+./main.o {...}
 ```
-where:
-- `{MODE}` is the execution mode, *i.e.* `sequential`, `multicore`, or `distributed`;
-- For the list of supported problems and options, see below;
-- `{NL}` is the number of Chapel's locale(s), typically the number of compute nodes in distributed mode.
+
+where the available options are:
+- **`--mode`**: parallel execution mode
+  - `sequential`: single-core execution, without parallel feature (default)
+  - `multicore`: single-node multi-core execution
+  - `distributed`: multi-node multi-core execution
+
+- **`-nl`**: number of Chapel's locales
+  - any positive integer, typically the number of compute nodes
+
+- **`--help`** or **`-h`**: help message
+
+Other problem-specific options are supported; see below.
 
 ### Supported problems
 
