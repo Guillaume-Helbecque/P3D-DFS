@@ -33,6 +33,7 @@ where the available options are:
 - **`--ub`**: initial upper bound (UB)
   - `opt`: initialize the UB to the best solution known (default)
   - `inf`: initialize the UB to $+\infty$, leading to a search from scratch
+  - `{NUM}`: initialize the UB to the given number
 
 ### References
 

@@ -75,7 +75,19 @@ module Problem_PFSP
       this.ub_init = ub;
       if (ub == "opt") then this.initUB = inst.get_best_ub();
       else if (ub == "inf") then this.initUB = max(int);
-      else halt("Error - Unsupported initial upper bound");
+      else {
+        try! this.initUB = ub:int;
+
+        // NOTE: If `lb` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // manage it as only catch-less try! statements are allowed in initializers.
+        // Ideally, we'd like to do this:
+
+        /* try {
+          this.initUB = ub:int;
+        } catch {
+          halt("Error - Unsupported initial upper bound");
+        } */
+      }
     }
 
     proc deinit()
