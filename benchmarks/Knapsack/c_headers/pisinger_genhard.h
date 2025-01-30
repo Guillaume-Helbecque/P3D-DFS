@@ -1,3 +1,6 @@
+#ifndef PISINGER_GENHARD_H
+#define PISINGER_GENHARD_H
+
 /* ======================================================================
 				   macros
    ====================================================================== */
@@ -32,3 +35,5 @@ int  lrand48x(void);
    ====================================================================== */
 
 long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests);
+
+#endif

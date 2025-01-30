@@ -52,10 +52,6 @@ class Instance_user : Instance
 
   override proc get_best_lb(): int
   {
-    // TODO: add support for user defined instances.
-    if (this.name == "default.txt") then
-      return 1458;
-    else
-      return 0;
+    return 0;
   }
 }

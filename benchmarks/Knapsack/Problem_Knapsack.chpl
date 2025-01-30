@@ -152,8 +152,8 @@ module Problem_Knapsack
       writeln("Resolution of the 0/1-Knapsack instance: ", this.name);
       writeln("  number of items: ", this.N);
       writeln("  capacity of the bag: ", this.W);
-      writeln("  items's profit: ", this.profits);
-      writeln("  items's weight: ", this.weights);
+      /* writeln("  items's profit: ", this.profits);
+      writeln("  items's weight: ", this.weights); */
       writeln("\n  initial lower bound: ", this.initLB);
       writeln("=================================================");
     }

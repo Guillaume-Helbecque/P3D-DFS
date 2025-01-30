@@ -179,7 +179,8 @@ long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
       case 16: w = randm(r)+1; p = 2*sqrt(4*r*r - (w-2*r)*(w-2*r))/3;
                break;
 
-      default: error("undefined problem type");
+      default: fprintf(stderr, "undefined problem type (--t)\n");
+               exit(1);
     }
     pp[i] = p; ww[i] = w; i++;
   }
@@ -209,6 +210,7 @@ long long generator(int n, int *pp, int *ww, int type, int r, int v, int tests)
     case 15: return c;
     case 16: return c;
 
-    default: error("undefined capacity type");
+    default: fprintf(stderr, "undefined problem type (--t)\n");
+             exit(1);
   }
 }

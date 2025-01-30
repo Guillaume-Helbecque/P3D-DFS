@@ -58,29 +58,23 @@ class Instance_Pisinger : Instance
 
   override proc get_best_lb(): int
   {
-    var path_dir = "./benchmarks/Knapsack/instances/data_Pisinger/";
-    var instanceType = this.name.split("_");
-    //TODO: differentiate small_coeff from large_coeff.
-    if (instanceType[1]:int <= 9) then path_dir += "small_coeff/";
-    else path_dir += "small_coeff_hard/";
-
-    const path = path_dir + "knapPI_optimal.txt";
+    const path = "./benchmarks/Knapsack/instances/knapPI_optimal.txt";
 
     var f = open(path, ioMode.r);
     var channel = f.reader(locking=false);
 
     // TODO: how to read a file of undetermined length?
-    var file = channel.read([0..480, 0..1] string);
+    var data = channel.read([0..#31800, 0..1] string);
 
     channel.close();
     f.close();
 
-    const pos = file[..,0].find(this.name);
+    const pos = data[..,0].find(this.name);
 
     if (pos == -1) then
       // best lower-bound not found
       return 0;
     else
-      return file[pos, 1]:int;
+      return data[pos, 1]:int;
   }
 }
