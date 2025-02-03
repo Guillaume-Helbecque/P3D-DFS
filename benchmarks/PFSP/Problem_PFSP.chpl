@@ -122,7 +122,7 @@ module Problem_PFSP
             else return END;
           }
           when "minMin" {
-            var min0 = 99999;
+            var min0 = max(int);
             for k in 0..#this.jobs {
               if lb_begin[k] then min0 = min(lb_begin[k], min0);
               if lb_end[k] then min0 = min(lb_end[k], min0);

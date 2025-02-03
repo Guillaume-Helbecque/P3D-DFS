@@ -40,14 +40,14 @@ Specifically for targeting hard Pisinger's instances [1], the following paramete
   - `3`: strongly correlated
   - `4`: inverse strongly correlated
   - `5`: almost strongly correlated
-  - `6`: subset-sum
-  - `9`: uncorrelated, similar weights
-  - `11`: uncorrelated span(2,10)
-  - `12`: weakly correlated span(2,10)
-  - `13`: strongly correlated span(2,10)
-  - `14`: mstr(3R/10,2R/10,6)
-  - `15`: pceil(3)
-  - `16`: circle(2/3)
+  - `6`: subset sum
+  - `9`: uncorrelated with similar weights
+  - `11`: uncorrelated spanner, span(2,10)
+  - `12`: weakly correlated spanner, span(2,10)
+  - `13`: strongly correlated spanner, span(2,10)
+  - `14`: multiple strongly correlated, mstr(3R/10,2R/10,6)
+  - `15`: profit ceiling, pceil(3)
+  - `16`: circle, circle(2/3)
 
 - **`--id`**: index of the instance
   - any positive integer (`1` by default)
