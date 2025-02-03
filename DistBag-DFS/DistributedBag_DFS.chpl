@@ -199,11 +199,6 @@ module DistributedBag_DFS
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerError("Reading a distBag_DFS is not supported");
-    }
-
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a distBag_DFS is not supported");
     }
@@ -214,21 +209,16 @@ module DistributedBag_DFS
       compilerError("Deserializing a distBag_DFS is not yet supported");
     }
 
-    // Write the contents of distBag_DFS to a channel.
-    @chpldoc.nodoc
-    proc writeThis(ch) throws {
-      ch.write("[");
-      var size = this.getSize();
-      for (i, iteration) in zip(this, 0..<size) {
-        ch.write(i);
-        if (iteration < size-1) then ch.write(", ");
-      }
-      ch.write("]");
-    }
-
+    // Write the contents of this distBag_DFS to a channel.
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("[");
+      var size = this.getSize();
+      for (i, iteration) in zip(this, 0..<size) {
+        writer.write(i);
+        if (iteration < size-1) then writer.write(", ");
+      }
+      writer.write("]");
     }
 
     forwarding _value;
@@ -343,14 +333,26 @@ module DistributedBag_DFS
     {
       return bag!.remove(taskId);
     }
+    /*
+      TODO: There are types in Chapel that cannot be default-initialized. One example
+      is owned MyClass (rather than owned MyClass?). To support storing such types
+      in a distBag, we would have it throw if the removal failed, and always return
+      the removed element on success.
+    */
 
     // TODO: implement 'removeBulk'
 
     /*
-      Obtain the number of elements held in all bags across all nodes. This method
-      is best-effort and can be non-deterministic for concurrent updates across nodes,
-      and may miss elements or even count duplicates resulting from any concurrent
-      insertion or removal operations.
+      Obtain the number of elements held in this distBag_DFS.
+
+      :return: The current number of elements contained in this distBag_DFS.
+      :rtype: `int`
+
+      .. warning::
+
+        This method is best-effort and can be non-deterministic for concurrent
+        updates across nodes, and may miss elements resulting from any concurrent
+        insertion or removal operations.
     */
     override proc getSize(): int
     {
@@ -365,10 +367,20 @@ module DistributedBag_DFS
     }
 
     /*
-      Performs a lookup to determine if the requested element exists in this bag.
-      This method is best-effort and can be non-deterministic for concurrent
-      updates across nodes, and may miss elements resulting from any concurrent
-      insertion or removal operations.
+      Perform a lookup to determine if the requested element exists in this
+      distBag_DFS.
+
+      :arg elt: An element to search for.
+      :type elt: `eltType`
+
+      :return: `true` if this distBag_DFS contains ``elt``.
+      :rtype: `bool`
+
+      .. warning::
+
+        This method is best-effort and can be non-deterministic for concurrent
+        updates across nodes, and may miss elements resulting from any concurrent
+        insertion or removal operations.
     */
     override proc contains(elt: eltType): bool
     {
@@ -381,8 +393,13 @@ module DistributedBag_DFS
     }
 
     /*
-      Clear all bags across all nodes in a best-effort approach. Elements added or
-      moved around from concurrent additions or removals may be missed while clearing.
+      Clear this distBag_DFS.
+
+      .. warning::
+
+        This method is best-effort and can be non-deterministic for concurrent
+        updates across nodes, and may miss elements resulting from any concurrent
+        insertion or removal operations.
     */
     override proc clear(): void
     {
@@ -418,17 +435,19 @@ module DistributedBag_DFS
     */
 
     /*
-      Iterate over each bag in each node. To avoid holding onto locks, we take
-      a snapshot approach, increasing memory consumption but also increasing parallelism.
-      This allows other concurrent, even mutating, operations while iterating,
-      but opens the possibility to iterating over duplicates or missing elements
-      from concurrent operations.
-      .. note::
-      `zip` iteration is not yet supported with rectangular data structures.
+      Iterate over the elements of this distBag_DFS. To avoid holding onto locks,
+      we take a snapshot approach, increasing memory consumption but also
+      increasing parallelism. This allows other concurrent, even mutating,
+      operations while iterating, but opens the possibility to iterating over
+      duplicates or missing elements from concurrent operations.
+
+      :yields: A reference to one of the elements contained in this distBag_DFS.
+
       .. warning::
-      Iteration takes a snapshot approach, and as such can easily result in a
-      Out-Of-Memory issue. If the data structure is large, the user is doubly advised to use
-      parallel iteration, for both performance and memory benefit.
+
+        Iteration takes a snapshot approach, and as such can easily result in a
+        Out-Of-Memory issue. If the data structure is large, the user is doubly
+        advised to use parallel iteration, for both performance and memory benefit.
     */
     override iter these(): eltType
     {
@@ -453,48 +472,41 @@ module DistributedBag_DFS
       }
     }
 
-    // UNUSED (these)
-    /* iter these(param tag : iterKind) where tag == iterKind.leader
+    @chpldoc.nodoc
+    iter these(param tag: iterKind) where tag == iterKind.leader
     {
       coforall loc in targetLocales do on loc {
         var instance = getPrivatizedThis;
-        coforall segmentIdx in 0..#here.maxTaskPar {
-          ref segment = instance.bag!.segments[segmentIdx];
-          if segment.acquireIfNonEmpty(STATUS_LOOKUP) {
-            // Create a snapshot...
-            var block = segment.headBlock;
-            var bufferSz = segment.nElems.read():int;
-            var buffer = c_malloc(eltType, bufferSz);
-            var bufferOffset = 0;
-            while (block != nil) {
-              if (bufferOffset + block!.size > bufferSz) {
-                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
-              }
-              __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
-              bufferOffset += block!.size;
-              block = block!.next;
-            }
-            // Yield this chunk to be process...
-            segment.releaseStatus();
-            yield (bufferSz, buffer);
-            c_free(buffer);
+        coforall taskId in 0..#here.maxTaskPar {
+          ref segment = instance.bag!.segments[taskId];
+
+          segment.lock_block.readFE();
+          // Create a snapshot
+          var bufferSize = segment.nElts;
+          var buffer: [0..#bufferSize] eltType;
+          for i in 0..#bufferSize {
+            buffer[i] = segment.block.elts[segment.block.headId + i];
           }
+          segment.lock_block.writeEF(true);
+
+          // Yield this chunk
+          yield (bufferSize, buffer);
         }
       }
-    } */
+    }
 
-    // UNUSED (these)
-    /* iter these(param tag : iterKind, followThis) where tag == iterKind.follower
+    @chpldoc.nodoc
+    iter these(param tag: iterKind, followThis) where tag == iterKind.follower
     {
-      var (bufferSz, buffer) = followThis;
-      foreach i in 0..#bufferSz {
+      var (bufferSize, buffer) = followThis;
+      foreach i in 0..#bufferSize {
         yield buffer[i];
       }
-    } */
+    }
   } // end 'DistributedBagImpl' class
 
   /*
-    We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
+    We maintain a multi-pool 'bag' per locale. Each bag keeps a handle to its parent,
     which is required for work stealing.
   */
   @chpldoc.nodoc
@@ -545,7 +557,8 @@ module DistributedBag_DFS
       calling task/locale cannot be chosen. We can also specify how many victims
       to check for eligibility; 1 by default.
     */
-    iter victim(const N: int, const callerId: int, const policy: string = "rand", const tries: int = 1): int
+    iter victim(const N: int, const callerId: int, const policy: string = "rand",
+      const tries: int = 1): int
     {
       var count: int;
       var limit: int = if (callerId == -1) then N else N-1;
@@ -775,8 +788,9 @@ module DistributedBag_DFS
   } // end 'Bag' class
 
   /*
-    A Segment is, in and of itself an unrolled linked list. We maintain one per core
-    to ensure maximum parallelism.
+    A Segment is a parallel-safe pool, implemented as a non-blocking split deque
+    (see header). In few words, it is a buffer of memory, called Block, along with
+    some logic to ensure parallel-safety.
   */
   @chpldoc.nodoc
   record Segment
@@ -911,11 +925,10 @@ module DistributedBag_DFS
     // TODO: implement 'addElementsPtr'
 
     /*
-      Retrieve operation, only executed by the segment's owner.
+      Remove an element.
     */
     inline proc ref takeElement(): (bool, eltType)
     {
-
       // if the segment is empty...
       if (nElts_private == 0) {
         var default: eltType;
@@ -1085,12 +1098,10 @@ module DistributedBag_DFS
   } // end 'Segment' record
 
   /*
-    A segment block is an unrolled linked list node that holds a contiguous buffer
-    of memory. Each segment block size *should* be a power of two, as we increase the
-    size of each subsequent unroll block by twice the size. This is so that stealing
-    work is faster in that majority of elements are confined to one area.
-    It should be noted that the block itself is not parallel-safe, and access must be
-    synchronized.
+    A Block is a Chapel array that holds a buffer of memory. Each block size
+    *should* be a power of two, as we extend the size of each full block by
+    twice the size. It should be noted that the block itself is not parallel-safe,
+    and access must be synchronized.
   */
   @chpldoc.nodoc
   class Block
