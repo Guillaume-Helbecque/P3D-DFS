@@ -1,3 +1,5 @@
+// WARNING: Personal work copy of the Chapel's DistributedBag package module.
+
 /*
   A highly parallel segmented multi-pool. Each node gets its own bag, and each
   bag is segmented into 'here.maxTaskPar' segments. Segments allow for actual
@@ -71,7 +73,7 @@ module DistributedBag_DFS
   use Math;
 
   /*
-    The phases for operations. An operation is composed of multiple phases,
+    The scenarios of the remove operation. An operation is composed of multiple phases,
     where they make a full pass searching for ideal conditions, then less-than-ideal
     conditions; this is required to ensure maximized parallelism at all times, and
     critical to good performance, especially when a node is oversubscribed.
@@ -79,8 +81,19 @@ module DistributedBag_DFS
   private param REMOVE_SIMPLE       = 1;
   private param REMOVE_LOCAL_STEAL  = 2;
   private param REMOVE_GLOBAL_STEAL = 3;
+
+  /*
+    TODO: For some reasons, this patch allows the dynamic work stealing to alleviate
+    the bottleneck that may occur in distributed settings. This is expected
+    to be remove in the future. I need to understand the phenomenon, fix it
+    and remove this patch.
+  */
   private param PERFORMANCE_PATCH   = 4;
 
+  /*
+    Outputs of the remove operation. They are used to indicate the final status
+    of the operation: success or fail.
+  */
   private param REMOVE_SUCCESS   =  1;
   private param REMOVE_FAST_EXIT =  0;
   private param REMOVE_FAIL      = -1;
@@ -150,6 +163,9 @@ module DistributedBag_DFS
   pragma "always RVF"
   record DistBag_DFS : serializable
   {
+    /*
+      The type of the elements contained in this DistBag_DFS.
+    */
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.
@@ -224,18 +240,23 @@ module DistributedBag_DFS
     var targetLocDom: domain(1);
 
     /*
-      The locales to allocate bags for and load balance across.
+      The locales to allocate bags for and load balance across. ``targetLocDom``
+      represents the corresponding range of locales.
     */
     var targetLocales: [targetLocDom] locale;
 
     @chpldoc.nodoc
     var pid: int = -1;
 
-    // Node-local fields below. These fields are specific to the privatized instance.
-    // To access them from another node, make sure you use 'getPrivatizedThis'
+    // Node-local fields below. These fields are specific to the privatized bag
+    // instance. To access them from another node, make sure you use
+    // 'getPrivatizedThis'.
     @chpldoc.nodoc
     var bag: unmanaged Bag(eltType)?;
 
+    /*
+      Initialize an empty DistBag_DFS.
+    */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
       super.init(eltType);
@@ -391,11 +412,10 @@ module DistributedBag_DFS
     }
 
     /*
-      Triggers a more static approach to load balancing, fairly redistributing all
+      TODO: Implement a more static approach to load balancing, fairly redistributing all
       elements fairly for bags across nodes. The result will result in all segments
       having roughly the same amount of elements.
     */
-    // TODO: is 'balance' needed?
 
     /*
       Iterate over each bag in each node. To avoid holding onto locks, we take
@@ -520,10 +540,10 @@ module DistributedBag_DFS
     }
 
     /*
-      This iterator is intented to select victim(s) in work-stealing strategies,
-      according to the specified policy. By default, the 'rand' strategy is chosen and
-      the calling thread/locale cannot be chosen. We can specify how many tries we want,
-      by default, only 1 is performed.
+      Iterate over the segments/locales eligible to be stolen from, according to
+      the specified policy. By default, the random strategy is chosen and the
+      calling task/locale cannot be chosen. We can also specify how many victims
+      to check for eligibility; 1 by default.
     */
     iter victim(const N: int, const callerId: int, const policy: string = "rand", const tries: int = 1): int
     {
@@ -554,9 +574,27 @@ module DistributedBag_DFS
             id += 1;
           }
         }
-        otherwise halt("DistributedBag_DFS internal error: Wrong victim choice policy");
+        otherwise halt("DistributedBag_DFS internal error: Unknown victim choice policy");
       }
     }
+    /*
+      TODO: Probably better to use an enum Policy instead of string here.
+    */
+    /*
+      TODO: Create a seed here for the RNG that includes the locale ID. Since we aren't
+      specifying the seed, we get one based on the time, but this might lead multiple
+      locales running this in parallel choosing the same permutation.
+    */
+    /*
+      TODO: Computing the permutation as an array seems pretty heavy-weight if we
+      are only going to try 1 segment. For tries < N, it might be better to create
+      a random stream and get bounded numbers with getNext with min and max arguments;
+      and then just accept that the same candidate might be checked multiple times.
+      If the iteration is bounded by limit, then indeed it might be necessary to
+      compute the permutation to ensure that each segment is visited. I suppose
+      it could do some random searching and then a round-robin strategy to make
+      sure each is visited.
+    */
 
     /*
       Retrieval operation that succeeds when one of the three successives case
@@ -773,20 +811,24 @@ module DistributedBag_DFS
     }
 
     /*
-      Returns the size of the private region. This information is computed from the
-      tail and split pointers, and since the block is implemented as a  circular
-      array, two cases need to be distinguished.
+      Return the size of the private portion.
     */
     inline proc nElts_private
     {
       return tail - o_split;
     }
 
+    /*
+      Return the global size.
+    */
     inline proc nElts
     {
       return nElts_private + nElts_shared.read();
     }
 
+    /*
+      Check if empty.
+    */
     inline proc isEmpty
     {
       lock_n.readFE();
@@ -907,10 +949,14 @@ module DistributedBag_DFS
       return (true, elt);
     }
 
-    // TODO: implement 'takeElements'
+    // TODO: implement 'takeElements', needed by 'removeBulk'
 
     // TODO: implement 'transferElements'
 
+    /*
+      Perform simultaneously two compareAndSwap operations. This ensures that
+      both atomic variables are accessed at the same time.
+    */
     inline proc ref simCAS(A: atomic int, B: atomic int, expA: int, expB: int, desA: int, desB: int): bool
     {
       var casA, casB: bool;
@@ -931,7 +977,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Stealing operation, only executed by thieves.
+      Steal an element.
     */
     inline proc ref stealElement(): (bool, eltType)
     {
@@ -971,7 +1017,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Grow operation that increases the shared space of the deque.
+      Increase the shared portion of the segment (and decrease the private one).
     */
     inline proc ref split_release(): void
     {
@@ -996,7 +1042,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Shrink operation that reduces the shared space of the deque.
+      Decrease the shared portion of the segment (and increase the private one).
     */
     inline proc ref split_reacquire(): bool
     {
@@ -1052,7 +1098,7 @@ module DistributedBag_DFS
     type eltType;
     var dom: domain(1);
     var elts: [dom] eltType;
-    var cap: int; // capacity of the block
+    var cap: int;    // capacity of the block
     var headId: int; // index of the head element
     var tailId: int; // index of the tail element
 
