@@ -41,17 +41,17 @@
   A parallel-safe distributed multi-pool implementation that scales in terms of
   nodes, processors per node (PPN), and workload; The more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
-  locality (see: const:`distributedBagInitialBlockCap`). This data structure is
+  locality (see: const:`distributedBagInitialSegmentCap`). This data structure is
   unordered and employs its own work stealing algorithm to balance work across nodes.
   .. note::
     This module is a work in progress and may change in future releases.
   Usage
   _____
-  To use: record:`DistBag_DFS`, the initializer must be invoked explicitly to
+  To use: record:`distBag_DFS`, the initializer must be invoked explicitly to
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
   .. code-block:: chapel
-    var bag = new DistBag_DFS(int, targetLocales=ourTargetLocales);
+    var bag = new distBag_DFS(int, targetLocales=ourTargetLocales);
   While the bag is safe to use in a distributed manner, each node always operates
   on its privatized instance. This means that it is easy to add data in bulk, expecting
   it to be distributed, when in reality it is not; if another node needs data, it
@@ -78,7 +78,7 @@ module DistributedBag_DFS
     conditions; this is required to ensure maximized parallelism at all times, and
     critical to good performance, especially when a node is oversubscribed.
   */
-  private param REMOVE_SIMPLE       = 1;
+  private param REMOVE_BEST_CASE    = 1;
   private param REMOVE_LOCAL_STEAL  = 2;
   private param REMOVE_GLOBAL_STEAL = 3;
 
@@ -104,7 +104,12 @@ module DistributedBag_DFS
     there are larger numbers of elements. The better the locality, the better raw
     performance and easier it is to redistribute work.
   */
-  config const distributedBagInitialBlockCap: int = 1024;
+  config const distributedBagInitialSegmentCap: int = 1024;
+  /*
+    The maximum amount of elements in an unroll block. This is crucial to ensure memory
+    usage does not rapidly grow out of control.
+  */
+  config const distributedBagMaxSegmentCap: int = 1024 * 1024;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
     (hence creating an artificial load imbalance), if the other node's segment has
@@ -129,11 +134,6 @@ module DistributedBag_DFS
     others and should not be stolen from.
   */
   config const distributedBagWorkStealingMinElts: int = 1;
-  /*
-    The maximum amount of elements in an unroll block. This is crucial to ensure memory
-    usage does not rapidly grow out of control.
-  */
-  config const distributedBagMaxBlockCap: int = 1024 * 1024;
 
   /*
     Reference counter for DistributedBag_DFS
@@ -156,15 +156,15 @@ module DistributedBag_DFS
     A parallel-safe distributed multiset implementation that scales in terms of
     nodes, processors per node (PPN), and workload; The more PPN, the more segments
     we allocate to increase raw parallelism, and the larger the workload the better
-    locality (see :const:`distributedBagInitialBlockCap`). This data structure is unordered and employs
+    locality (see :const:`distributedBagInitialSegmentCap`). This data structure is unordered and employs
     its own work-stealing algorithm, and provides a means to obtain a privatized instance of
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag_DFS : serializable
+  record distBag_DFS : serializable
   {
     /*
-      The type of the elements contained in this DistBag_DFS.
+      The type of the elements contained in this distBag_DFS.
     */
     type eltType;
 
@@ -194,27 +194,27 @@ module DistributedBag_DFS
     @chpldoc.nodoc
     inline proc _value
     {
-      if (_pid == -1) then halt("DistBag_DFS is uninitialized.");
+      if (_pid == -1) then halt("distBag_DFS is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     @chpldoc.nodoc
     proc readThis(f) throws {
-      compilerError("Reading a DistBag_DFS is not supported");
+      compilerError("Reading a distBag_DFS is not supported");
     }
 
     @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
-      compilerError("Reading a DistBag is not supported");
+      compilerError("Reading a distBag_DFS is not supported");
     }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader(?), ref deserializer) {
       this.init(eltType);
-      compilerError("Deserializing a DistBag is not yet supported");
+      compilerError("Deserializing a distBag_DFS is not yet supported");
     }
 
-    // Write the contents of DistBag_DFS to a channel.
+    // Write the contents of distBag_DFS to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
@@ -232,7 +232,7 @@ module DistributedBag_DFS
     }
 
     forwarding _value;
-  } // end 'DistBag_DFS' record
+  } // end 'distBag_DFS' record
 
   class DistributedBagImpl : CollectionImpl(?)
   {
@@ -255,7 +255,7 @@ module DistributedBag_DFS
     var bag: unmanaged Bag(eltType)?;
 
     /*
-      Initialize an empty DistBag_DFS.
+      Initialize an empty distBag_DFS.
     */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
@@ -394,7 +394,7 @@ module DistributedBag_DFS
           segment.lock_block.readFE();
 
           delete segment.block;
-          segment.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+          segment.block = new unmanaged Block(eltType, distributedBagInitialSegmentCap);
           segment.nElts_shared.write(0);
           segment.head.write(0);
           segment.split.write(0);
@@ -513,8 +513,8 @@ module DistributedBag_DFS
     {
       this.eltType = eltType;
       this.parentHandle = parentHandle;
-      // KNOWN ISSUE: 'this.complete' produces an error when 'eltType' is a Chapel
-      // array (see Github issue #19859)
+      // KNOWN ISSUE: 'init this' produces an error when 'eltType' is a Chapel
+      // array (see Github issue #19859).
     }
 
     proc deinit()
@@ -605,7 +605,7 @@ module DistributedBag_DFS
     */
     proc remove(const taskId: int): (int, eltType)
     {
-      var phase = REMOVE_SIMPLE;
+      var phase = REMOVE_BEST_CASE;
       if (numLocales > 1) then phase = PERFORMANCE_PATCH;
 
       ref segment = segments[taskId];
@@ -621,7 +621,7 @@ module DistributedBag_DFS
             TODO: investigate this in order to remove the patch.
           */
           when PERFORMANCE_PATCH {
-            phase = REMOVE_SIMPLE;
+            phase = REMOVE_BEST_CASE;
           }
 
           /*
@@ -630,7 +630,7 @@ module DistributedBag_DFS
             at the tail of the segment's block. This try fails if the private region
             is empty.
           */
-          when REMOVE_SIMPLE {
+          when REMOVE_BEST_CASE {
             // if the private region contains at least one element to be removed...
             if (segment.nElts_private > 0) {
               // attempt to remove an element
@@ -807,7 +807,7 @@ module DistributedBag_DFS
     proc init(type eltType)
     {
       this.eltType = eltType;
-      this.block = new unmanaged Block(eltType, distributedBagInitialBlockCap);
+      this.block = new unmanaged Block(eltType, distributedBagInitialSegmentCap);
     }
 
     /*
@@ -845,10 +845,10 @@ module DistributedBag_DFS
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
-        if (block.cap == distributedBagMaxBlockCap) then
+        if (block.cap == distributedBagMaxSegmentCap) then
           return false;
         lock_block.readFE();
-        block.cap = min(distributedBagMaxBlockCap, 2*block.cap);
+        block.cap = min(distributedBagMaxSegmentCap, 2*block.cap);
         block.dom = {0..#block.cap};
         lock_block.writeEF(true);
       }
@@ -884,11 +884,11 @@ module DistributedBag_DFS
       if (block.tailId + size > block.cap) {
         //TODO: use divceilpos?
         const neededCap = block.cap*2**divCeil(block.tailId + size, block.cap);
-        if (neededCap >= distributedBagMaxBlockCap) {
-          realSize = distributedBagMaxBlockCap - block.tailId;
+        if (neededCap >= distributedBagMaxSegmentCap) {
+          realSize = distributedBagMaxSegmentCap - block.tailId;
         }
         lock_block.readFE();
-        block.cap = min(distributedBagMaxBlockCap, neededCap);
+        block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
         lock_block.writeEF(true);
       }
