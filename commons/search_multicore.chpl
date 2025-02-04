@@ -29,7 +29,7 @@ module search_multicore
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node);
+    var bag = new distBag_DFS(Node);
     var root = new Node(problem);
 
     if activeSet {

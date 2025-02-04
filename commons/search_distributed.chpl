@@ -30,7 +30,7 @@ module search_distributed
     // INITIALIZATION
     // ===============
 
-    var bag = new DistBag_DFS(Node, targetLocales = Locales);
+    var bag = new distBag_DFS(Node, targetLocales = Locales);
     var root = new Node(problem);
 
     if activeSet {
