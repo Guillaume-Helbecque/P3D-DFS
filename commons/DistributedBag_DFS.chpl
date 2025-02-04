@@ -271,7 +271,7 @@ module DistributedBag_DFS
     }
 
     @chpldoc.nodoc
-    proc init(type eltType, reader: fileReader, ref deserializer) {
+    proc init(type eltType, reader: fileReader(?), ref deserializer) {
       this.init(eltType);
       compilerError("Deserializing a distBag_DFS is not yet supported");
     }
