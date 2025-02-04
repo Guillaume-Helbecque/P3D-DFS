@@ -1,64 +1,135 @@
 // WARNING: Personal work copy of the Chapel's DistributedBag package module.
 
 /*
-  A highly parallel segmented multi-pool. Each node gets its own bag, and each
-  bag is segmented into 'here.maxTaskPar' segments. Segments allow for actual
-  parallelism while operating in that it enables us to manage 'best-case',
-  'average-case', and 'worst-case' scenarios by making multiple passes over each
-  segment. In the case where there is no oversubscription, the best-case will
-  always be achieved (considering any other conditions are also met), while in
-  the case of oversubscription or, for example a near empty bag, we fall into
-  the 'average-case', etc. Examples of 'best-case' scenarios for a removal would
-  be when a segment contains some elements we can drain, and the 'average-case'
-  would be to find any segment that contains elements we can drain (local work
-  stealing), and so on.
-  This data structure also employs a bi-level work stealing algorithm (WS) that
-  first tries to steal a ratio of elements across local segments, and if it fails,
-  it tries a global steal across segments of another bag instance. We steal a ratio
-  of elements, say 25%, because it leaves all victim segments with 75% of their
-  work; the more elements they have, the more we take, but the less they have,
-  the less we steal; this also has the added benefit of reducing unnecessary WS
-  between segments when the bag is nearly emptied. Stealing ensures that all segments
-  remain filled and that we still achieve parallelism across segments for removal
-  operations. Lastly, we attempt to steal a maximum of `N / sizeof(eltType)`, where
-  N is some size in megabytes (representing how much data can be sent in one network
-  request), which keeps down excessive communication.
-  This data structure does not come without flaws; as WS is dynamic and triggered
+  Implementation Description:
+  ___________________________
+
+  A highly parallel segmented multi-pool specialized for depth-first search (DFS).
+  Each locale gets its own bag, and each bag is segmented into 'here.maxTaskPar'
+  segments. To allow high performance at scale, segments are implemented as
+  non-blocking split deques. This scheme consists in splitting segments into a
+  "public" and a "private" portion using an atomic "split pointer". Each task
+  pushes/pops elements to/from the tail of its segment ensuring a Last-In First-Out
+  (LIFO) ordering. The latter guarantees a local DFS exploration. During load
+  balancing operations, elements are stolen by other tasks from the head of the
+  segment, in a First-In First-Out (FIFO) manner. This implementation allows lock-free
+  local access to the private portion of the segments and copy-free transfer of
+  elements between the public and private portions. Work transfer is done by moving
+  the split pointer in either direction using appropriate methods.
+
+  The data structure is equipped with a dynamic load balancing mechanism, based on
+  the work stealing (WS) paradigm. In few words, when a segment is (near)-empty,
+  the associated task will try to steal elements from the public portion of other
+  segments, potentially from other locales. During WS operations, thief tasks
+  synchronize using a lock. This mechanism is transparently managed by the
+  :proc:`distBag.remove` method of the distBag. Three scenarios may occur:
+
+      * Best case: the private portion of the calling task is not empty, and we
+                   simply get a element.
+
+      * Local steal: if the best case failed, the calling task first tries to steal
+                     elements locally, i.e. from another segment of its bag instance.
+                     To select the victim task, we iterate over the segments using
+                     either the "random" (default) or "round-robin" policy. When a
+                     segment is eligible to be stolen from, one element is removed,
+                     and the stealing process stops. Since DFS ensures that the
+                     shallowest nodes in a search tree are stored at the head of each
+                     segment, stealing one is generally sufficient since the stolen
+                     node leads to a potentially large sub-tree.
+
+      * Global steal: if the local steal failed, the calling task tries to steal
+                      elements globally, i.e. from another bag instance. To choose
+                      victim tasks, we iterate over locales to find an eligible
+                      locale. When considering a locale, we iterate over its segments
+                      similarly to the previous case. When an eligible locale is
+                      found, we try to steal one element from each of its segments.
+                      Since the global WS is a heavy-weight operation, stealing
+                      one is no more appropriate, and we steal each segment in order
+                      to not create load-unbalance between them.
+
+  The data structure scales in terms of nodes, processors per node, and even workload.
+  Nevertheless, it does not come without flaws; as WS is dynamic and triggered
   on demand, WS can still be performed in excess, which dramatically causes a
-  performance drop. Furthermore, a severe imbalance across nodes, such as an unfair
-  distribution of work to a single or small subset of nodes, may also causes an
-  equally severe performance degradation. This data structure scales in terms of
-  nodes, processors per node, and even work load. The larger the work load, the
-  more data that gets stolen when WS, and better locality of elements  among segments.
-  As well, to achieve true parallelism, usage of a privatized instance is a requirement,
-  as it avoids the overhead of remotely accessing class fields, bounding performance
-  on communication.
+  performance drop. Furthermore, a severe imbalance across locales, such as an
+  unfair distribution of work to a single or small subset of locales, may also
+  causes an equally severe performance degradation. As well, to achieve true
+  parallelism, usage of a privatized instance is a requirement, as it avoids the
+  overhead of remotely accessing class fields, bounding performance on communication.
 */
 
-/* Implements a highly parallel segmented multi-pool.
+/*
+  Implements a parallel segmented multi-pool for depth-first tree-search.
+  The data structure is sometimes referred to as ``DistBag_DFS``.
+
   Summary
   _______
-  A parallel-safe distributed multi-pool implementation that scales in terms of
-  nodes, processors per node (PPN), and workload; The more PPN, the more segments
-  we allocate to increase raw parallelism, and the larger the workload the better
-  locality (see: const:`distributedBagInitialSegmentCap`). This data structure is
-  unordered and employs its own work stealing algorithm to balance work across nodes.
+
+  A parallel-safe distributed multi-pool implementation specialized for depth-first
+  search (DFS), that scales in terms of nodes, processors per node (PPN), and workload;
+  the more PPN, the more segments we allocate to increase raw parallelism, and the larger
+  the workload the better locality (see :const:`distributedBagInitialSegmentCap`). This
+  data structure is locally ordered (ensuring DFS), encapsulates a dynamic work stealing
+  mechanism to balance work across nodes, and provides a means to obtain a privatized
+  instance of the data structure for maximized performance.
+
   .. note::
+
     This module is a work in progress and may change in future releases.
+
   Usage
   _____
-  To use: record:`distBag_DFS`, the initializer must be invoked explicitly to
-  properly initialize the structure. Using the default state without initializing
-  will result in a halt.
+
+  To use :record:`distBag`, the initializer must be invoked explicitly to
+  properly initialize the data structure. By default, one bag instance is
+  initialized per locale, and one segment per task.
+
   .. code-block:: chapel
-    var bag = new distBag_DFS(int, targetLocales=ourTargetLocales);
-  While the bag is safe to use in a distributed manner, each node always operates
-  on its privatized instance. This means that it is easy to add data in bulk, expecting
-  it to be distributed, when in reality it is not; if another node needs data, it
-  will steal work on-demand.
+
+    var bag = new distBag(int, targetLocales=ourTargetLocales);
+
+  The basic methods that distBag supports require a ``taskId`` argument. This
+  ``taskId`` will serve as an index to the segment to be updated and it must be
+  in ``0..<here.maskTaskPar``. More precisely, it is used to map each task to a
+  segment, which ensures the parallel-safety of the data structure, as well as the
+  local DFS ordering.
+
   .. code-block:: chapel
-    bag.addBulk(1..N);
-    bag.balance();
+
+    bag.add(0, taskId);
+    bag.addBulk(1..100, taskId);
+    var (hasElt, elt) = bag.remove(taskId)
+
+  While the bag is safe to use in a distributed manner, each locale always operates
+  on its privatized instance. This means that it is easy to add data in bulk,
+  expecting it to be distributed, when in reality it is not; if another locale needs
+  data, it will steal work on-demand. Here is an example of concurrent operations
+  on distBag across multiple locales and tasks:
+
+  .. code-block:: chapel
+
+    coforall loc in Locales do on loc {
+      coforall taskId in 0..<here.maxTaskPar {
+        var (hasElt, elt) = bag.remove(taskId);
+        if hasElt {
+          elt += 1;
+          bag.add(elt, taskId);
+        }
+      }
+    }
+
+  Finally, distBag supports serial and parallel iteration, as well as a set of
+  global operations. Here is an example of a distributed parallel iteration and a
+  few global operations working with a ``distBag``:
+
+  .. code-block:: chapel
+
+    forall elts in bag do
+      body();
+
+    const size = bag.getSize();
+    const foundElt = bag.contains(elt);
+    bag.clear();
+
   Methods
   _______
 */
