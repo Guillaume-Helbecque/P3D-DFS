@@ -148,6 +148,13 @@ module search_multicore
     // ========
 
     writeln("\nExploration terminated.");
+    var nS, nSS: int = 0;
+    for i in 0..#here.maxTaskPar {
+      nS += bag.bag!.segments[i].nSteal;
+      nSS += bag.bag!.segments[i].nSSteal;
+    }
+    writeln("nSteal = ", nS);
+    writeln("nSSteal = ", nSS);
 
     if saveTime {
       const path = problem.output_filepath();

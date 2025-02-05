@@ -752,6 +752,9 @@ module DistributedBag_DFS
 
               if !targetSegment.globalSteal.read() {
                 targetSegment.lock_block.readFE();
+
+                targetSegment.nSteal += 1;
+
                 // if the shared region contains enough elements to be stolen...
                 if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
@@ -760,6 +763,7 @@ module DistributedBag_DFS
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
                     targetSegment.lock_block.writeEF(true);
+                    targetSegment.nSSteal += 1;
                     return (REMOVE_SUCCESS, elt);
                   }
                 }
@@ -891,6 +895,8 @@ module DistributedBag_DFS
     var lock: sync bool = true;
     var lock_n: sync bool = true;
     var lock_block: sync bool = true;
+
+    var nSteal, nSSteal: int = 0;
 
     proc init(type eltType)
     {
