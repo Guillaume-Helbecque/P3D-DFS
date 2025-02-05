@@ -985,7 +985,7 @@ module DistributedBag_DFS
       }
 
       // add the elements to the tail
-      for elt in elts[0..#size] do block.pushTail(elt);
+      for elt in elts do block.pushTail(elt);
       tail += size;
 
       // check split request
