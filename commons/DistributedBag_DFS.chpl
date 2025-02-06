@@ -756,15 +756,16 @@ module DistributedBag_DFS
                 targetSegment.nSteal += 1;
 
                 // if the shared region contains enough elements to be stolen...
-                if (distributedBagWorkStealingMinElts <= targetSegment.nElts_shared.read()) {
+                if (2 <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
-                  var (hasElt, elt): (bool, eltType) = targetSegment.stealElement();
+                  var (hasElt, elts) = targetSegment.stealElements(2);
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
                     targetSegment.lock_block.writeEF(true);
                     targetSegment.nSSteal += 1;
-                    return (REMOVE_SUCCESS, elt);
+                    segment.addElements(elts[1..<2]);
+                    return (REMOVE_SUCCESS, elts[0]);
                   }
                 }
                 // otherwise, if the private region has elements, we request for a split shifting
@@ -1095,6 +1096,48 @@ module DistributedBag_DFS
           lock_n.writeEF(true);
 
           return (true, elt);
+        }
+        else {
+          return (false, default);
+        }
+      }
+
+      // set the split request, if not already set
+      if !split_request.read() then split_request.write(true);
+
+      return (false, default);
+    }
+
+    /*
+      Steal elements.
+    */
+    inline proc ref stealElements(const n)//: (bool, eltType)
+    {
+      var default: [0..-1] eltType;
+
+      // if the shared region becomes empty due to a concurrent operation
+      if (nElts_shared.read() == 0) then return (false, default);
+
+      // Fast exit
+      /* if allstolen.read() then return (false, default); */
+
+      lock.readFE(); // set locked (empty)
+      var (h, s): (int, int) = (head.read(), split.read());
+      lock.writeEF(true); // set unlocked (full)
+
+      // check eligibility, again
+      if (n <= s - h) {
+        // try to move the pointers
+        if simCAS(head, split, h, s, h+n, s) {
+          var elts: [0..#n] eltType;
+          // get an element from the head of the private portion
+          lock_n.readFE();
+          for i in 0..#n do
+            elts[i] = block.popHead();
+          nElts_shared.sub(n);
+          lock_n.writeEF(true);
+
+          return (true, elts);
         }
         else {
           return (false, default);
