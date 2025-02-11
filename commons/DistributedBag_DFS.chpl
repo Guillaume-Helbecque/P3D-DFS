@@ -483,7 +483,7 @@ module DistributedBag_DFS
           segment.head.write(0);
           segment.split.write(0);
           segment.globalSteal.write(false);
-          segment.split_request.write(false);
+          segment.splitRequest.write(false);
           segment.lock.writeXF(true);
           segment.lock_n.writeXF(true);
           segment.tail = 0;
@@ -771,7 +771,7 @@ module DistributedBag_DFS
                 // otherwise, if the private region has elements, we request for a split shifting
                 else if (targetSegment.nElts_private > 1) {
                   splitreq = true;
-                  targetSegment.split_request.write(true);
+                  targetSegment.splitRequest.write(true);
                 }
                 targetSegment.lock_block.writeEF(true);
               }
@@ -835,7 +835,7 @@ module DistributedBag_DFS
                   //  }
                   }
                   else if (targetSegment.nElts_private > 1) {
-                    targetSegment.split_request.write(true);
+                    targetSegment.splitRequest.write(true);
                   }
 
                   targetSegment.lock_block.writeEF(true);
@@ -889,7 +889,7 @@ module DistributedBag_DFS
     var split: atomic int;
     var head: atomic int;
     /* var allstolen: atomic bool; */
-    var split_request: atomic bool;
+    var splitRequest: atomic bool;
     var nElts_shared: atomic int; // number of elements in the shared portion
 
     // locks (initially unlocked)
@@ -953,7 +953,7 @@ module DistributedBag_DFS
       tail += 1;
 
       // check split request
-      if split_request.read() then split_release();
+      if splitRequest.read() then splitRelease();
 
       /* if o_allstolen {
         lock.readFE(); // block until its full and set locked (empty)
@@ -963,9 +963,9 @@ module DistributedBag_DFS
         o_split = tail;
         allstolen.write(false);
         o_allstolen = false;
-        if split_request.read() then split_request.write(false);
+        if splitRequest.read() then splitRequest.write(false);
       }
-      else if split_request.read() then split_release(); */
+      else if splitRequest.read() then splitRelease(); */
 
       return true;
     }
@@ -995,7 +995,7 @@ module DistributedBag_DFS
       tail += size;
 
       // check split request
-      if split_request.read() then split_release();
+      if splitRequest.read() then splitRelease();
 
       return size;
     }
@@ -1022,7 +1022,7 @@ module DistributedBag_DFS
       // if the private region is empty...
       if (nElts_private == 0) { //(o_split == tail) {
         // if we successfully shring the shared region...
-        if split_reacquire() {
+        if splitReacquire() {
           var elt = block.popTail();
           tail -= 1; //?
 
@@ -1035,7 +1035,7 @@ module DistributedBag_DFS
       tail -= 1;
 
       // check split request
-      if split_request.read() then split_release();
+      if splitRequest.read() then splitRelease();
 
       return (true, elt);
     }
@@ -1103,7 +1103,7 @@ module DistributedBag_DFS
       }
 
       // set the split request, if not already set
-      if !split_request.read() then split_request.write(true);
+      if !splitRequest.read() then splitRequest.write(true);
 
       return (false, default);
     }
@@ -1145,7 +1145,7 @@ module DistributedBag_DFS
       }
 
       // set the split request, if not already set
-      if !split_request.read() then split_request.write(true);
+      if !splitRequest.read() then splitRequest.write(true);
 
       return (false, default);
     }
@@ -1153,7 +1153,7 @@ module DistributedBag_DFS
     /*
       Increase the shared portion of the segment (and decrease the private one).
     */
-    inline proc ref split_release(): void
+    inline proc ref splitRelease(): void
     {
       // fast exit
       if (nElts_private <= 1) then return;
@@ -1172,13 +1172,13 @@ module DistributedBag_DFS
       o_split = new_split;
 
       // reset split request
-      split_request.write(false);
+      splitRequest.write(false);
     }
 
     /*
       Decrease the shared portion of the segment (and increase the private one).
     */
-    inline proc ref split_reacquire(): bool
+    inline proc ref splitReacquire(): bool
     {
       // fast exit
       if (nElts_shared.read() <= 1) then return false;
