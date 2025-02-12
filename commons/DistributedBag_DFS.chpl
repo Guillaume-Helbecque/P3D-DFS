@@ -487,7 +487,6 @@ module DistributedBag_DFS
           segment.globalSteal.write(false);
           segment.splitRequest.write(false);
           segment.lock.writeXF(true);
-          segment.lock_n.writeXF(true);
           segment.tail = 0;
           segment.o_split = 0;
 
@@ -897,7 +896,6 @@ module DistributedBag_DFS
 
     // locks (initially unlocked)
     var lock: sync bool = true;
-    var lock_n: sync bool = true;
     var lock_block: sync bool = true;
 
     var nSteal, nSSteal: int = 0;
@@ -929,11 +927,7 @@ module DistributedBag_DFS
     */
     inline proc isEmpty
     {
-      lock_n.readFE();
-      var n_shared = nElts_shared.read();
-      var n_private = nElts_private;
-      lock_n.writeEF(true);
-      return (n_shared + n_private) == 0;
+      return (nElts_shared.read() + nElts_private) == 0;
     }
 
     /*
@@ -1100,11 +1094,9 @@ module DistributedBag_DFS
       if (h < s) {
         // try to move the pointers
         if simCAS(head, split, h, s, h+1, s) {
-          lock_n.readFE();
           // get an element from the head of the private portion
           var elt = block.popHead();
           nElts_shared.sub(1);
-          lock_n.writeEF(true);
 
           return (true, elt);
         }
@@ -1142,11 +1134,9 @@ module DistributedBag_DFS
         if simCAS(head, split, h, s, h+n, s) {
           var elts: [0..#n] eltType;
           // get an element from the head of the shared portion
-          lock_n.readFE();
           for i in 0..#n do
             elts[i] = block.popHead();
           nElts_shared.sub(n);
-          lock_n.writeEF(true);
 
           return (true, elts);
         }
@@ -1176,9 +1166,7 @@ module DistributedBag_DFS
       lock.writeEF(true); // set unlocked (full)
 
       // updates counters
-      lock_n.readFE();
       nElts_shared.add(new_split - o_split);
-      lock_n.writeEF(true);
 
       o_split = new_split;
 
@@ -1201,9 +1189,7 @@ module DistributedBag_DFS
           if simCAS(head, split, h, o_split, h, o_split-1) {
             o_split -= 1;
 
-            lock_n.readFE();
             nElts_shared.sub(1);
-            lock_n.writeEF(true);
 
             return true;
           }
@@ -1217,9 +1203,8 @@ module DistributedBag_DFS
       return false;
 
       // FAST EXIT if the shared region is also empty
-      /* lock_n.readFE();
+      /*
       if (nElts_shared.read() < 1) {
-        lock_n.writeEF(true);
         return false;
       }
 
@@ -1230,9 +1215,7 @@ module DistributedBag_DFS
         if simCAS(head, split, h, s, h, s-1) {
           o_split -= 1; //new_split;
 
-          lock_n.readFE();
           nElts_shared.sub(1); //new_split - o_split);
-          lock_n.writeEF(true);
         } else {
           return false;
         }
@@ -1240,9 +1223,7 @@ module DistributedBag_DFS
         /* lock.readFE(); // block until its full and set locked (empty)
         split.sub(1); //write(new_split);
         lock.writeEF(true); // set unlocked (full)
-        lock_n.readFE();
         nElts_shared.sub(1); //new_split - o_split);
-        lock_n.writeEF(true);
         o_split -= 1; //new_split; */
         // fence
         /* atomicFence();
@@ -1253,9 +1234,7 @@ module DistributedBag_DFS
             lock.readFE(); // block until its full and set locked (empty)
             split.write(new_split);
             lock.writeEF(true); // set unlocked (full)
-            lock_n.readFE();
             nElts_shared.sub(new_split - o_split);
-            lock_n.writeEF(true);
             o_split = new_split;
           }
           return false;
