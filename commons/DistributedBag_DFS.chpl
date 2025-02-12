@@ -201,6 +201,8 @@ module DistributedBag_DFS
   */
   config const distributedBagWorkStealingMemCap: real = 1.0;
 
+  config const n: int = 1;
+
   /*
     Reference counter for DistributedBag_DFS.
   */
@@ -754,18 +756,18 @@ module DistributedBag_DFS
               if !targetSegment.globalSteal.read() {
                 targetSegment.lock_block.readFE();
 
-                targetSegment.nSteal += 1;
+                segment.nSteal += 1;
 
                 // if the shared region contains enough elements to be stolen...
-                if (2 <= targetSegment.nElts_shared.read()) {
+                if (n <= targetSegment.nElts_shared.read()) {
                   // attempt to steal an element
-                  var (hasElt, elts) = targetSegment.stealElements(2);
+                  var (hasElt, elts) = targetSegment.stealElements(n);
 
                   // if the steal succeeds, we return, otherwise we continue
                   if hasElt {
                     targetSegment.lock_block.writeEF(true);
-                    targetSegment.nSSteal += 1;
-                    segment.addElements(elts[1..<2]);
+                    segment.nSSteal += 1;
+                    segment.addElements(elts[1..<n]);
                     return (REMOVE_SUCCESS, elts[0]);
                   }
                 }
@@ -1184,15 +1186,6 @@ module DistributedBag_DFS
       splitRequest.write(false);
     }
 
-    /* inline proc readsh() {
-      lock.readFE(); // set locked (empty)
-      var (h, s): (int, int) = (head.read(), split.read());
-      lock.writeEF(true); // set unlocked (full)
-      if (s > h) then
-        return true;
-      return false;
-    } */
-
     /*
       Decrease the shared portion of the segment (and increase the private one).
     */
@@ -1219,62 +1212,6 @@ module DistributedBag_DFS
         }
       }
       while (true);
-      /* while (readsh()) {
-        if simCASsplit.compareAndSwap(o_split, o_split-1) {
-          o_split -= 1;
-
-          lock_n.readFE();
-          nElts_shared.sub(1); //new_split - o_split);
-          lock_n.writeEF(true);
-
-          return true;
-        }
-      } */
-
-      /* lock.readFE(); // set locked (empty)
-      var (h, s): (int, int) = (head.read(), split.read());
-      lock.writeEF(true); // set unlocked (full) */
-
-      /* if (s > h) { */
-
-        /* lock.readFE(); // block until its full and set locked (empty)
-        split.sub(1);
-        lock.writeEF(true); // set unlocked (full)
-
-        lock_n.readFE();
-        nElts_shared.sub(1); //new_split - o_split);
-        lock_n.writeEF(true);
-
-        o_split -= 1;
-
-        return true; */
-
-        /* if split.compareAndSwap(o_split, o_split-1) {
-          o_split -= 1;
-
-          lock_n.readFE();
-          nElts_shared.sub(1); //new_split - o_split);
-          lock_n.writeEF(true);
-
-          return true;
-        } */
-
-        /* lock.readFE(); // block until its full and set locked (empty)
-        var (h, s): (int, int) = (head.read(), split.read()); // o_split ?
-        lock.writeEF(true); // set unlocked (full) */
-
-        /* if (h < s) {
-          if simCAS(head, split, h, s, h, s-1) {
-            o_split -= 1; //new_split;
-
-            lock_n.readFE();
-            nElts_shared.sub(1); //new_split - o_split);
-            lock_n.writeEF(true);
-
-            return true;
-          }
-        } */
-      /* } */
 
       /* writeln("splitReacquire failed"); */
       return false;
