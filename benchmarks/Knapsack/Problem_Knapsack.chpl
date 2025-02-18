@@ -145,7 +145,7 @@ module Problem_Knapsack
       var children: list(Node);
 
       const N = min(NB, 100 - parent.depth);
-      var max = 1 << size; // 2^N
+      var max = 1 << N; // 2^N
 
       for i in 0..<max {
         var child = new Node(parent);
