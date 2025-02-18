@@ -10,6 +10,8 @@ module Problem_Knapsack
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
+  config const NB = 1;
+
   class Problem_Knapsack : Problem
   {
     var name: string;          // instance name
@@ -101,7 +103,7 @@ module Problem_Knapsack
       return bound;
     }
 
-    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    /* override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -112,6 +114,49 @@ module Problem_Knapsack
         child.items[parent.depth] = i:uint(32);
         child.weight += i*this.weights[parent.depth];
         child.profit += i*this.profits[parent.depth];
+
+        if (child.weight <= this.W) {
+          if (child.depth == this.N) { // leaf
+            num_sol += 1;
+
+            if (best_task < child.profit) {
+              best_task = child.profit;
+              lock.readFE();
+              if (best < child.profit) then best = child.profit;
+              else best_task = best;
+              lock.writeEF(true);
+            }
+          }
+          else {
+            if (best_task < /* child.profit + */ computeBound(Node, child)) { // bounding and pruning
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+      }
+
+      return children;
+    } */
+
+    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var max = 1 << NB; // 2^n
+
+      for i in 0..<max {
+        var child = new Node(parent);
+        child.depth += NB;
+
+        for j in 0..<NB by -1 {
+          const bit = ((i >> j) & 1):uint(32);
+
+          child.items[parent.depth+j] = bit;
+          child.weight += bit*this.weights[parent.depth];
+          child.profit += bit*this.profits[parent.depth];
+        }
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf

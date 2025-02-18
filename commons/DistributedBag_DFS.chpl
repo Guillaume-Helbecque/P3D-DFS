@@ -920,6 +920,7 @@ module DistributedBag_DFS
     inline proc nElts
     {
       return nElts_private + nElts_shared.read();
+      /* return tail - head.read(); */
     }
 
     /*
@@ -928,6 +929,7 @@ module DistributedBag_DFS
     inline proc isEmpty
     {
       return (nElts_shared.read() + nElts_private) == 0;
+      /* return tail == head.read(); */
     }
 
     /*
