@@ -18,6 +18,8 @@ module Problem_PFSP
   param BEGINEND: c_int = 0;
   param END: c_int      = 1;
 
+  config const NB = 1;
+
   class Problem_PFSP : Problem
   {
     var name: string;
@@ -156,7 +158,7 @@ module Problem_PFSP
       halt("DEADCODE");
     }
 
-    proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    /* proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -183,6 +185,51 @@ module Problem_PFSP
           swap(child.prmu[child.depth], child.prmu[i]);
           child.depth  += 1;
           child.limit1 += 1;
+
+          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+
+          if (lowerbound < best_task) {
+            children.pushBack(child);
+            tree_loc += 1;
+          }
+        }
+      }
+
+      return children;
+    } */
+
+    proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      /* If the parent node is a leaf, we evaluate its permutation and compare it
+      against the best evaluation found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best evaluation found so far. */
+      if (parent.depth + 1 == jobs) {
+        const eval = eval_solution(lbound1, parent.prmu);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
+
+        num_sol += 1;
+      }
+      else {
+        const depth = parent.depth;
+        const n = min(NB, 20 - depth - 1);
+        const size = factorial(20-depth)/factorial(20-depth-n);
+
+        for i in 0..<size {
+          var child = new Node(parent);
+          var div = size;
+          permute(child.prmu, n, 20, i, depth, div, 20-depth, depth+n);
+          child.depth  += n;
+          child.limit1 += n;
 
           const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
@@ -259,7 +306,7 @@ module Problem_PFSP
       return children;
     }
 
-    proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    /* proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -288,6 +335,51 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+
+          if (lowerbound < best_task) {
+            children.pushBack(child);
+            tree_loc += 1;
+          }
+        }
+      }
+
+      return children;
+    } */
+
+    proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      /* If the parent node is a leaf, we evaluate its permutation and compare it
+      against the best evaluation found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best evaluation found so far. */
+      if (parent.depth + 1 == jobs) {
+        const eval = eval_solution(lbound1, parent.prmu);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
+
+        num_sol += 1;
+      }
+      else {
+        const depth = parent.depth;
+        const n = min(NB, 20 - depth - 1);
+        const size = factorial(20-depth)/factorial(20-depth-n);
+
+        for i in 0..<size {
+          var child = new Node(parent);
+          var div = size;
+          permute(child.prmu, n, 20, i, depth, div, 20-depth, depth+n);
+          child.depth  += n;
+          child.limit1 += n;
+
+          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
           if (lowerbound < best_task) {
             children.pushBack(child);
@@ -374,4 +466,21 @@ module Problem_PFSP
 
   } // end class
 
+  private proc factorial(x: int) : int
+  {
+    return if x == 0 then 1 else x * factorial(x-1);
+  }
+
+  private proc permute(ref arr, const n: int, const N: int, const id_global: int, const depth: int, ref div: int, mod: int, dpn: int) {
+    if (depth == dpn) {
+      return;
+    }
+
+    div /= (20-depth);
+    var id = (id_global / div) % mod;
+
+    arr[depth] <=> arr[depth+id];
+
+    permute(arr, n, N, id_global, depth+1, div, mod-1, dpn);
+  }
 } // end module
