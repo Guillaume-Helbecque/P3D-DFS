@@ -11,14 +11,14 @@ module Problem_PFSP
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
-  const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
+  const allowedLowerBounds = ["lb1", "lb1_mb", "lb1_d", "lb2", "lb2_mb"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
   param BEGIN: c_int    =-1;
   param BEGINEND: c_int = 0;
   param END: c_int      = 1;
 
-  config const NB = 1;
+  config const MB = 1;
 
   class Problem_PFSP : Problem
   {
@@ -55,7 +55,7 @@ module Problem_PFSP
       inst.get_data(lbound1.deref().p_times);
       fill_min_heads_tails(lbound1);
 
-      if (lb == "lb2") {
+      if (lb == "lb2" || lb == "lb2_mb") {
         this.lbound2 = new_johnson_bd_data(lbound1/*, LB2_FULL*/);
         fill_machine_pairs(lbound2/*, LB2_FULL*/);
         fill_lags(lbound1, lbound2);
@@ -95,7 +95,8 @@ module Problem_PFSP
     proc deinit()
     {
       free_bound_data(this.lbound1);
-      if (this.lb_name == "lb2") then free_johnson_bd_data(this.lbound2);
+      if (this.lb_name == "lb2" || this.lb_name == "lb2_mb") then
+        free_johnson_bd_data(this.lbound2);
     }
 
     // TODO: Implement a copy initializer, to avoid re-computing all the data
@@ -158,7 +159,7 @@ module Problem_PFSP
       halt("DEADCODE");
     }
 
-    /* proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -196,9 +197,9 @@ module Problem_PFSP
       }
 
       return children;
-    } */
+    }
 
-    proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_lb1_mb(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -221,7 +222,7 @@ module Problem_PFSP
       }
       else {
         const depth = parent.depth;
-        const n = min(NB, 20 - depth - 1);
+        const n = min(MB, 20 - depth - 1);
         const size = factorial(20-depth)/factorial(20-depth-n);
 
         for i in 0..<size {
@@ -306,7 +307,7 @@ module Problem_PFSP
       return children;
     }
 
-    /* proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -344,9 +345,9 @@ module Problem_PFSP
       }
 
       return children;
-    } */
+    }
 
-    proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_lb2_mb(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -369,7 +370,7 @@ module Problem_PFSP
       }
       else {
         const depth = parent.depth;
-        const n = min(NB, 20 - depth - 1);
+        const n = min(MB, 20 - depth - 1);
         const size = factorial(20-depth)/factorial(20-depth-n);
 
         for i in 0..<size {
@@ -398,11 +399,17 @@ module Problem_PFSP
         when "lb1" {
           return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
+        when "lb1_mb" {
+          return decompose_lb1_mb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
         when "lb1_d" {
           return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "lb2" {
           return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "lb2_mb" {
+          return decompose_lb2_mb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
