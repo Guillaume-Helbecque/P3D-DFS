@@ -380,7 +380,7 @@ module Problem_PFSP
           child.depth  += n;
           child.limit1 += n;
 
-          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
           if (lowerbound < best_task) {
             children.pushBack(child);
