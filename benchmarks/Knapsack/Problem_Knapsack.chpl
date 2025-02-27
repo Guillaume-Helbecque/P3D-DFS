@@ -3,6 +3,7 @@ module Problem_Knapsack
   use CTypes;
   use List;
   use Path;
+  /* use IO; */
 
   use Problem;
   use Instances;
@@ -10,7 +11,9 @@ module Problem_Knapsack
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
-  config const NB = 1;
+  const allowedUpperBounds = ["dantzig", "dantzig_mb"];
+
+  config const MB = 1;
 
   class Problem_Knapsack : Problem
   {
@@ -20,12 +23,14 @@ module Problem_Knapsack
     var profits: c_ptr(c_int); // items' profit
     var weights: c_ptr(c_int); // items' weight
 
+    var ub_name: string;
+
     var lb_init: string;
     var initLB: int;
 
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
-      const lb: string): void
+      const ub: string, const lb: string): void
     {
       // TODO: Is id > s allowed?
 
@@ -40,6 +45,9 @@ module Problem_Knapsack
       this.weights = allocate(c_int, n);
       inst.get_profits(this.profits);
       inst.get_weights(this.weights);
+
+      if (allowedUpperBounds.find(ub) != -1) then this.ub_name = ub;
+      else halt("Error - Unsupported upper bound");
 
       this.lb_init = lb;
 
@@ -103,7 +111,7 @@ module Problem_Knapsack
       return bound;
     }
 
-    /* override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -137,14 +145,14 @@ module Problem_Knapsack
       }
 
       return children;
-    } */
+    }
 
-    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_dantzig_mb(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
 
-      const N = min(NB, 100 - parent.depth);
+      const N = min(MB, 100 - parent.depth);
       var max = 1 << N; // 2^N
 
       for i in 0..<max {
@@ -183,6 +191,22 @@ module Problem_Knapsack
       return children;
     }
 
+    override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      select this.ub_name {
+        when "dantzig" {
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "dantzig_mb" {
+          return decompose_dantzig_mb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        otherwise {
+          halt("DEADCODE");
+        }
+      }
+    }
+
     override proc getInitBound(): int
     {
       return this.initLB;
@@ -196,11 +220,15 @@ module Problem_Knapsack
     {
       writeln("\n=================================================");
       writeln("Resolution of the 0/1-Knapsack instance: ", this.name);
-      writeln("  number of items: ", this.N);
-      writeln("  capacity of the bag: ", this.W);
+      writeln("  Number of items: ", this.N);
+      writeln("  Capacity of the bag: ", this.W);
       /* writeln("  items's profit: ", this.profits);
       writeln("  items's weight: ", this.weights); */
-      writeln("\n  initial lower bound: ", this.initLB);
+      writeln("  Initial lower bound: ", this.initLB);
+      if (this.ub_name == "dantzig_mb") then
+        writeln("  Upper bound function: ", this.ub_name, " (", MB, ")");
+      else
+        writeln("  Upper bound function: ", this.ub_name);
       writeln("=================================================");
     }
 
@@ -222,16 +250,25 @@ module Problem_Knapsack
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
+
+      /* try! {
+        var f: file = open(output_filepath(), ioMode.a);
+        var channel = f.writer(locking=false);
+        channel.writeln(elapsedTime, " ", treeSize, " ", nbSol);
+        channel.close();
+        f.close();
+      } */
     }
 
     override proc output_filepath(): string
     {
-      return "./chpl_knapsack_" + splitExt(this.name)[0] + ".txt";
+      return "./chpl_knapsack_" + splitExt(this.name)[0] + "_" + this.ub_name + ".txt";
     }
 
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
+      writeln("   --ub     str   upper bound function (dantzig, dantzig_mb)");
       writeln("   --lb     str   lower bound initialization (opt, inf)\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str   file containing the data\n");

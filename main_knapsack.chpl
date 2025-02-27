@@ -19,6 +19,7 @@ module main_knapsack
 
   // Knapsack-specific option
   config const inst: string = "";
+  config const ub: string   = "dantzig"; // dantzig{_mb}
   config const lb: string   = "opt"; // opt, inf
 
   config const n: c_int  = 100;
@@ -30,7 +31,7 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, lb);
+    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
 
     // Helper
     for a in args[1..] {
