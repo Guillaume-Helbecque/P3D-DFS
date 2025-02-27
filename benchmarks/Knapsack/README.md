@@ -22,12 +22,15 @@ where the available options are:
   list of weights (delimited with spaces)
   ```
 
+- **`--ub`**: upper bound function
+  - `dantzig`: naive implementation of Dantzig's bound [1] (default)
+
 - **`--lb`**: initial lower bound (LB)
   - `opt`: initialize the LB to the best solution known (default)
   - `inf`: initialize the LB to 0, leading to a search from scratch
   - `{NUM}`: initialize the LB to the given number
 
-Specifically for targeting hard Pisinger's instances [1], the following parameters can be used (and `--inst` omitted):
+Specifically for targeting hard Pisinger's instances [2], the following parameters can be used (and `--inst` omitted):
 - **`--n`**: number of items
   - any positive integer (`100` by default)
 
@@ -57,4 +60,5 @@ Specifically for targeting hard Pisinger's instances [1], the following paramete
 
 ### References
 
-1. D. Pisinger. (2005) Where are the hard knapsack problems?. *Computers & Operations Research*, 32(9):2271-2284. DOI: [10.1016/j.cor.2004.03.002](https://doi.org/10.1016/j.cor.2004.03.002).
+1. G. B. Dantzig. (1957) Discrete-Variable Extremum Problems. *Operations Research*, 5(2):266-288. DOI: [10.1287/opre.5.2.266](https://doi.org/10.1287/opre.5.2.266).
+2. D. Pisinger. (2005) Where are the hard knapsack problems?. *Computers & Operations Research*, 32(9):2271-2284. DOI: [10.1016/j.cor.2004.03.002](https://doi.org/10.1016/j.cor.2004.03.002).

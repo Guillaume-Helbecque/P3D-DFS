@@ -78,7 +78,7 @@ module Problem_PFSP
       else {
         try! this.initUB = ub:int;
 
-        // NOTE: If `lb` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // NOTE: If `ub` cannot be cast into `int`, an errow is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
