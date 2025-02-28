@@ -10,7 +10,7 @@ module Problem_Knapsack
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
-  const allowedUpperBounds = ["dantzig"];
+  const allowedUpperBounds = ["dantzig", "martello"];
 
   class Problem_Knapsack : Problem
   {
@@ -90,11 +90,13 @@ module Problem_Knapsack
         this.lb_init, this.initLB);
     }
 
-    proc computeBound(type Node, const n: Node)
+    // Bound from Dantzig (1957)
+    proc bound_dantzig(type Node, const n: Node)
     {
       var remainingWeight = this.W - n.weight;
       var bound = n.profit:real;
 
+      // iterate until the critical item is reached
       for i in n.depth..this.N-1 {
         if (remainingWeight >= this.weights[i]) {
           bound += this.profits[i];
@@ -105,7 +107,7 @@ module Problem_Knapsack
         }
       }
 
-      return bound;
+      return floor(bound);
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -133,7 +135,74 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < /* child.profit + */ computeBound(Node, child)) { // bounding and pruning
+            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+      }
+
+      return children;
+    }
+
+    // Bound from Martello and Toth (1977)
+    proc bound_martello(type Node, const n: Node)
+    {
+      var remainingWeight = this.W - n.weight;
+      var U0, U1 = n.profit:real;
+      var s = 0;
+
+      // iterate until the critical item is reached
+      for i in n.depth..this.N-1 {
+        if (remainingWeight >= this.weights[i]) {
+          U0 += this.profits[i];
+          U1 += this.profits[i];
+          remainingWeight -= this.weights[i];
+        } else {
+          s = i;
+          break;
+        }
+      }
+
+      if (s == this.N-1) then {
+        U0 += remainingWeight * (this.profits[s]:real / this.weights[s]:real);
+      } else {
+        U0 += remainingWeight * (this.profits[s+1]:real / this.weights[s+1]:real);
+      }
+
+      U1 += this.profits[s] - (this.weights[s] - remainingWeight) *
+        (this.profits[s-1]:real / this.weights[s-1]:real);
+
+      return max(floor(U0), floor(U1));
+    }
+
+    proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      for i in 0..1 {
+        var child = new Node(parent);
+        child.depth += 1;
+        child.items[parent.depth] = i:uint(32);
+        child.weight += i*this.weights[parent.depth];
+        child.profit += i*this.profits[parent.depth];
+
+        if (child.weight <= this.W) {
+          if (child.depth == this.N) { // leaf
+            num_sol += 1;
+
+            if (best_task < child.profit) {
+              best_task = child.profit;
+              lock.readFE();
+              if (best < child.profit) then best = child.profit;
+              else best_task = best;
+              lock.writeEF(true);
+            }
+          }
+          else {
+            if (best_task < bound_martello(Node, child)) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -150,6 +219,9 @@ module Problem_Knapsack
       select this.ub_name {
         when "dantzig" {
           return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "martello" {
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -207,7 +279,7 @@ module Problem_Knapsack
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
-      writeln("   --ub     str   upper bound function (dantzig)");
+      writeln("   --ub     str   upper bound function (dantzig, martello)");
       writeln("   --lb     str   lower bound initialization (opt, inf)\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str   file containing the data\n");

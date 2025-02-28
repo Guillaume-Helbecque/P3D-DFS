@@ -19,7 +19,7 @@ module main_knapsack
 
   // Knapsack-specific option
   config const inst: string = "";
-  config const ub: string   = "dantzig"; // dantzig
+  config const ub: string   = "dantzig"; // dantzig, martello
   config const lb: string   = "opt"; // opt, inf
 
   config const n: c_int  = 100;
