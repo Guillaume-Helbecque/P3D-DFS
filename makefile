@@ -20,7 +20,7 @@ all: main_pfsp.out main_uts.out main_nqueens.out main_knapsack.out
 # PFSP
 # ==========
 
-CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
+CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP_bin
 CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instances
 
 main_pfsp.out: main_pfsp.chpl
