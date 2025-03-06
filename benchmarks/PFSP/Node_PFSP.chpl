@@ -4,6 +4,7 @@ module Node_PFSP
 
   // Maximum number of jobs in PFSP Taillard's instances.
   config param JobsMax: int = 50;
+  config param MachinesMax: int = 10;
 
   record Node_PFSP
   {
@@ -11,6 +12,7 @@ module Node_PFSP
     var limit1: int; // right limit
     var limit2: int; // left limit
     var prmu: c_array(c_int, JobsMax);
+    var front: c_array(c_int, MachinesMax);
 
     // default-initializer
     proc init()
@@ -32,6 +34,7 @@ module Node_PFSP
       this.limit1 = other.limit1;
       this.limit2 = other.limit2;
       this.prmu   = other.prmu;
+      this.front  = other.front;
     }
 
     proc deinit()

@@ -232,11 +232,21 @@ module Problem_PFSP
           child.depth  += n;
           child.limit1 += n;
 
-          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          for ii in parent.depth..child.depth-1 {
+            child.front[0] += this.lbound1.deref().p_times[child.prmu[ii]];
+            for j in 1..<this.machines {
+              child.front[j] = max(child.front[j-1], child.front[j]) +
+                this.lbound1.deref().p_times[j * this.jobs + child.prmu[ii]];
+            }
+          }
 
-          if (lowerbound < best_task) {
-            children.pushBack(child);
-            tree_loc += 1;
+          if (child.front[this.machines-1] <= best_task) {
+            const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+
+            if (lowerbound < best_task) {
+              children.pushBack(child);
+              tree_loc += 1;
+            }
           }
         }
       }
