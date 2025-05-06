@@ -1,11 +1,4 @@
 #!/bin/bash -l
-#SBATCH --time=00:15:00
-#SBATCH --account=pxxxxxx
-#SBATCH --partition=cpu
-#SBATCH --qos=default
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=128
 
 # Configuration of Chapel for multicore experiments on the Luxembourg national
 # MeluXina cluster (https://docs.lxp.lu/).

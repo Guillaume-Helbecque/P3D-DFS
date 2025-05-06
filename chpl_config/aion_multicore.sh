@@ -1,9 +1,4 @@
 #!/bin/bash -l
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=128
-#SBATCH --time=01:00:00
-#SBATCH --exclusive
 
 # Configuration of Chapel for multi-core experiments on the Aion cluster of the
 # Université du Luxembourg (https://hpc-docs.uni.lu/systems/aion/).
