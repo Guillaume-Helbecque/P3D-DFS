@@ -11,7 +11,8 @@ module Problem
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int)
     {
       halt("Error - decompose() not implemented");
     }

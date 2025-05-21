@@ -45,7 +45,7 @@ module search_sequential
 
       // Decompose the element
       var children = problem.decompose(Node, parent, exploredTree, exploredSol,
-        maxDepth, bestCost, lockBestCost, bestCost);
+        maxDepth, bestCost, bestBound, lockBestCost, bestCost);
 
       pool.pushBack(children);
     }

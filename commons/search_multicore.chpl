@@ -53,7 +53,7 @@ module search_multicore
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, bestCost, lockBestCost, bestCost_task);
+            max_depth, bestCost, bestBound, lockBestCost, bestCost_task);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -81,7 +81,7 @@ module search_multicore
     // =====================
 
     coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
-      ref eachMaxDepth, ref eachTaskState, ref bestCost) {
+      ref eachMaxDepth, ref eachTaskState, ref bestCost, ref bestBound) {
 
       // Task variables
       var bestCost_task: int = bestCost;
@@ -129,7 +129,7 @@ module search_multicore
 
         // Decompose an element
         var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, bestCost, lockBestCost, bestCost_task);
+          max_depth, bestCost, bestBound, lockBestCost, bestCost_task);
 
         bag.addBulk(children, taskId);
 

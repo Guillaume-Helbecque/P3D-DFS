@@ -159,7 +159,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -199,7 +200,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -262,7 +264,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -303,17 +306,18 @@ module Problem_PFSP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       select this.lb_name {
         when "lb1" {
-          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, bestCost, bestBound, lock, bestCost_task);
         }
         when "lb1_d" {
-          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, bestCost, bestBound, lock, bestCost_task);
         }
         when "lb2" {
-          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, bestCost, bestBound, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");

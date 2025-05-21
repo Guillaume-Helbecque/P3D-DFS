@@ -113,7 +113,8 @@ module Problem_Knapsack
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -180,7 +181,8 @@ module Problem_Knapsack
     }
 
     proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -216,14 +218,15 @@ module Problem_Knapsack
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, ref bestBound: int, lock: sync bool,
+      ref bestCost_task: int): list(?)
     {
       select this.ub_name {
         when "dantzig" {
-          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, bestCost, bestBound, lock, bestCost_task);
         }
         when "martello" {
-          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, bestCost, bestBound, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");

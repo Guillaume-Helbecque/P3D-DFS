@@ -54,7 +54,7 @@ module search_distributed
 
         {
           var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, bestCost, lockBestCost, bestCost_task);
+            max_depth, bestCost, bestBound, lockBestCost, bestCost_task);
 
           for elt in children do initList.insert(0, elt);
         }
@@ -86,7 +86,7 @@ module search_distributed
     // =====================
 
     coforall loc in Locales with (const ref problem, ref eachLocaleState, ref eachExploredTree,
-      ref eachExploredSol, ref eachMaxDepth, ref bestCost) do on loc {
+      ref eachExploredSol, ref eachMaxDepth, ref bestCost, ref bestBound) do on loc {
 
       const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
@@ -102,7 +102,8 @@ module search_distributed
       var eachLocalMaxDepth: [0..#numTasks] int;
 
       coforall taskId in 0..#numTasks with (ref eachLocalExploredTree, ref eachLocalExploredSol,
-        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref bestCost/*, ref bestCost_locale*/) {
+        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref bestCost, ref bestBound
+        /*, ref bestCost_locale*/) {
 
         // Task variables
         var bestCost_task: int = bestCost; //_locale;
@@ -162,7 +163,7 @@ module search_distributed
 
           // Decompose an element
           var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, bestCost, lockBestCost, bestCost_task);
+            max_depth, bestCost, bestBound, lockBestCost, bestCost_task);
 
           bag.addBulk(children, taskId);
 
