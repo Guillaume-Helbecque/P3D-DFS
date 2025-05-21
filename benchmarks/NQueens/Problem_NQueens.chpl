@@ -36,7 +36,7 @@ module Problem_NQueens
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -76,7 +76,7 @@ module Problem_NQueens
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);

@@ -82,7 +82,7 @@ module Problem_UTS
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): [] Node
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): [] Node
     {
       var numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
         this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
@@ -146,7 +146,7 @@ module Problem_UTS
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbLeaf: int   = (+ reduce subSolExplored);
@@ -160,7 +160,6 @@ module Problem_UTS
       writeln("Number of leaves explored: ", nbLeaf, " (", 100 * nbLeaf:real / treeSize:real, "%)");
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Tree depth: ", maxDepth);
-      /* writeln("Optimal makespan: ", best); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================\n");
     }

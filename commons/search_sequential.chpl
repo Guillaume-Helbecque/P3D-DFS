@@ -8,9 +8,9 @@ module search_sequential
 
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
-    var best: int = problem.getInitBound();
+    var bestCost: int = problem.getInitBound();
     /* Not needed in sequential mode, but we use it only to match the generic template. */
-    var lockBest: sync bool = true;
+    var lockBestCost: sync bool = true;
 
     // Statistics
     var exploredTree: int;
@@ -43,7 +43,7 @@ module search_sequential
 
       // Decompose the element
       var children = problem.decompose(Node, parent, exploredTree, exploredSol,
-        maxDepth, best, lockBest, best);
+        maxDepth, bestCost, lockBestCost, bestCost);
 
       pool.pushBack(children);
     }
@@ -64,11 +64,11 @@ module search_sequential
     writeln("\n=================================================");
     writeln("Size of the explored tree: ", exploredTree);
     writeln("Number of explored solutions: ", exploredSol);
-    writeln("Optimal makespan: ", best);
+    writeln("Optimal makespan: ", bestCost);
     writeln("Elapsed time: ", globalTimer.elapsed(), " [s]");
     writeln("=================================================\n");
 
-    /* problem.print_results(exploredTree, exploredSol, maxDepth, best,
+    /* problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed()); */
   }
 }

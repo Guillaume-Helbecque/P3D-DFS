@@ -102,7 +102,7 @@ module Problem_PFSP
       return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
     }
 
-    inline proc branchingRule(const lb_begin, const lb_end, const depth, const best)
+    inline proc branchingRule(const lb_begin, const lb_end, const depth, const bestCost)
     {
       var branch = this.branching;
 
@@ -139,8 +139,8 @@ module Problem_PFSP
           when "minBranch" {
             var c, s: int;
             for i in 0..#this.jobs {
-              if (lb_begin[i] >= best) then c += 1;
-              if (lb_end[i] >= best) then c -= 1;
+              if (lb_begin[i] >= bestCost) then c += 1;
+              if (lb_end[i] >= bestCost) then c -= 1;
               s += (lb_begin[i] - lb_end[i]);
             }
             if (c > 0) then return BEGIN;
@@ -157,21 +157,21 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
       /* If the parent node is a leaf, we evaluate its permutation and compare it
-      against the best evaluation found so far. Otherwise, we generate its children
-      nodes and compare their lower bound against the best evaluation found so far. */
+      against the best cost found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best cost found so far. */
       if (parent.depth + 1 == jobs) {
         const eval = eval_solution(lbound1, parent.prmu);
 
-        if (eval < best_task) {
-          best_task = eval;
+        if (eval < bestCost_task) {
+          bestCost_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval < bestCost then bestCost = eval;
+          else bestCost_task = bestCost;
           lock.writeEF(true);
         }
 
@@ -186,7 +186,7 @@ module Problem_PFSP
 
           const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
-          if (lowerbound < best_task) {
+          if (lowerbound < bestCost_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -197,21 +197,21 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
       /* If the parent node is a leaf, we evaluate its permutation and compare it
-      against the best evaluation found so far. Otherwise, we generate its children
-      nodes and compare their lower bound against the best evaluation found so far. */
+      against the best cost found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best cost found so far. */
       if (parent.depth + 1 == jobs) {
         const eval = eval_solution(lbound1, parent.prmu);
 
-        if (eval < best_task) {
-          best_task = eval;
+        if (eval < bestCost_task) {
+          bestCost_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval < bestCost then bestCost = eval;
+          else bestCost_task = bestCost;
           lock.writeEF(true);
         }
 
@@ -228,14 +228,14 @@ module Problem_PFSP
           lb_begin, lb_end, nil, nil, beginEnd);
 
         if (this.branchingSide == BEGINEND) {
-          beginEnd = branchingRule(lb_begin, lb_end, parent.depth, best_task);
+          beginEnd = branchingRule(lb_begin, lb_end, parent.depth, bestCost_task);
         }
 
         for i in parent.limit1+1..parent.limit2-1 {
           const job = parent.prmu[i];
           const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
 
-          if (lb < best_task) {
+          if (lb < bestCost_task) {
             var child = new Node(parent);
             child.depth += 1;
 
@@ -260,21 +260,21 @@ module Problem_PFSP
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
       /* If the parent node is a leaf, we evaluate its permutation and compare it
-      against the best evaluation found so far. Otherwise, we generate its children
-      nodes and compare their lower bound against the best evaluation found so far. */
+      against the best cost found so far. Otherwise, we generate its children
+      nodes and compare their lower bound against the best cost found so far. */
       if (parent.depth + 1 == jobs) {
         const eval = eval_solution(lbound1, parent.prmu);
 
-        if (eval < best_task) {
-          best_task = eval;
+        if (eval < bestCost_task) {
+          bestCost_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval < bestCost then bestCost = eval;
+          else bestCost_task = bestCost;
           lock.writeEF(true);
         }
 
@@ -287,9 +287,10 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int,
+            jobs, bestCost_task:c_int);
 
-          if (lowerbound < best_task) {
+          if (lowerbound < bestCost_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -300,17 +301,17 @@ module Problem_PFSP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       select this.lb_name {
         when "lb1" {
-          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         when "lb1_d" {
-          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         when "lb2" {
-          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -338,7 +339,7 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
@@ -350,9 +351,9 @@ module Problem_PFSP
       writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
-      const is_better = if (best < this.initUB) then " (improved)"
-                                                else " (not improved)";
-      writeln("Optimal makespan: ", best, is_better);
+      const is_better = if (bestCost < this.initUB) then " (improved)"
+                                                    else " (not improved)";
+      writeln("Optimal makespan: ", bestCost, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }

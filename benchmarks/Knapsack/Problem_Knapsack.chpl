@@ -111,7 +111,7 @@ module Problem_Knapsack
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -126,16 +126,16 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             num_sol += 1;
 
-            if (best_task < child.profit) {
-              best_task = child.profit;
+            if (bestCost_task < child.profit) {
+              bestCost_task = child.profit;
               lock.readFE();
-              if (best < child.profit) then best = child.profit;
-              else best_task = best;
+              if (bestCost < child.profit) then bestCost = child.profit;
+              else bestCost_task = bestCost;
               lock.writeEF(true);
             }
           }
           else {
-            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+            if (bestCost_task < bound_dantzig(Node, child)) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -178,7 +178,7 @@ module Problem_Knapsack
     }
 
     proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -193,16 +193,16 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             num_sol += 1;
 
-            if (best_task < child.profit) {
-              best_task = child.profit;
+            if (bestCost_task < child.profit) {
+              bestCost_task = child.profit;
               lock.readFE();
-              if (best < child.profit) then best = child.profit;
-              else best_task = best;
+              if (bestCost < child.profit) then bestCost = child.profit;
+              else bestCost_task = bestCost;
               lock.writeEF(true);
             }
           }
           else {
-            if (best_task < bound_martello(Node, child)) { // bounding and pruning
+            if (bestCost_task < bound_martello(Node, child)) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -214,14 +214,14 @@ module Problem_Knapsack
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       select this.ub_name {
         when "dantzig" {
-          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         when "martello" {
-          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -252,16 +252,16 @@ module Problem_Knapsack
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
-      const is_better = if (best > this.initLB) then " (improved)"
-                                                else " (not improved)";
-      writeln("Optimum found: ", best, is_better);
+      const is_better = if (bestCost > this.initLB) then " (improved)"
+                                                    else " (not improved)";
+      writeln("Optimum found: ", bestCost, is_better);
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);

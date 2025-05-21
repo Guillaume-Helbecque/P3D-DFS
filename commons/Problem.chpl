@@ -8,7 +8,7 @@ module Problem
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int)
     {
       halt("Error - decompose() not implemented");
     }
@@ -28,7 +28,7 @@ module Problem
     }
 
     proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
     {
       halt("Error - print_results() not implemented");
     }
