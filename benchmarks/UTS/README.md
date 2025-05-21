@@ -29,7 +29,7 @@ where the available options are:
   - any positive integer (`2000` by default)
 
 - **`--r`**: seed for RNG state at root
-  - any positive integer (`0` by default)
+  - any positive integer (`30` by default)
 
 - **`--g`**: instance granularity
   - any positive integer (`1` by default)
