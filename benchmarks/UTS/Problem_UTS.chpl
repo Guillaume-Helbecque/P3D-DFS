@@ -147,19 +147,30 @@ module Problem_UTS
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const bestCost: int, const bestBound: int,
+    override proc print_results(const subNodeExplored, const subSolExplored,
+      const subDepthReached, const bestCost: int, const bestBound: int,
       const elapsedTime: real): void
     {
-      var treeSize: int = (+ reduce subNodeExplored);
-      var nbLeaf: int   = (+ reduce subSolExplored);
-      var maxDepth: int = (max reduce subDepthReached);
+      var treeSize, nbLeaf, maxDepth: int;
+
+      if (isArray(subNodeExplored) && isArray(subSolExplored) && isArray(subDepthReached)) {
+        treeSize = (+ reduce subNodeExplored);
+        nbLeaf = (+ reduce subSolExplored);
+        maxDepth = (max reduce subDepthReached);
+      } else { // if not array, then int
+        treeSize = subNodeExplored;
+        nbLeaf = subSolExplored;
+        maxDepth = subDepthReached;
+      }
+
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================");
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-      writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      if isArray(subNodeExplored) {
+        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      }
       writeln("Number of leaves explored: ", nbLeaf, " (", 100 * nbLeaf:real / treeSize:real, "%)");
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Tree depth: ", maxDepth);
