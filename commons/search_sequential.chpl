@@ -67,10 +67,11 @@ module search_sequential
     writeln("Size of the explored tree: ", exploredTree);
     writeln("Number of explored solutions: ", exploredSol);
     writeln("Optimal makespan: ", bestCost);
+    writeln("Best bound: ", bestBound);
     writeln("Elapsed time: ", globalTimer.elapsed(), " [s]");
     writeln("=================================================\n");
 
-    /* problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
+    /* problem.print_results(exploredTree, exploredSol, maxDepth, bestCost, bestBound,
       globalTimer.elapsed()); */
   }
 }

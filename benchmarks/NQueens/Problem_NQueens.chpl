@@ -77,7 +77,8 @@ module Problem_NQueens
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const bestBound: int,
+      const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);

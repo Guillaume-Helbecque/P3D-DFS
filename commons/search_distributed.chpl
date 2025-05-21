@@ -195,7 +195,7 @@ module search_distributed
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, bestCost,
-      globalTimer.elapsed());
+      bestBound, globalTimer.elapsed());
   }
 
 }

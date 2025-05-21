@@ -31,7 +31,8 @@ module Problem
     }
 
     proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const bestBound: int,
+      const elapsedTime: real): void
     {
       halt("Error - print_results() not implemented");
     }

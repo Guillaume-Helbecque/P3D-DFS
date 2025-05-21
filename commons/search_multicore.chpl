@@ -156,6 +156,6 @@ module search_multicore
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, bestCost,
-      globalTimer.elapsed());
+      bestBound, globalTimer.elapsed());
   }
 }

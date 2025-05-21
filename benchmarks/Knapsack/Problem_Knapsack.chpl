@@ -254,21 +254,23 @@ module Problem_Knapsack
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const bestBound: int,
+      const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
-      const is_better = if (bestCost > this.initLB) then " (improved)"
-                                                    else " (not improved)";
-      writeln("Optimum found: ", bestCost, is_better);
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      const is_better = if (bestCost > this.initLB) then " (improved)"
+                                                    else " (not improved)";
+      writeln("Optimum found: ", bestCost, is_better);
+      writeln("Best (highest) bound: ", bestBound);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }

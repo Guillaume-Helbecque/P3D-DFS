@@ -341,7 +341,8 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const bestCost: int, const elapsedTime: real): void
+      const subDepthReached: [] int, const bestCost: int, const bestBound: int,
+      const elapsedTime: real): void
     {
       var treeSize: int = (+ reduce subNodeExplored);
       var nbSol: int = (+ reduce subSolExplored);
@@ -356,6 +357,7 @@ module Problem_PFSP
       const is_better = if (bestCost < this.initUB) then " (improved)"
                                                     else " (not improved)";
       writeln("Optimal makespan: ", bestCost, is_better);
+      writeln("Best (smallest) bound: ", bestBound);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }
