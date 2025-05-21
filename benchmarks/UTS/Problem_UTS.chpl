@@ -64,6 +64,8 @@ module Problem_UTS
       const nonLeafProba: c_double, const gen: c_int, const shape_fct: c_int, const shiftD: c_double,
       const gran: c_int): void
     {
+      this.obj = "none";
+
       this.treeType           = tree_type;
       this.b_0                = bf_0;
       this.rootId             = rootIdx;

@@ -13,6 +13,7 @@ module search_distributed
   {
     // Global variables (best cost found and termination)
     var bestCost: int = problem.getInitBound();
+    var bestBound: int = if (problem.obj == "min") then max(int) else 0;
     var lockBestCost: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;

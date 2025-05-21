@@ -10,6 +10,7 @@ module Problem_NQueens
 
     proc init(const n: int): void
     {
+      this.obj = "none";
       this.N = n;
     }
 

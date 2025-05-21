@@ -13,6 +13,7 @@ module search_multicore
 
     // Global variables (best cost found and termination)
     var bestCost: int = problem.getInitBound();
+    var bestBound: int = if (problem.obj == "min") then max(int) else 0;
     var lockBestCost: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;

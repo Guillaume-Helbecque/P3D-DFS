@@ -36,6 +36,8 @@ module Problem_PFSP
 
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
+      this.obj = "min";
+
       this.name = fileName;
 
       var inst = new Instance();

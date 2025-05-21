@@ -9,6 +9,8 @@ module search_sequential
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
     var bestCost: int = problem.getInitBound();
+    var bestBound: int = if (problem.obj == "min") then max(int) else 0;
+
     /* Not needed in sequential mode, but we use it only to match the generic template. */
     var lockBestCost: sync bool = true;
 

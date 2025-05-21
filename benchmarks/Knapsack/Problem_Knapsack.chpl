@@ -29,6 +29,8 @@ module Problem_Knapsack
     proc init(const fileName: string, const n, const r, const t, const id, const s,
       const ub: string, const lb: string): void
     {
+      this.obj = "max";
+
       // TODO: Is id > s allowed?
 
       var inst = new Instance();

@@ -2,6 +2,9 @@ module Problem
 {
   class Problem
   {
+    /* Problem objective: "min", "max", or "none" */
+    var obj: string;
+
     proc copy()
     {
       halt("Error - copy() not implemented");
