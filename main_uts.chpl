@@ -20,7 +20,7 @@ module main_uts
   // UTS-specific options
   config const t: c_int    = 0; // BIN
   config const b: c_double = 2000.0;
-  config const r: c_int    = 0;
+  config const r: c_int    = 30;
   config const a: c_int    = 0; // LINEAR
   config const d: c_int    = 6;
   config const q: c_double = 0.499995;
