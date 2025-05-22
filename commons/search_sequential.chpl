@@ -61,14 +61,7 @@ module search_sequential
       save_time(1, globalTimer.elapsed(), path);
     }
 
-    writeln("\n=================================================");
-    writeln("Size of the explored tree: ", exploredTree);
-    writeln("Number of explored solutions: ", exploredSol);
-    writeln("Optimal makespan: ", best);
-    writeln("Elapsed time: ", globalTimer.elapsed(), " [s]");
-    writeln("=================================================\n");
-
-    /* problem.print_results(exploredTree, exploredSol, maxDepth, best,
-      globalTimer.elapsed()); */
+    problem.print_results(exploredTree, exploredSol, maxDepth, best,
+      globalTimer.elapsed());
   }
 }

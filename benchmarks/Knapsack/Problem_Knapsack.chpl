@@ -251,11 +251,19 @@ module Problem_Knapsack
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+    override proc print_results(const subNodeExplored, const subSolExplored,
+      const subDepthReached, const best: int, const elapsedTime: real): void
     {
-      var treeSize: int = (+ reduce subNodeExplored);
-      var nbSol: int = (+ reduce subSolExplored);
+      var treeSize, nbSol: int;
+
+      if (isArray(subNodeExplored) && isArray(subSolExplored)) {
+        treeSize = (+ reduce subNodeExplored);
+        nbSol = (+ reduce subSolExplored);
+      } else { // if not array, then int
+        treeSize = subNodeExplored;
+        nbSol = subSolExplored;
+      }
+
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
@@ -264,7 +272,9 @@ module Problem_Knapsack
       writeln("Optimum found: ", best, is_better);
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-      writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      if isArray(subNodeExplored) {
+        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      }
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");

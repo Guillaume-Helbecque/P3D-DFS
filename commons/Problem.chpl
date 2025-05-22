@@ -27,8 +27,8 @@ module Problem
       halt("Error - print_settings() not implemented");
     }
 
-    proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int,
-      const subDepthReached: [] int, const best: int, const elapsedTime: real): void
+    proc print_results(const subNodeExplored, const subSolExplored,
+      const subDepthReached, const best: int, const elapsedTime: real): void
     {
       halt("Error - print_results() not implemented");
     }
