@@ -154,13 +154,18 @@ module Problem_Knapsack
     {
       var children: list(Node);
 
-      var max = 1 << NB; // 2^n
+      /*
+        We assume for now a problem size of 100 items.
+        TODO: Make this general.
+      */
+      const N = min(NB, 100 - parent.depth);
+      var max = 1 << N; // 2^N
 
       for i in 0..<max {
         var child = new Node(parent);
-        child.depth += NB;
+        child.depth += N;
 
-        for j in 0..<NB by -1 {
+        for j in 0..<N by -1 {
           const bit = ((i >> j) & 1):uint(32);
 
           child.items[parent.depth+j] = bit;
