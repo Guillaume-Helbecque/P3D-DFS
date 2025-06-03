@@ -13,6 +13,7 @@ module search_distributed
   {
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
+    var timeStop: int = problem.getTimeStop();
     var lockBest: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
@@ -114,7 +115,7 @@ module search_distributed
         allLocalesBarrier.barrier(); // synchronization barrier
 
         // Exploration of the tree
-        while true do {
+        while true && globalTimer.elapsed() < timeStop do {
 
           // Try to remove an element
           var (hasWork, parent): (int, Node) = bag.remove(taskId);
@@ -182,6 +183,17 @@ module search_distributed
 
     globalTimer.stop();
 
+    var bestBound: real = 0;
+    const problemType = problem.getType();
+
+    if problemType != 0 {
+      if bag.size > 0 {
+        if problemType == 1 then bestBound = max reduce [n in bag] n.bound;
+        else if problemType == -1 then bestBound = min reduce [n in bag] n.bound;
+      }
+      else bestBound = best;
+    }
+
     // ========
     // OUTPUTS
     // ========
@@ -194,7 +206,6 @@ module search_distributed
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
-      globalTimer.elapsed());
+      globalTimer.elapsed(), bestBound);
   }
-
 }
