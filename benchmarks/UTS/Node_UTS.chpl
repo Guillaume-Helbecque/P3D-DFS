@@ -8,7 +8,7 @@ module Node_UTS
   extern record Node_UTS
   {
     var numChildren: c_int;
-
+    var bound: real;
     // default-initializer
     proc init()
     {}
@@ -18,6 +18,7 @@ module Node_UTS
     {
       init this;
       uts_initRoot(this, problem.treeType, problem.rootId);
+      this.bound = 1e-6;
     }
   }
 }
