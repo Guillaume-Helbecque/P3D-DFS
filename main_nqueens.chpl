@@ -14,6 +14,7 @@ module main_queens
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
+  config const time: int = max(int);
 
   // NQueens-specific option
   config const N: int = 13;
@@ -21,7 +22,7 @@ module main_queens
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var nqueens = new Problem_NQueens(N);
+    var nqueens = new Problem_NQueens(N, time);
 
     // Helper
     for a in args[1..] {
