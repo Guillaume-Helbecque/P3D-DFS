@@ -18,6 +18,16 @@ module Problem
       halt("Error - getInitBound() not implemented");
     }
 
+    proc getType(): int
+    {
+      halt("Error - getType() not implemented");
+    }
+
+    proc getTimeStop(): int
+    {
+      halt("Error - getTimeStop() not implemented");
+    }
+
     // =======================
     // Utility functions
     // =======================
@@ -28,7 +38,7 @@ module Problem
     }
 
     proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real = 0): void
     {
       halt("Error - print_results() not implemented");
     }
