@@ -63,18 +63,15 @@ class Instance_Pisinger : Instance
     var f = open(path, ioMode.r);
     var channel = f.reader(locking=false);
 
-    // TODO: how to read a file of undetermined length?
-    var data = channel.read([0..#31800, 0..1] string);
+    for line in channel.lines() {
+      if (line.find(this.name) != -1) then
+        return line.partition(" ")[2]:int;
+    }
 
     channel.close();
     f.close();
 
-    const pos = data[..,0].find(this.name);
-
-    if (pos == -1) then
-      // best lower-bound not found
-      return 0;
-    else
-      return data[pos, 1]:int;
+    // best lower-bound not found
+    return 0;
   }
 }
