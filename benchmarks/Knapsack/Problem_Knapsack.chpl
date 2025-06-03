@@ -10,9 +10,9 @@ module Problem_Knapsack
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
-  config const NB = 1; // N-assignment Branching factor
+  config const MB = 1; // Multi-assignment Branching factor
 
-  const allowedUpperBounds = ["dantzig", "martello"];
+  const allowedUpperBounds = ["dantzig", "dantzig_mb", "martello"];
 
   class Problem_Knapsack : Problem
   {
@@ -112,7 +112,7 @@ module Problem_Knapsack
       return floor(bound);
     }
 
-    /* proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -146,11 +146,11 @@ module Problem_Knapsack
       }
 
       return children;
-    } */
+    }
 
-    proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int,
-      ref num_sol: int,Add commentMore actions ref max_depth: int, ref best: int,
-      lock: sync bool, ref best_task: int): list(?)
+    proc decompose_dantzig_mb(type Node, const parent: Node, ref tree_loc: int,
+      ref num_sol: int, ref max_depth: int, ref best: int, lock: sync bool,
+      ref best_task: int): list(?)
     {
       var children: list(Node);
 
@@ -158,7 +158,7 @@ module Problem_Knapsack
         We assume for now a problem size of 100 items.
         TODO: Make this general.
       */
-      const N = min(NB, 100 - parent.depth);
+      const N = min(MB, 100 - parent.depth);
       var max = 1 << N; // 2^N
 
       for i in 0..<max {
@@ -271,6 +271,9 @@ module Problem_Knapsack
         when "dantzig" {
           return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
+        when "dantzig_mb" {
+          return decompose_dantzig_mb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
         when "martello" {
           return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
@@ -298,7 +301,10 @@ module Problem_Knapsack
       /* writeln("  items's profit: ", this.profits);
       writeln("  items's weight: ", this.weights); */
       writeln("  Initial lower bound: ", this.initLB);
-      writeln("  Upper bound function: ", this.ub_name);
+      if (this.ub_name == "dantzig_mb") then
+        writeln("  Upper bound function: ", this.ub_name, " (", MB, ")");
+      else
+        writeln("  Upper bound function: ", this.ub_name);
       writeln("=================================================");
     }
 
@@ -340,7 +346,7 @@ module Problem_Knapsack
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
-      writeln("   --ub     str   upper bound function (dantzig, martello)");
+      writeln("   --ub     str   upper bound function (dantzig, dantzig_mb, martello)");
       writeln("   --lb     str   lower bound initialization (opt, inf)\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str   file containing the data\n");
