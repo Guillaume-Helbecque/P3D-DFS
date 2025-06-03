@@ -16,6 +16,7 @@ module main_knapsack
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
+  config const time: int = max(int);
 
   // Knapsack-specific option
   config const inst: string = "";
@@ -31,7 +32,7 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
+    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb, time);
 
     // Helper
     for a in args[1..] {
