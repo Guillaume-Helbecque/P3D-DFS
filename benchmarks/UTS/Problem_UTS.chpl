@@ -60,9 +60,11 @@ module Problem_UTS
     /* compute granularity - number of rng evaluations per tree node */
     var computeGranularity: c_int;
 
+    var timeStop: int;
+
     proc init(const tree_type: c_int, const bf_0: c_double, const rootIdx: c_int, const nonLeafBFact: c_int,
       const nonLeafProba: c_double, const gen: c_int, const shape_fct: c_int, const shiftD: c_double,
-      const gran: c_int): void
+      const gran: c_int, const timeStop: int): void
     {
       this.treeType           = tree_type;
       this.b_0                = bf_0;
@@ -73,12 +75,13 @@ module Problem_UTS
       this.shape_fn           = shape_fct;
       this.shiftDepth         = shiftD;
       this.computeGranularity = gran;
+      this.timeStop           = timeStop;
     }
 
     override proc copy()
     {
       return new Problem_UTS(this.treeType, this.b_0, this.rootId, this.nonLeafBF,
-        this.nonLeafProb, this.gen_mx, this.shape_fn, this.shiftDepth, this.computeGranularity);
+        this.nonLeafProb, this.gen_mx, this.shape_fn, this.shiftDepth, this.computeGranularity, this.timeStop);
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -106,6 +109,15 @@ module Problem_UTS
       return 0;
     }
 
+    override proc getType(): int
+    {
+      return 0;
+    }
+
+    override proc getTimeStop(): int
+    {
+      return this.timeStop;
+    }
     // =======================
     // Utility functions
     // =======================
@@ -146,7 +158,7 @@ module Problem_UTS
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real,  const bestBound: real): void
     {
       var treeSize, nbLeaf, maxDepth: int;
 
