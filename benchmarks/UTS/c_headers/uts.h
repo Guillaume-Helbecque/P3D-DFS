@@ -30,6 +30,8 @@ typedef struct
   int numChildren;      // number of children, -1 => not yet determined
 
   struct state_t state; // RNG state associated with this node
+
+  double bound;
 } Node_UTS;
 
 /* Tree type
