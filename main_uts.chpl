@@ -16,6 +16,7 @@ module main_uts
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
+  config const time: int = max(int);
 
   // UTS-specific options
   config const t: c_int    = 0; // BIN
@@ -31,7 +32,7 @@ module main_uts
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
+    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g, time);
 
     // Helper
     for a in args[1..] {
