@@ -13,6 +13,7 @@ module search_multicore
 
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
+    var timeStop: int = problem.getTimeStop();
     var lockBest: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
@@ -91,7 +92,7 @@ module search_multicore
       ref max_depth = eachMaxDepth[taskId];
 
       // Exploration of the tree
-      while true do {
+      while true && globalTimer.elapsed() < timeStop do {
 
         // Try to remove an element
         var (hasWork, parent): (int, Node) = bag.remove(taskId);
@@ -142,6 +143,17 @@ module search_multicore
     }
 
     globalTimer.stop();
+    
+    var bestBound: real = 0;
+    const problemType = problem.getType();
+
+    if problemType != 0 {
+      if bag.size > 0 {
+        if problemType == 1 then bestBound = max reduce [n in bag] n.bound;
+        else if problemType == -1 then bestBound = min reduce [n in bag] n.bound;
+      }
+      else bestBound = best;
+    }
 
     // ========
     // OUTPUTS
@@ -155,6 +167,6 @@ module search_multicore
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
-      globalTimer.elapsed());
+      globalTimer.elapsed(), bestBound);
   }
 }
