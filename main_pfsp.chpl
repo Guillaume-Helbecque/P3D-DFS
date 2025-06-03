@@ -14,6 +14,7 @@ module main_pfsp
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
+  config const time: int = max(int);
 
   // PFSP-specific options
   config const inst: string = "ta14"; // instance's name
@@ -24,7 +25,7 @@ module main_pfsp
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var pfsp = new Problem_PFSP(inst, lb, br, ub);
+    var pfsp = new Problem_PFSP(inst, lb, br, ub, time);
 
     // Helper
     for a in args[1..] {
