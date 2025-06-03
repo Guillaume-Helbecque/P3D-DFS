@@ -25,9 +25,11 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
+    var timeStop: int;
+
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
-      const ub: string, const lb: string): void
+      const ub: string, const lb: string, const timeStop: int): void
     {
       // TODO: Is id > s allowed?
 
@@ -69,11 +71,12 @@ module Problem_Knapsack
         order according to the ratio profit / weight.
       */
       sortItems(this.N, this.weights, this.profits);
+      this.timeStop = timeStop;
     }
 
     // copy-initialisation
     proc init(const file_name: string, const n, const w, const pr: c_ptr(c_int),
-      const we: c_ptr(c_int), const lb: string, const init_lb: int): void
+      const we: c_ptr(c_int), const lb: string, const init_lb: int, const timeStop: int): void
     {
       this.name    = file_name;
       this.N       = n;
@@ -82,12 +85,13 @@ module Problem_Knapsack
       this.weights = we;
       this.lb_init = lb;
       this.initLB  = init_lb;
+      this.timeStop = timeStop;
     }
 
     override proc copy()
     {
       return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
-        this.lb_init, this.initLB);
+        this.lb_init, this.initLB, this.timeStop);
     }
 
     // Bound from Dantzig (1957)
@@ -135,7 +139,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+            child.bound = bound_dantzig(Node, child);
+            if (best_task < child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -202,7 +207,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_martello(Node, child)) { // bounding and pruning
+            child.bound = bound_dantzig(Node, child);
+            if (best_task < child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -234,6 +240,16 @@ module Problem_Knapsack
       return this.initLB;
     }
 
+    override proc getType(): int
+    {
+      return -1;
+    }
+
+    override proc getTimeStop(): int
+    {
+      return this.timeStop;
+    }
+
     // =======================
     // Utility functions
     // =======================
@@ -252,7 +268,7 @@ module Problem_Knapsack
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real): void
     {
       var treeSize, nbSol: int;
 
@@ -278,6 +294,7 @@ module Problem_Knapsack
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
+      writeln("Best lower bound: ", bestBound);
       writeln("=================================================\n");
     }
 
