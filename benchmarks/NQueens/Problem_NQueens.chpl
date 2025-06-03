@@ -7,15 +7,17 @@ module Problem_NQueens
   class Problem_NQueens : Problem
   {
     var N: int; // number of queens
+    var timeStop: int;
 
-    proc init(const n: int): void
+    proc init(const n: int, const timeStop: int): void
     {
       this.N = n;
+      this.timeStop = timeStop;
     }
 
     override proc copy()
     {
-      return new Problem_NQueens(this.N);
+      return new Problem_NQueens(this.N, this.timeStop);
     }
 
     proc isSafe(const board, const queen_num: int, const row_pos: uint(8)): bool
@@ -64,6 +66,16 @@ module Problem_NQueens
       return 0;
     }
 
+    override proc getType(): int
+    {
+      return 0;
+    }
+
+    override proc getTimeStop(): int
+    {
+      return this.timeStop;
+    }
+
     // =======================
     // Utility functions
     // =======================
@@ -76,7 +88,7 @@ module Problem_NQueens
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real): void
     {
       var treeSize, nbSol: int;
 
