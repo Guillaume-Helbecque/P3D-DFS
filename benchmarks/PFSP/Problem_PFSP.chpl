@@ -34,7 +34,9 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
-    proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
+    var timeStop: int;
+
+    proc init(const fileName: string, const lb: string, const rules: string, const ub: string, const timeStop: int): void
     {
       this.name = fileName;
 
@@ -88,6 +90,9 @@ module Problem_PFSP
           halt("Error - Unsupported initial upper bound");
         } */
       }
+   
+    this.timeStop = timeStop;
+
     }
 
     proc deinit()
@@ -99,7 +104,7 @@ module Problem_PFSP
     // TODO: Implement a copy initializer, to avoid re-computing all the data
     override proc copy()
     {
-      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
+      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init, this.timeStop);
     }
 
     inline proc branchingRule(const lb_begin, const lb_end, const depth, const best)
@@ -185,7 +190,7 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
-          child.lb = lowerbound;
+          child.bound = lowerbound;
 
           if (lowerbound < best_task) {
             children.pushBack(child);
@@ -238,7 +243,7 @@ module Problem_PFSP
 
           if (lb < best_task) {
             var child = new Node(parent);
-            child.lb = lb;
+            child.bound = lb;
             child.depth += 1;
 
             if (beginEnd == BEGIN) {
@@ -290,7 +295,7 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
-          child.lb = lowerbound;
+          child.bound = lowerbound;
 
           if (lowerbound < best_task) {
             children.pushBack(child);
@@ -326,6 +331,16 @@ module Problem_PFSP
       return this.initUB;
     }
 
+    override proc getType(): int
+    {
+      return -1;
+    }
+
+    override proc getTimeStop(): int
+    {
+      return this.timeStop;
+    }
+
     // =======================
     // Utility functions
     // =======================
@@ -341,7 +356,7 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real = 1e-6):  void
     {
       var treeSize, nbSol: int;
 
@@ -367,6 +382,7 @@ module Problem_PFSP
                                                 else " (not improved)";
       writeln("Optimal makespan: ", best, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
+      writeln("Best lower bound: ", bestBound);
       writeln("=================================================\n");
     }
 
