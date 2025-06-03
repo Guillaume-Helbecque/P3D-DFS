@@ -10,6 +10,7 @@ module Node_NQueens
   {
     var board: NMax*uint(8);
     var depth: uint(8);
+    var bound: real;
 
     // default-initializer
     proc init()
@@ -20,6 +21,7 @@ module Node_NQueens
     {
       init this;
       for i in 0..#problem.N do this.board[i] = i:uint(8);
+      this.bound = 1e-6;
     }
 
     // copy-initializer
@@ -27,6 +29,7 @@ module Node_NQueens
     {
       this.board = other.board;
       this.depth = other.depth;
+      this.bound = other.bound;
     }
 
     proc deinit()
