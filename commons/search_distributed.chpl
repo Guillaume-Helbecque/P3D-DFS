@@ -9,11 +9,10 @@ module search_distributed
   use util;
   use Problem;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const time: int, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
-    var timeStop: int = problem.getTimeStop();
     var lockBest: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
@@ -115,7 +114,7 @@ module search_distributed
         allLocalesBarrier.barrier(); // synchronization barrier
 
         // Exploration of the tree
-        while true && globalTimer.elapsed() < timeStop do {
+        while true && globalTimer.elapsed() < time do {
 
           // Try to remove an element
           var (hasWork, parent): (int, Node) = bag.remove(taskId);
