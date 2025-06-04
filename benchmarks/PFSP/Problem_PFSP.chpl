@@ -34,9 +34,7 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
-    var timeStop: int;
-
-    proc init(const fileName: string, const lb: string, const rules: string, const ub: string, const timeStop: int): void
+    proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;
 
@@ -90,9 +88,6 @@ module Problem_PFSP
           halt("Error - Unsupported initial upper bound");
         } */
       }
-   
-    this.timeStop = timeStop;
-
     }
 
     proc deinit()
@@ -104,7 +99,7 @@ module Problem_PFSP
     // TODO: Implement a copy initializer, to avoid re-computing all the data
     override proc copy()
     {
-      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init, this.timeStop);
+      return new Problem_PFSP(this.name, this.lb_name, this.branching, this.ub_init);
     }
 
     inline proc branchingRule(const lb_begin, const lb_end, const depth, const best)
@@ -334,11 +329,6 @@ module Problem_PFSP
     override proc getType(): int
     {
       return -1;
-    }
-
-    override proc getTimeStop(): int
-    {
-      return this.timeStop;
     }
 
     // =======================
