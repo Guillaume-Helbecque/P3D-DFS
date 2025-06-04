@@ -36,7 +36,7 @@ module search_sequential
     // =====================
 
     // Exploration of the tree
-    while !pool.isEmpty() && globalTimer.elapsed() < timeStop do {
+    while !pool.isEmpty() && globalTimer.elapsed() < time do {
 
       // Remove an element
       var parent: Node = pool.popBack();
