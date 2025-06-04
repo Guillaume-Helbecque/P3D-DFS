@@ -76,7 +76,7 @@ module Problem_Knapsack
 
     // copy-initialisation
     proc init(const file_name: string, const n, const w, const pr: c_ptr(c_int),
-      const we: c_ptr(c_int), const lb: string, const init_lb: int, const timeStop: int): void
+      const we: c_ptr(c_int), const lb: string, const init_lb: int): void
     {
       this.name    = file_name;
       this.N       = n;
@@ -85,13 +85,12 @@ module Problem_Knapsack
       this.weights = we;
       this.lb_init = lb;
       this.initLB  = init_lb;
-      this.timeStop = timeStop;
     }
 
     override proc copy()
     {
       return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
-        this.lb_init, this.initLB, this.timeStop);
+        this.lb_init, this.initLB);
     }
 
     // Bound from Dantzig (1957)
@@ -243,11 +242,6 @@ module Problem_Knapsack
     override proc getType(): int
     {
       return -1;
-    }
-
-    override proc getTimeStop(): int
-    {
-      return this.timeStop;
     }
 
     // =======================
