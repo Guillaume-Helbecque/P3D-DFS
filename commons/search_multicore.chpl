@@ -7,7 +7,7 @@ module search_multicore
   use util;
   use Problem;
 
-  proc search_multicore(type Node, problem, const time: int, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(type Node, problem, const timeStop: int, const saveTime: bool, const activeSet: bool): void
   {
     const numTasks = here.maxTaskPar;
 
@@ -91,7 +91,7 @@ module search_multicore
       ref max_depth = eachMaxDepth[taskId];
 
       // Exploration of the tree
-      while true && globalTimer.elapsed() < time do {
+      while true && globalTimer.elapsed() < timeStop do {
 
         // Try to remove an element
         var (hasWork, parent): (int, Node) = bag.remove(taskId);
