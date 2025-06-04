@@ -16,7 +16,7 @@ module main_knapsack
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
-  config const time: int = max(int);
+  config const timeStop: int = max(int);
 
   // Knapsack-specific option
   config const inst: string = "";
@@ -48,13 +48,13 @@ module main_knapsack
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_Knapsack, knapsack, time, saveTime);
+        search_sequential(Node_Knapsack, knapsack, timeStop, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_Knapsack, knapsack, time, saveTime, activeSet);
+        search_multicore(Node_Knapsack, knapsack, timeStop, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_Knapsack, knapsack, time, saveTime, activeSet);
+        search_distributed(Node_Knapsack, knapsack, timeStop, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
