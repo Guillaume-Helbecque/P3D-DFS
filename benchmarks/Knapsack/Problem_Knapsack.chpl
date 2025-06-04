@@ -203,7 +203,7 @@ module Problem_Knapsack
             }
           }
           else {
-            child.bound = bound_dantzig(Node, child);
+            child.bound = bound_martello(Node, child);
             if (best_task < child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
