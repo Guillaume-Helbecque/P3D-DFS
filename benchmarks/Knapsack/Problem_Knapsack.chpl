@@ -25,11 +25,9 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
-    var timeStop: int;
-
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
-      const ub: string, const lb: string, const timeStop: int): void
+      const ub: string, const lb: string): void
     {
       // TODO: Is id > s allowed?
 
@@ -71,7 +69,6 @@ module Problem_Knapsack
         order according to the ratio profit / weight.
       */
       sortItems(this.N, this.weights, this.profits);
-      this.timeStop = timeStop;
     }
 
     // copy-initialisation
