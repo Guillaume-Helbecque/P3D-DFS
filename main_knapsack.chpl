@@ -32,7 +32,7 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb, time);
+    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
 
     // Helper
     for a in args[1..] {
@@ -48,13 +48,13 @@ module main_knapsack
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_Knapsack, knapsack, saveTime);
+        search_sequential(Node_Knapsack, knapsack, time, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_Knapsack, knapsack, saveTime, activeSet);
+        search_multicore(Node_Knapsack, knapsack, time, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_Knapsack, knapsack, saveTime, activeSet);
+        search_distributed(Node_Knapsack, knapsack, time, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
