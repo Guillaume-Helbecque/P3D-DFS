@@ -23,11 +23,6 @@ module Problem
       halt("Error - getType() not implemented");
     }
 
-    proc getTimeStop(): int
-    {
-      halt("Error - getTimeStop() not implemented");
-    }
-
     // =======================
     // Utility functions
     // =======================
