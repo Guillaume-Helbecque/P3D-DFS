@@ -6,7 +6,7 @@ module search_sequential
   use util;
   use Problem;
 
-  proc search_sequential(type Node, problem, const time: int, const saveTime: bool): void
+  proc search_sequential(type Node, problem, const timeStop: int, const saveTime: bool): void
   {
     var best: int = problem.getInitBound();
     /* Not needed in sequential mode, but we use it only to match the generic template. */
@@ -36,7 +36,7 @@ module search_sequential
     // =====================
 
     // Exploration of the tree
-    while !pool.isEmpty() && globalTimer.elapsed() < time do {
+    while !pool.isEmpty() && globalTimer.elapsed() < timeStop do {
 
       // Remove an element
       var parent: Node = pool.popBack();
