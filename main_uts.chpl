@@ -32,7 +32,7 @@ module main_uts
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g, time);
+    var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
 
     // Helper
     for a in args[1..] {
@@ -48,13 +48,13 @@ module main_uts
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_UTS, uts, saveTime);
+        search_sequential(Node_UTS, uts, time, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_UTS, uts, saveTime, activeSet);
+        search_multicore(Node_UTS, uts, time, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_UTS, uts, saveTime, activeSet);
+        search_distributed(Node_UTS, uts, time, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
