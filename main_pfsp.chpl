@@ -25,7 +25,7 @@ module main_pfsp
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var pfsp = new Problem_PFSP(inst, lb, br, ub, time);
+    var pfsp = new Problem_PFSP(inst, lb, br, ub);
 
     // Helper
     for a in args[1..] {
@@ -41,13 +41,13 @@ module main_pfsp
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_PFSP, pfsp, saveTime);
+        search_sequential(Node_PFSP, pfsp, time, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
+        search_multicore(Node_PFSP, pfsp, time, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
+        search_distributed(Node_PFSP, pfsp, time, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
