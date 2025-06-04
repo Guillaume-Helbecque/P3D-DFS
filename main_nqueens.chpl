@@ -22,7 +22,7 @@ module main_queens
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var nqueens = new Problem_NQueens(N, time);
+    var nqueens = new Problem_NQueens(N);
 
     // Helper
     for a in args[1..] {
@@ -38,13 +38,13 @@ module main_queens
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_NQueens, nqueens, saveTime);
+        search_sequential(Node_NQueens, nqueens, time, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_NQueens, nqueens, saveTime, activeSet);
+        search_multicore(Node_NQueens, nqueens, time, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
+        search_distributed(Node_NQueens, nqueens, time, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");
