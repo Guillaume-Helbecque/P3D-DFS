@@ -1,0 +1,22 @@
+name: Compilation
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: configure and build Chapel
+      working-directory: chpl_config
+      run: source laptop_multicore.sh
+
+    - name: Compilation test
+      run: make all
