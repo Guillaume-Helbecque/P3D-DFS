@@ -14,9 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: configure and build Chapel
+    - name: Build Chapel and compile code
       working-directory: chpl_config
-      run: source laptop_multicore.sh
-
-    - name: Compilation test
-      run: make all
+      run: |
+        source laptop_multicore.sh
+        make all
