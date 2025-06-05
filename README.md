@@ -14,7 +14,7 @@ The [chpl_config](./chpl_config) directory contains predefined shell scripts for
 
 ### Compilation and configuration options
 
-- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the target system, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 
 - **Step 2:** Compile with `make` and execute with:
 
@@ -33,7 +33,7 @@ where the available options are:
 
 - **`--help`** or **`-h`**: help message
 
-Other problem-specific options are supported; see below.
+Other problem-specific options are supported; see next section.
 
 ### Supported problems
 
