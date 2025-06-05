@@ -19,7 +19,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ./chapel-2.4.0MC
-        key: ${{ runner.os }}-chapel-${{ hashFiles('chapel-2.4.0MC/**') }}
+        key: ${{ runner.os }}-chapel-2.4.0MC
 
     - name: Build Chapel 2.4.0 (if not cached)
       if: steps.cache-chapel-240.outputs.cache-hit != 'true'
