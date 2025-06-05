@@ -15,14 +15,14 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Cache Chapel-2.4.0
-      id: cache-chapel-2.4.0
+      id: cache-chapel-240
       uses: actions/cache@v4
       with:
         path: ./chapel-2.4.0MC
         key: ${{ runner.os }}-chapel-${{ hashFiles('chapel-2.4.0MC/**') }}
 
     - name: Build Chapel 2.4.0 (if not cached)
-      if: steps.cache-chapel-2.4.0.outputs.cache-hit != 'true'
+      if: steps.cache-chapel-240.outputs.cache-hit != 'true'
       run: |
         cd chpl_config
         source laptop_multicore.sh
