@@ -33,7 +33,7 @@ where the available options are:
 
 - **`--help`** or **`-h`**: help message
 
-Other problem-specific options are supported; see below.
+Other problem-specific options are supported; see next section.
 
 ### Supported problems
 
