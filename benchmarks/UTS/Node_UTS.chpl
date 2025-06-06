@@ -16,9 +16,9 @@ module Node_UTS
     // root-initializer
     proc init(problem)
     {
+      this.bound = 1e-6;
       init this;
       uts_initRoot(this, problem.treeType, problem.rootId);
-      this.bound = 1e-6;
     }
   }
 }

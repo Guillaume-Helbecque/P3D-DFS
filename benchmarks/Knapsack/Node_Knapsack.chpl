@@ -17,8 +17,8 @@ module Node_Knapsack
     // root-initializer
     proc init(problem)
     {
-      this.init();
       this.bound = max(real);
+      init this;
     }
 
     // copy-initializer

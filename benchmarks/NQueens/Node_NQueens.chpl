@@ -19,9 +19,9 @@ module Node_NQueens
     // root-initializer
     proc init(problem)
     {
+      this.bound = 1e-6;
       init this;
       for i in 0..#problem.N do this.board[i] = i:uint(8);
-      this.bound = 1e-6;
     }
 
     // copy-initializer
