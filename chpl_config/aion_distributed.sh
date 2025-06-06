@@ -5,7 +5,7 @@
 # are interconnected through a Fast InfiniBand (IB) HDR100 network.
 
 # Load the foss toolchain to get access to gcc, mpi, etc...
-module load toolchain/foss/2020b
+module load toolchain/foss/2023b
 module load devel/CMake
 
 export CHPL_VERSION=$(cat CHPL_VERSION)

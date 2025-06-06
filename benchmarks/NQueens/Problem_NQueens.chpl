@@ -8,6 +8,8 @@ module Problem_NQueens
   {
     var N: int; // number of queens
 
+    var problemType = ProblemType.Enum;
+
     proc init(const n: int): void
     {
       this.N = n;
@@ -76,7 +78,7 @@ module Problem_NQueens
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real): void
     {
       var treeSize, nbSol: int;
 

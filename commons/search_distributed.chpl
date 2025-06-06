@@ -9,7 +9,7 @@ module search_distributed
   use util;
   use Problem;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const timeStop: int, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
@@ -114,7 +114,7 @@ module search_distributed
         allLocalesBarrier.barrier(); // synchronization barrier
 
         // Exploration of the tree
-        while true do {
+        while true && globalTimer.elapsed() < timeStop do {
 
           // Try to remove an element
           var (hasWork, parent): (int, Node) = bag.remove(taskId);
@@ -182,6 +182,18 @@ module search_distributed
 
     globalTimer.stop();
 
+    var bestBound: real = 0;
+
+    if problem.problemType != ProblemType.Enum {
+      if bag.size > 0 {
+        if problem.problemType == ProblemType.Max then
+          bestBound = max reduce [n in bag] n.bound;
+        else if problem.problemType == ProblemType.Min then
+          bestBound = min reduce [n in bag] n.bound;
+      }
+      else bestBound = best;
+    }
+
     // ========
     // OUTPUTS
     // ========
@@ -194,7 +206,6 @@ module search_distributed
     }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
-      globalTimer.elapsed());
+      globalTimer.elapsed(), bestBound);
   }
-
 }
