@@ -51,12 +51,13 @@ module search_sequential
     globalTimer.stop();
 
     var bestBound: real = 0;
-    const problemType = problem.getType();
 
-    if problemType != 0 {
+    if problem.problemType != ProblemType.Enum {
       if pool.size > 0 {
-        if problemType == 1 then bestBound = max reduce [n in pool] n.bound;
-        else if problemType == -1 then bestBound = min reduce [n in pool] n.bound;
+        if problem.problemType == ProblemType.Max then
+          bestBound = max reduce [n in pool] n.bound;
+        else if problem.problemType == ProblemType.Min then
+          bestBound = min reduce [n in pool] n.bound;
       }
       else bestBound = best;
     }

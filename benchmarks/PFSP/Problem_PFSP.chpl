@@ -34,6 +34,8 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
+    var problemType = ProblemType.Min;
+
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;
@@ -324,11 +326,6 @@ module Problem_PFSP
     override proc getInitBound(): int
     {
       return this.initUB;
-    }
-
-    override proc getType(): int
-    {
-      return -1;
     }
 
     // =======================

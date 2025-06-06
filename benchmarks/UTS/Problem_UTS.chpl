@@ -60,6 +60,8 @@ module Problem_UTS
     /* compute granularity - number of rng evaluations per tree node */
     var computeGranularity: c_int;
 
+    var problemType = ProblemType.Enum;
+
     proc init(const tree_type: c_int, const bf_0: c_double, const rootIdx: c_int, const nonLeafBFact: c_int,
       const nonLeafProba: c_double, const gen: c_int, const shape_fct: c_int, const shiftD: c_double,
       const gran: c_int): void
@@ -102,11 +104,6 @@ module Problem_UTS
 
     // No bounding in UTS
     override proc getInitBound(): int
-    {
-      return 0;
-    }
-
-    override proc getType(): int
     {
       return 0;
     }

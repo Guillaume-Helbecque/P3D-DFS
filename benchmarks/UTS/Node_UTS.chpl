@@ -9,6 +9,7 @@ module Node_UTS
   {
     var numChildren: c_int;
     var bound: real;
+
     // default-initializer
     proc init()
     {}

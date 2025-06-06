@@ -1,5 +1,7 @@
 module Problem
 {
+  enum ProblemType { Max, Min, Enum }
+
   class Problem
   {
     proc copy()
@@ -16,11 +18,6 @@ module Problem
     proc getInitBound(): int
     {
       halt("Error - getInitBound() not implemented");
-    }
-
-    proc getType(): int
-    {
-      halt("Error - getType() not implemented");
     }
 
     // =======================

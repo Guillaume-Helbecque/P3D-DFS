@@ -8,6 +8,8 @@ module Problem_NQueens
   {
     var N: int; // number of queens
 
+    var problemType = ProblemType.Enum;
+
     proc init(const n: int): void
     {
       this.N = n;
@@ -60,11 +62,6 @@ module Problem_NQueens
 
     // No bounding in NQueens
     override proc getInitBound(): int
-    {
-      return 0;
-    }
-
-    override proc getType(): int
     {
       return 0;
     }

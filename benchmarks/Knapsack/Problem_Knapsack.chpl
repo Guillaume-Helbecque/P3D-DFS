@@ -25,6 +25,8 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
+    var problemType = ProblemType.Max;
+
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
       const ub: string, const lb: string): void
@@ -234,11 +236,6 @@ module Problem_Knapsack
     override proc getInitBound(): int
     {
       return this.initLB;
-    }
-
-    override proc getType(): int
-    {
-      return -1;
     }
 
     // =======================
