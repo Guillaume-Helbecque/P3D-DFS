@@ -14,7 +14,7 @@ module main_pfsp
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
-  config const time: int = max(int);
+  config const timeStop: int   = max(int);
 
   // PFSP-specific options
   config const inst: string = "ta14"; // instance's name

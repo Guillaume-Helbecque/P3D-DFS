@@ -16,7 +16,7 @@ module main_uts
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
-  config const timeStop: int = max(int);
+  config const timeStop: int   = max(int);
 
   // UTS-specific options
   config const t: c_int    = 0; // BIN

@@ -16,7 +16,7 @@ module main_knapsack
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
-  config const timeStop: int = max(int);
+  config const timeStop: int   = max(int);
 
   // Knapsack-specific option
   config const inst: string = "";

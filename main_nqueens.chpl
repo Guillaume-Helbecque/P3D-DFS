@@ -14,7 +14,7 @@ module main_queens
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
-  config const timeStop: int = max(int);
+  config const timeStop: int   = max(int);
 
   // NQueens-specific option
   config const N: int = 13;
