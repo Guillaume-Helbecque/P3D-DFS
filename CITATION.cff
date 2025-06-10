@@ -1,0 +1,19 @@
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Helbecque"
+    given-names: "Guillaume"
+  - family-names: "Gmys"
+    given-names: "Jan"
+  - family-names: "Melab"
+    given-names: "Nouredine"
+  - family-names: "Carneiro"
+    given-names: "Tiago"
+  - family-names: "Bouvry"
+    given-names: "Pascal"
+  doi: "10.1002/cpe.7874"
+  journal: "Concurrency and Computation: Practice and Experience"
+  title: "Parallel distributed productivity-aware tree-search using Chapel"
+  issue: 27
+  volume: 35
+  year: 2023
