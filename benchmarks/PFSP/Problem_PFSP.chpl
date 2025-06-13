@@ -34,6 +34,8 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
+    var problemType = ProblemType.Min;
+
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;
@@ -185,6 +187,7 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          child.bound = lowerbound;
 
           if (lowerbound < best_task) {
             children.pushBack(child);
@@ -237,6 +240,7 @@ module Problem_PFSP
 
           if (lb < best_task) {
             var child = new Node(parent);
+            child.bound = lb;
             child.depth += 1;
 
             if (beginEnd == BEGIN) {
@@ -288,6 +292,7 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          child.bound = lowerbound;
 
           if (lowerbound < best_task) {
             children.pushBack(child);
@@ -338,7 +343,7 @@ module Problem_PFSP
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real = 1e-6):  void
     {
       var treeSize, nbSol: int;
 
@@ -364,6 +369,7 @@ module Problem_PFSP
                                                 else " (not improved)";
       writeln("Optimal makespan: ", best, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
+      writeln("Best lower bound: ", bestBound);
       writeln("=================================================\n");
     }
 
