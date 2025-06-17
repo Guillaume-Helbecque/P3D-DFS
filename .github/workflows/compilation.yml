@@ -1,0 +1,35 @@
+name: Compilation
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache Chapel-2.5.0
+      id: cache-chapel-250
+      uses: actions/cache@v4
+      with:
+        path: ~/chapel-2.5.0MC
+        key: ${{ runner.os }}-chapel-2.5.0MC
+
+    - name: Build Chapel 2.5.0 (if not cached)
+      if: steps.cache-chapel-250.outputs.cache-hit != 'true'
+      run: |
+        cd chpl_config
+        source laptop_multicore.sh
+
+    - name: Compile code
+      working-directory: chpl_config
+      run: |
+        source laptop_multicore.sh
+        make all

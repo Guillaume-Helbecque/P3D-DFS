@@ -8,13 +8,13 @@ The parallelization relies on the parallel tree exploration model, in which seve
 
 ### Prerequisites
 
-[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.4.0)
+[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.5.0)
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
 ### Compilation and configuration options
 
-- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the target system, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 
 - **Step 2:** Compile with `make` and execute with:
 
@@ -33,7 +33,7 @@ where the available options are:
 
 - **`--help`** or **`-h`**: help message
 
-Other problem-specific options are supported; see below.
+Other problem-specific options are supported; see next section.
 
 ### Supported problems
 
