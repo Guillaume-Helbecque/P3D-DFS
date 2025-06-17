@@ -58,6 +58,7 @@ module util
     writeln("\n    usage:  main.out [parameter value] ...");
     writeln("\n  General Parameters:\n");
     writeln("   --mode                str   parallel execution mode (sequential, multicore, distributed)");
+    writeln("   --timeStop            int   time limit in seconds for the Branch-and-Bound algorithm");
     writeln("   --activeSet           bool  compute and distribute an initial set of elements");
     writeln("   --saveTime            bool  save processing time in a file");
     writeln("   --help (or -h)              this message");
