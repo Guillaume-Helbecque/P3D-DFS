@@ -11,6 +11,7 @@ module Node_PFSP
     var limit1: int; // right limit
     var limit2: int; // left limit
     var prmu: c_array(c_int, JobsMax);
+    var bound: real;
 
     // default-initializer
     proc init()
@@ -21,6 +22,7 @@ module Node_PFSP
     {
       this.limit1 = -1;
       this.limit2 = problem.jobs;
+      this.bound = 1e-6;
       init this;
       for i in 0..#problem.jobs do this.prmu[i] = i:c_int;
     }
@@ -32,6 +34,7 @@ module Node_PFSP
       this.limit1 = other.limit1;
       this.limit2 = other.limit2;
       this.prmu   = other.prmu;
+      this.bound  = other.bound;
     }
 
     proc deinit()

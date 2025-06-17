@@ -14,6 +14,7 @@ module main_queens
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
+  config const timeStop: int   = max(int);
 
   // NQueens-specific option
   config const N: int = 13;
@@ -37,13 +38,13 @@ module main_queens
     select mode {
       when "sequential" {
         if activeSet then warning("Cannot use `activeSet` in sequential mode.");
-        search_sequential(Node_NQueens, nqueens, saveTime);
+        search_sequential(Node_NQueens, nqueens, timeStop, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_NQueens, nqueens, saveTime, activeSet);
+        search_multicore(Node_NQueens, nqueens, timeStop, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
+        search_distributed(Node_NQueens, nqueens, timeStop, saveTime, activeSet);
       }
       otherwise {
         halt("ERROR - Unknown execution mode");

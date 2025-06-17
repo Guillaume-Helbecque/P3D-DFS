@@ -1,5 +1,7 @@
 module Problem
 {
+  enum ProblemType { Max, Min, Enum }
+
   class Problem
   {
     proc copy()
@@ -28,7 +30,7 @@ module Problem
     }
 
     proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real = 0): void
     {
       halt("Error - print_results() not implemented");
     }

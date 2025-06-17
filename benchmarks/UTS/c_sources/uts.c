@@ -40,6 +40,7 @@ void uts_initRoot(Node_UTS* root, tree_t treeType, int rootId)
   root->height = 0;
   root->numChildren = -1; // not yet determined
   rng_init(root->state.state, rootId);
+  root->bound = 0.0;
 }
 
 int uts_numChildren_bin(Node_UTS* parent, int nonLeafBF, double nonLeafProb)

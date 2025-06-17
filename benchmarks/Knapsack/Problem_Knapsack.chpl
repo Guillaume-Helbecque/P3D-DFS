@@ -25,6 +25,8 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
+    var problemType = ProblemType.Max;
+
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
       const ub: string, const lb: string): void
@@ -135,7 +137,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+            child.bound = bound_dantzig(Node, child);
+            if (best_task < child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -202,7 +205,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_martello(Node, child)) { // bounding and pruning
+            child.bound = bound_martello(Node, child);
+            if (best_task < child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -252,7 +256,7 @@ module Problem_Knapsack
     }
 
     override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const elapsedTime: real, const bestBound: real): void
     {
       var treeSize, nbSol: int;
 
@@ -278,6 +282,7 @@ module Problem_Knapsack
       writeln("Number of explored solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
+      writeln("Best lower bound: ", bestBound);
       writeln("=================================================\n");
     }
 
