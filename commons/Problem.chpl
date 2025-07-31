@@ -4,18 +4,18 @@ module Problem
   {
     proc copy()
     {
-      halt("Error - copy() not implemented");
+      compilerError("Problem.copy() not implemented");
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int)
     {
-      halt("Error - decompose() not implemented");
+      compilerError("Problem.decompose() not implemented");
     }
 
     proc getInitBound(): int
     {
-      halt("Error - getInitBound() not implemented");
+      compilerError("Problem.getInitBound() not implemented");
     }
 
     // =======================
@@ -24,23 +24,24 @@ module Problem
 
     proc print_settings(): void
     {
-      halt("Error - print_settings() not implemented");
+      compilerWarning("Problem.print_settings() not implemented");
     }
 
     proc print_results(const subNodeExplored, const subSolExplored,
       const subDepthReached, const best: int, const elapsedTime: real): void
     {
-      halt("Error - print_results() not implemented");
+      compilerWarning("Problem.print_results() not implemented");
     }
 
     proc output_filepath(): string
     {
-      halt("Error - output_filepath() not implemented");
+      compilerWarning("Problem.output_filepath() not implemented");
+      return "";
     }
 
     proc help_message(): void
     {
-      halt("Error - help_message() not implemented");
+      compilerWarning("Problem.help_message() not implemented");
     }
   } // end class
 
