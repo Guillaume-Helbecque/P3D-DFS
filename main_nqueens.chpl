@@ -36,7 +36,7 @@ module main_queens
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        if activeSet then warning("`activeSet` is ignored in sequential mode");
         search_sequential(Node_NQueens, nqueens, saveTime);
       }
       when "multicore" {
@@ -46,7 +46,7 @@ module main_queens
         search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown execution mode");
+        halt("unknown execution mode");
       }
     }
 

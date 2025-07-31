@@ -16,7 +16,7 @@ module Node_Knapsack
     // root-initializer
     proc init(problem)
     {
-      this.init();
+      init this;
     }
 
     // copy-initializer

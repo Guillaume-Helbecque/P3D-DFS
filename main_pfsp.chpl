@@ -39,7 +39,7 @@ module main_pfsp
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        if activeSet then warning("`activeSet` is ignored in sequential mode");
         search_sequential(Node_PFSP, pfsp, saveTime);
       }
       when "multicore" {
@@ -49,7 +49,7 @@ module main_pfsp
         search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown execution mode");
+        halt("unknown execution mode");
       }
     }
 

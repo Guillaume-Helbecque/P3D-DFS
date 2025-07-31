@@ -46,7 +46,7 @@ module main_uts
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        if activeSet then warning("`activeSet` is ignored in sequential mode");
         search_sequential(Node_UTS, uts, saveTime);
       }
       when "multicore" {
@@ -56,7 +56,7 @@ module main_uts
         search_distributed(Node_UTS, uts, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown execution mode");
+        halt("unknown execution mode");
       }
     }
 
