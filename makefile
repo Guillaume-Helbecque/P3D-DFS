@@ -14,7 +14,17 @@ CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 # Build Chapel codes
 # ==========================
 
-all: main_pfsp.out main_uts.out main_nqueens.out main_knapsack.out
+MAIN_FILES = $(wildcard main_*.chpl)
+EXECUTABLES = $(MAIN_FILES:.chpl=.out)
+
+all: $(EXECUTABLES)
+
+# ==========
+# Generic
+# ==========
+
+main_%.out: main_%.chpl
+	$(COMPILER) $(CHPL_COMMON_OPTS) $< -o $@
 
 # ==========
 # PFSP
@@ -86,5 +96,5 @@ main_knapsack.out: main_knapsack.chpl
 .PHONY: clean
 
 clean:
-	rm -f main_*.out
-	rm -f main_*.out_real
+	rm -f $(EXECUTABLES)
+	rm -f $(EXECUTABLES:=_real)
