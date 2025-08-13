@@ -8,7 +8,7 @@ module main_uts
   use search_multicore;
   use search_distributed;
 
-  // UTS-specific modules
+  // Problem-specific modules
   use Node_UTS;
   use Problem_UTS;
 
@@ -17,7 +17,7 @@ module main_uts
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
-  // UTS-specific options
+  // Problem-specific options
   config const t: c_int    = 0; // BIN
   config const b: c_double = 2000.0;
   config const r: c_int    = 30;

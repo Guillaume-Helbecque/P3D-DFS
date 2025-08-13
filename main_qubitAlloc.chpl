@@ -1,7 +1,5 @@
-module main_knapsack
+module main_qubitAlloc
 {
-  use CTypes;
-
   // Common modules
   use util;
   use search_sequential;
@@ -9,8 +7,8 @@ module main_knapsack
   use search_distributed;
 
   // Problem-specific modules
-  use Node_Knapsack;
-  use Problem_Knapsack;
+  use Node_QubitAlloc;
+  use Problem_QubitAlloc;
 
   // Common options
   config const mode: string    = "multicore"; // sequential, multicore, distributed
@@ -18,26 +16,18 @@ module main_knapsack
   config const saveTime: bool  = false;
 
   // Problem-specific option
-  config const inst: string = "";
-  config const ub: string   = "dantzig"; // dantzig, martello
-  config const lb: string   = "opt"; // opt, inf
-
-  config const n: c_int  = 100;
-  config const r: c_int  = 10000;
-  config const t: c_int  = 1;
-  config const id: c_int = 1;
-  config const s: c_int  = 100;
+  // TODO: add, if any
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
+    var qubitAlloc = new Problem_QubitAlloc();
 
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
         common_help_message();
-        knapsack.help_message();
+        qubitAlloc.help_message();
 
         return 1;
       }
@@ -47,13 +37,13 @@ module main_knapsack
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_Knapsack, knapsack, saveTime);
+        search_sequential(Node_QubitAlloc, qubitAlloc, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_Knapsack, knapsack, saveTime, activeSet);
+        search_multicore(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_Knapsack, knapsack, saveTime, activeSet);
+        search_distributed(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

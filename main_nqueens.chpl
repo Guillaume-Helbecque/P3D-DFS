@@ -6,7 +6,7 @@ module main_queens
   use search_multicore;
   use search_distributed;
 
-  // NQueens-specific modules
+  // Problem-specific modules
   use Node_NQueens;
   use Problem_NQueens;
 
@@ -15,7 +15,7 @@ module main_queens
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
-  // NQueens-specific option
+  // Problem-specific option
   config const N: int = 13;
 
   proc main(args: [] string): int
