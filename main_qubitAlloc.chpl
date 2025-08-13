@@ -21,7 +21,7 @@ module main_qubitAlloc
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc();
+    var qubitAlloc = new Problem_QubitAlloc("rd_4.csv", "test.csv");
 
     // Helper
     for a in args[1..] {
@@ -42,9 +42,9 @@ module main_qubitAlloc
       when "multicore" {
         search_multicore(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
-      when "distributed" {
+      /* when "distributed" {
         search_distributed(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
-      }
+      } */
       otherwise {
         halt("unknown execution mode");
       }
