@@ -33,8 +33,6 @@ module Node_QubitAlloc
 
   }
 
-
-
   record Node_QubitAlloc
   {
     var mapping: c_array(c_int, sizeMax);

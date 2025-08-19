@@ -17,6 +17,8 @@ class Problem_QubitAlloc : Problem
 
   var priority: [0..<sizeMax] c_int;
 
+  var initUB: int;
+
   proc init(filenameInter, filenameDist): void
   {
     init this;
@@ -47,7 +49,7 @@ class Problem_QubitAlloc : Problem
     f.close();
 
     Prioritization(this.F, this.n, this.N);
-    var min_cost = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
+    this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
   }
 
   proc Prioritization(F, n: int, N: int)
@@ -354,7 +356,7 @@ class Problem_QubitAlloc : Problem
     }
   }
 
-  proc bound(ref node, it_max, min_cost)
+  proc bound(ref node, it_max, best)
   {
     /* auto t0 = std::chrono::high_resolution_clock::now(); */
 
@@ -375,7 +377,7 @@ class Problem_QubitAlloc : Problem
 
     var it = 0;
 
-    while (it < it_max && lb <= min_cost)
+    while (it < it_max && lb <= best)
     {
       it += 1;
 
@@ -409,22 +411,201 @@ class Problem_QubitAlloc : Problem
     return lb;
   }
 
+  proc reduceNode(type Node, parent, i, j, k, l, lb_new)
+  {
+    var child = new Node(parent);
+    child.depth += 1;
+
+    // assign q_i to P_j
+    child.mapping[i] = j:c_int;
+
+    /* const int n = this -> size; */
+    const n = parent.size;
+    const m = n - 1;
+    child.size -= 1;
+
+    /* assert(n > 0 && "Cannot reduce problem of size 0.");
+    assert(std::min(i, j) >= 0 && std::max(i, j) < n && "Invalid reduction indices."); */
+
+    /* const vector<int>& C = this -> costs;
+    vector<int> L_copy = this -> leader; */
+    var L_copy = parent.leader;
+
+    child.domCost = {0..<m**4};
+    child.domLeader = {0..<m**2};
+    /* var C_new = [0..<m**4] c_int;
+    var L_new = [0..<m**2] c_int; */
+    /* vector<int> C_new;
+    vector<int> L_new; */
+
+    var x2, y2, p2, q2: int;
+
+    // Updating the leader
+    for x in 0..<n
+    {
+      if (x == k) then
+        continue;
+
+      for y in 0..<n
+      {
+        if (y != l)
+        {
+          L_copy[x*n + y] += (parent.costs[idx4D(x, y, k, l, n)] + parent.costs[idx4D(k, l, x, y, n)]);
+        }
+      }
+    }
+
+    // clearing + reallocating
+    /* C_new.assign(m*m*m*m, 0);
+    L_new.assign(m*m, 0); */
+
+    // reducing the matrix
+    x2 = 0;
+    for x in 0..<n
+    {
+      if (x == k) then
+        continue;
+
+      y2 = 0;
+      for y in 0..<n
+      {
+        if (y == l) then
+          continue;
+
+        // copy C_xy into C_x2y2
+        p2 = 0;
+        for p in 0..<n
+        {
+          if (p == k) then
+            continue;
+
+          q2 = 0;
+          for q in 0..<n
+          {
+            if (q == l) then
+              continue;
+
+            child.costs[idx4D(x2, y2, p2, q2, m)] = parent.costs[idx4D(x, y, p, q, n)];
+            q2 += 1;
+          }
+          p2 += 1;
+        }
+
+        child.leader[x2*m + y2] = L_copy[x*n + y];
+        y2 += 1;
+      }
+      x2 += 1;
+    }
+
+    child.available.getAndRemove(l);
+
+    // reduce cost matrix according to the new sub-problem
+    /* CostMatrix CM_new = CM.reduce(k, l); */
+
+    // insert in children vector
+    /* children.push_back(Node{sol, sz+1, lb_new, CM_new, av}); */
+    child.lower_bound = lb_new;
+
+    // restore data
+    /* sol.mapping[i] = -1; */
+    /* av.insert(av.begin() + l, j); */
+
+    return child;
+  }
+
   override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
     ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
   {
     var children: list(Node);
-    var child = new Node(parent);
 
-    var lb = bound(child, 10, max(c_int));
-    writeln(child.costs);
-    writeln("\n", lb);
+    var depth = parent.depth;
+
+    if (parent.depth == this.n) {
+      const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+      if (eval < best_task) {
+        best_task = eval;
+        lock.readFE();
+        if eval < best then best = eval;
+        else best_task = best;
+        lock.writeEF(true);
+      }
+
+      num_sol += 1;
+    }
+    else {
+      var i = this.priority[depth];
+
+      for l in 0..(this.N - depth - 1) by -1
+      {
+        // next available physical qubit
+        var j = parent.available[l];
+
+        // local index of q_i in the cost matrix
+        var k = getLocalIndex(parent.mapping, i);
+
+        // increment lower bound
+        var incre = parent.leader[k*(this.N - depth) + l];
+        var lb_new = parent.lower_bound + incre;
+        // prune
+        if (lb_new > best)
+        {
+          continue;
+        }
+
+        var child = reduceNode(Node, parent, i, j, k, l, lb_new);
+
+        if (child.depth < this.n) {
+          var lb = bound(child, 15, best_task);
+          /* writeln("child bound = ", lb); */
+          if (lb <= best_task) {
+            children.pushBack(child);
+            tree_loc += 1;
+          }
+        }
+        else {
+          children.pushBack(child);
+          tree_loc += 1;
+        }
+      }
+    }
 
     return children;
   }
 
+  override proc print_results(const subNodeExplored, const subSolExplored,
+    const subDepthReached, const best: int, const elapsedTime: real): void
+  {
+    var treeSize, nbSol: int;
+
+    if (isArray(subNodeExplored) && isArray(subSolExplored)) {
+      treeSize = (+ reduce subNodeExplored);
+      nbSol = (+ reduce subSolExplored);
+    } else { // if not array, then int
+      treeSize = subNodeExplored;
+      nbSol = subSolExplored;
+    }
+
+    var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+
+    writeln("\n=================================================");
+    writeln("Size of the explored tree: ", treeSize);
+    /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
+    if isArray(subNodeExplored) {
+      writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+    }
+    writeln("Number of explored solutions: ", nbSol);
+    /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+    /* const is_better = if (best < this.initUB) then " (improved)"
+                                              else " (not improved)"; */
+    writeln("Optimal allocation: ", best);
+    writeln("Elapsed time: ", elapsedTime, " [s]");
+    writeln("=================================================\n");
+  }
+
   override proc getInitBound(): int
   {
-    return 0;
+    return this.initUB;
   }
 
   override proc help_message(): void
