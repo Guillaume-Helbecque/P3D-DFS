@@ -1,8 +1,9 @@
 module Node_QubitAlloc
 {
-  use IO;
   use List;
   use CTypes;
+
+  use Util;
 
   config param sizeMax: int = 27;
 
@@ -32,16 +33,13 @@ module Node_QubitAlloc
 
   }
 
-  proc idx4D(i, j, k, l, n)
-  {
-    return n*n*n*i + n*n*j + n*k + l;
-  }
+
 
   record Node_QubitAlloc
   {
     var mapping: c_array(c_int, sizeMax);
     /* var cost: c_int; */
-    var lower_bound: c_int;
+    var lower_bound: int;
     var depth: c_int;
     var available: list(int);
     /* var costMatrix: owned CostMatrix; */
@@ -75,6 +73,16 @@ module Node_QubitAlloc
     // copy-initializer
     proc init(other: Node_QubitAlloc)
     {
+      this.mapping = other.mapping;
+      this.lower_bound = other.lower_bound;
+      this.depth = other.depth;
+      this.available = other.available;
+
+      this.domCost = other.domCost;
+      this.costs = other.costs;
+      this.domLeader = other.domLeader;
+      this.leader = other.leader;
+      this.size = other.size;
     }
 
     proc deinit()

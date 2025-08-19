@@ -21,7 +21,7 @@ module main_qubitAlloc
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc("rd_4.csv", "test.csv");
+    var qubitAlloc = new Problem_QubitAlloc("rd_4.csv", "dev_4.csv");
 
     // Helper
     for a in args[1..] {
