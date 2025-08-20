@@ -19,9 +19,11 @@ class Problem_QubitAlloc : Problem
   var priority: [0..<sizeMax] int(32);
 
   var it_max: int(32);
+
+  var ub_init: string;
   var initUB: int(32);
 
-  proc init(filenameInter, filenameDist, itmax): void
+  proc init(filenameInter, filenameDist, itmax, ub): void
   {
     this.filenameInter = filenameInter;
     this.filenameDist = filenameDist;
@@ -56,7 +58,37 @@ class Problem_QubitAlloc : Problem
 
     Prioritization(this.F, this.n, this.N);
     this.it_max = itmax;
-    this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
+
+    this.ub_init = ub;
+    if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
+    else {
+      try! this.initUB = ub:int(32);
+
+      // NOTE: If `ub` cannot be cast into `int`, an errow is thrown. For now, we cannot
+      // manage it as only catch-less try! statements are allowed in initializers.
+      // Ideally, we'd like to do this:
+
+      /* try {
+        this.initUB = ub:int;
+      } catch {
+        halt("Error - Unsupported initial upper bound");
+      } */
+    }
+  }
+
+  proc init(other): void
+  {
+    this.filenameInter = other.filenameInter;
+    this.filenameDist = other.filenameDist;
+    this.N = other.N;
+    this.dom = other.dom;
+    this.D = other.D;
+    this.n = other.n;
+    this.F = other.F;
+    this.priority = other.priority;
+    this.it_max = other.it_max;
+    this.ub_init = other.ub_init;
+    this.initUB = other.initUB;
   }
 
   proc Prioritization(F, n: int(32), N: int(32))
@@ -154,7 +186,7 @@ class Problem_QubitAlloc : Problem
 
   override proc copy()
   {
-    return new Problem_QubitAlloc();
+    return new Problem_QubitAlloc(this);
   }
 
   proc ckmin(ref a, const ref b)

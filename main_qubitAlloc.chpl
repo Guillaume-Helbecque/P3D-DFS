@@ -19,11 +19,12 @@ module main_qubitAlloc
   config const inter = "10_sqn";
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
+  config const ub: string = "heuristic";  // heuristic
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub);
 
     // Helper
     for a in args[1..] {
@@ -44,9 +45,9 @@ module main_qubitAlloc
       when "multicore" {
         search_multicore(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
-      /* when "distributed" {
+      when "distributed" {
         search_distributed(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
-      } */
+      }
       otherwise {
         halt("unknown execution mode");
       }
