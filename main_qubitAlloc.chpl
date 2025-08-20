@@ -17,8 +17,8 @@ module main_qubitAlloc
 
   // Problem-specific option
   // TODO: add, if any
-  config const inter = "";
-  config const dist = "";
+  config const inter = "10_sqn";
+  config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
 
   proc main(args: [] string): int

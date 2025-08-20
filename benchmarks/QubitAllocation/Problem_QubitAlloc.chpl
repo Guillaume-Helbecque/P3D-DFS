@@ -28,7 +28,7 @@ class Problem_QubitAlloc : Problem
 
     init this;
 
-    var f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist, ioMode.r);
+    var f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist + ".csv", ioMode.r);
     var channel = f.reader(locking=false);
 
     channel.read(this.N);
@@ -38,7 +38,7 @@ class Problem_QubitAlloc : Problem
     channel.close();
     f.close();
 
-    f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter, ioMode.r);
+    f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter + ".csv", ioMode.r);
     channel = f.reader(locking=false);
 
     channel.read(this.n);
@@ -491,10 +491,12 @@ class Problem_QubitAlloc : Problem
   override proc print_settings(): void
   {
     writeln("\n=================================================");
-    writeln("Circuit: ", this.filenameInter, ", number of logical qubits: ", this.n);
-    writeln("Device: ", this.filenameDist, ", number of physical qubits: ", this.N);
+    writeln("Circuit: ", this.filenameInter);
+    writeln("Device: ", this.filenameDist);
+    writeln("Number of logical qubits: ", this.n);
+    writeln("Number of physical qubits: ", this.N);
     writeln("Max bounding iterations: ", this.it_max);
-    writeln("Initial lower bound: ", this.initUB);
+    writeln("Initial upper bound: ", this.initUB);
     writeln("=================================================");
   }
 
