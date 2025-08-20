@@ -272,10 +272,6 @@ class Problem_QubitAlloc : Problem
 
   proc distributeLeader(ref C, ref L, n)
   {
-    /* vector<int>& C = this -> costs;
-    vector<int>& L = this -> leader;
-    const int n = this -> size; */
-
     var leader_cost_div, leader_cost_rem, val: int;
     var leader_cost: c_int;
 
@@ -323,9 +319,6 @@ class Problem_QubitAlloc : Problem
 
   proc halveComplementary(ref C, n)
   {
-    /* vector<int>& C = this -> costs;
-    const int n = this -> size; */
-
     var cost_sum: c_int;
 
     for i in 0..<n
@@ -358,20 +351,10 @@ class Problem_QubitAlloc : Problem
 
   proc bound(ref node, it_max, best)
   {
-    /* auto t0 = std::chrono::high_resolution_clock::now(); */
-
     ref lb = node.lower_bound;
     ref C = node.costs;
     ref L = node.leader;
     const m = node.size;
-    /* CostMatrix& CM = this->costMatrix;
-
-    const int m = CM.get_size();
-
-    assert(m > 0 && "Error: Cannot bound problem of size 0.");
-
-    vector<int>& C = CM.get_costs();
-    vector<int>& L = CM.get_leader(); */
 
     var cost, incre: int;
 
@@ -404,10 +387,6 @@ class Problem_QubitAlloc : Problem
       lb += incre;
     }
 
-    /* auto t1 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> delta = t1 - t0;
-    rt += delta.count(); */
-
     return lb;
   }
 
@@ -419,7 +398,6 @@ class Problem_QubitAlloc : Problem
     // assign q_i to P_j
     child.mapping[i] = j:c_int;
 
-    /* const int n = this -> size; */
     const n = parent.size;
     const m = n - 1;
     child.size -= 1;
@@ -427,16 +405,10 @@ class Problem_QubitAlloc : Problem
     /* assert(n > 0 && "Cannot reduce problem of size 0.");
     assert(std::min(i, j) >= 0 && std::max(i, j) < n && "Invalid reduction indices."); */
 
-    /* const vector<int>& C = this -> costs;
-    vector<int> L_copy = this -> leader; */
     var L_copy = parent.leader;
 
     child.domCost = {0..<m**4};
     child.domLeader = {0..<m**2};
-    /* var C_new = [0..<m**4] c_int;
-    var L_new = [0..<m**2] c_int; */
-    /* vector<int> C_new;
-    vector<int> L_new; */
 
     var x2, y2, p2, q2: int;
 
@@ -454,10 +426,6 @@ class Problem_QubitAlloc : Problem
         }
       }
     }
-
-    // clearing + reallocating
-    /* C_new.assign(m*m*m*m, 0);
-    L_new.assign(m*m, 0); */
 
     // reducing the matrix
     x2 = 0;
@@ -499,16 +467,7 @@ class Problem_QubitAlloc : Problem
 
     child.available.getAndRemove(l);
 
-    // reduce cost matrix according to the new sub-problem
-    /* CostMatrix CM_new = CM.reduce(k, l); */
-
-    // insert in children vector
-    /* children.push_back(Node{sol, sz+1, lb_new, CM_new, av}); */
     child.lower_bound = lb_new;
-
-    // restore data
-    /* sol.mapping[i] = -1; */
-    /* av.insert(av.begin() + l, j); */
 
     return child;
   }
@@ -557,7 +516,6 @@ class Problem_QubitAlloc : Problem
 
         if (child.depth < this.n) {
           var lb = bound(child, 15, best_task);
-          /* writeln("child bound = ", lb); */
           if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
@@ -596,9 +554,9 @@ class Problem_QubitAlloc : Problem
     }
     writeln("Number of explored solutions: ", nbSol);
     /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
-    /* const is_better = if (best < this.initUB) then " (improved)"
-                                              else " (not improved)"; */
-    writeln("Optimal allocation: ", best);
+    const is_better = if (best < this.initUB) then " (improved)"
+                                              else " (not improved)";
+    writeln("Optimal allocation: ", best, is_better);
     writeln("Elapsed time: ", elapsedTime, " [s]");
     writeln("=================================================\n");
   }

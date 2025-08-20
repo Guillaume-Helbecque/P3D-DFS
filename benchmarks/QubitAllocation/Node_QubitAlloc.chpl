@@ -7,21 +7,14 @@ module Node_QubitAlloc
 
   config param sizeMax: int = 27;
 
-  class CostMatrix {
+  /* class CostMatrix {
     var domCost: domain(1);
     var costs: [domCost] c_int;
     var domLeader: domain(1);
     var leader: [domLeader] c_int;
     var size: int;
 
-    proc init() {
-      /* init this;
-      domCost = 0..0;
-      costs[0] = 0;
-      domCost = 0..0;
-      leader[0] = 0;
-      size = 0; */
-    }
+    proc init() {}
 
     proc init(D, F, N) {
       init this;
@@ -30,8 +23,7 @@ module Node_QubitAlloc
       this.size = N;
       Assemble(D, F, N);
     }
-
-  }
+  } */
 
   record Node_QubitAlloc
   {
@@ -86,13 +78,9 @@ module Node_QubitAlloc
     proc deinit()
     {}
 
-    proc Assemble(D, F, N)
+    proc ref Assemble(D, F, N)
     {
       const inf: c_int = max(c_int) / 2;
-
-      /* for (i,j,k,l) in zip(0..<N,0..<N,0..<N,0..<N) {
-
-      } */
 
       for i in 0..<N
       {
