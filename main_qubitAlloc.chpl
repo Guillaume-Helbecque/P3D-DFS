@@ -16,7 +16,6 @@ module main_qubitAlloc
   config const saveTime: bool  = false;
 
   // Problem-specific option
-  // TODO: add, if any
   config const inter = "10_sqn";
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
