@@ -8,6 +8,8 @@ config param sizeMax: int(32) = 27;
 
 class Problem_QubitAlloc : Problem
 {
+  var filenameInter: string;
+  var filenameDist: string;
   var N: int(32);
   var dom: domain(2, idxType = int(32));
   var D: [dom] int(32);
@@ -21,6 +23,9 @@ class Problem_QubitAlloc : Problem
 
   proc init(filenameInter, filenameDist, itmax): void
   {
+    this.filenameInter = filenameInter;
+    this.filenameDist = filenameDist;
+
     init this;
 
     var f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist, ioMode.r);
@@ -483,6 +488,16 @@ class Problem_QubitAlloc : Problem
     return children;
   }
 
+  override proc print_settings(): void
+  {
+    writeln("\n=================================================");
+    writeln("Circuit: ", this.filenameInter, ", number of logical qubits: ", this.n);
+    writeln("Device: ", this.filenameDist, ", number of physical qubits: ", this.N);
+    writeln("Max bounding iterations: ", this.it_max);
+    writeln("Initial lower bound: ", this.initUB);
+    writeln("=================================================");
+  }
+
   override proc print_results(const subNodeExplored, const subSolExplored,
     const subDepthReached, const best: int, const elapsedTime: real): void
   {
@@ -518,9 +533,17 @@ class Problem_QubitAlloc : Problem
     return this.initUB;
   }
 
+  override proc output_filepath(): string
+  {
+    return "./chpl_qubitAlloc.txt";
+  }
+
   override proc help_message(): void
   {
     writeln("\n  Qubit Allocation Problem Parameters:\n");
+    writeln("   --dist   str  interaction frequency matrix file name");
+    writeln("   --inter  str  coupling distance matrix file name");
+    writeln("   --itmax  int  maximum number of bounding iterations (optional, default: 10)\n");
   }
 
 } // end class
