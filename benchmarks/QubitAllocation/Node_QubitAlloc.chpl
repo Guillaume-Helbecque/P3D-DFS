@@ -1,7 +1,6 @@
 module Node_QubitAlloc
 {
   use List;
-  use CTypes;
 
   use Util;
 
@@ -27,7 +26,7 @@ module Node_QubitAlloc
 
   record Node_QubitAlloc
   {
-    var mapping: c_array(int(32), sizeMax);
+    var mapping: sizeMax*int(32);
     /* var cost: c_int; */
     var lower_bound: int(32);
     var depth: int(32);
@@ -51,7 +50,7 @@ module Node_QubitAlloc
     {
       /* this.costMatrix = new CostMatrix(problem.D, problem.F, problem.N); */
       init this;
-      this.mapping[0..<problem.n] = -1:c_int;
+      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
       this.available.pushBack(0..<problem.N);
 
       this.domCost = 0..<(problem.N**4);
@@ -80,18 +79,12 @@ module Node_QubitAlloc
 
     proc ref Assemble(D, F, N)
     {
-      const inf: c_int = max(c_int) / 2;
-
-      for i in 0..<N
-      {
-        for j in 0..<N
-        {
-          for k in 0..<N
-          {
-            for l in 0..<N
-            {
+      for i in 0..<N {
+        for j in 0..<N {
+          for k in 0..<N {
+            for l in 0..<N {
               if ((k == i) ^ (l == j)) then
-                this.costs[idx4D(i, j, k, l, N)] = inf;
+                this.costs[idx4D(i, j, k, l, N)] = INFD2;
               else
                 this.costs[idx4D(i, j, k, l, N)] = F[i, k] * D[j, l];
             }

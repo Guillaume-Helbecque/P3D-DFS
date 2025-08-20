@@ -25,8 +25,7 @@ class Problem_QubitAlloc : Problem
     var f = open(filenameDist, ioMode.r);
     var channel = f.reader(locking=false);
 
-    // TODO: use channel.read(this.N)
-    this.N = channel.read(int(32));
+    channel.read(this.N);
     this.dom = {0..<this.N, 0..<this.N};
     channel.read(this.D);
 
@@ -36,8 +35,7 @@ class Problem_QubitAlloc : Problem
     f = open(filenameInter, ioMode.r);
     channel = f.reader(locking=false);
 
-    // TODO: use channel.read(this.n)
-    this.n = channel.read(int(32));
+    channel.read(this.n);
     // TODO: add an error message
     assert(this.n <= this.N);
 
@@ -63,15 +61,12 @@ class Problem_QubitAlloc : Problem
 
     var min_inter, min_inter_index: int(32);
 
-    for i in 0..<N
-    {
+    for i in 0..<N {
       min_inter = sF[0];
       min_inter_index = 0;
 
-      for j in 1..<N
-      {
-        if (sF[j] < min_inter)
-        {
+      for j in 1..<N {
+        if (sF[j] < min_inter) {
           min_inter = sF[j];
           min_inter_index = j:int(32);
         }
@@ -79,11 +74,10 @@ class Problem_QubitAlloc : Problem
 
       this.priority[N-1-i] = min_inter_index;
 
-      sF[min_inter_index] = max(int(32));
+      sF[min_inter_index] = INF;
 
-      for j in 0..<N
-      {
-        if (sF[j] != max(int(32))) then
+      for j in 0..<N {
+        if (sF[j] != INF) then
           sF[j] -= F[j, min_inter_index];
       }
     }
@@ -91,14 +85,12 @@ class Problem_QubitAlloc : Problem
 
   proc GreedyAllocation(const D, const F, const priority, n, N)
   {
-    var route_cost = max(int(32));
+    var route_cost = INF;
 
-    var l_min: int(32) = 0;
-    var k, i: int(32);
+    var l_min, k, i: int(32);
     var route_cost_temp, cost_incre, min_cost_incre: int(32);
 
-    for j in 0..<N
-    {
+    for j in 0..<N {
       var alloc_temp: [0..<sizeMax] int(32) = -1;
       var available: [0..<N] bool = true;
 
@@ -106,26 +98,21 @@ class Problem_QubitAlloc : Problem
       available[j] = false;
 
       // for each logical qubit (after the first one)
-      for p in 1..<n
-      {
+      for p in 1..<n {
         k = priority[p];
 
-        min_cost_incre = max(int(32));
+        min_cost_incre = INF;
 
         // find physical qubit with least increasing route cost
-        for l in 0..<N
-        {
-          if (available[l])
-          {
+        for l in 0..<N {
+          if (available[l]) {
             cost_incre = 0;
-            for q in 0..<p
-            {
+            for q in 0..<p {
               i = priority[q];
               cost_incre += F[i, k] * D[alloc_temp[i], l];
             }
 
-            if (cost_incre < min_cost_incre)
-            {
+            if (cost_incre < min_cost_incre) {
               l_min = l:int(32);
               min_cost_incre = cost_incre;
             }
@@ -147,13 +134,11 @@ class Problem_QubitAlloc : Problem
 
   proc ObjectiveFunction(const mapping, const D, const F, n)
   {
-    var route_cost: int(32) = 0;
+    var route_cost: int(32);
 
-    for i in 0..<n
-    {
-       for j in i..<n
-       {
-           route_cost += F[i, j] * D[mapping[i], mapping[j]];
+    for i in 0..<n {
+       for j in i..<n {
+          route_cost += F[i, j] * D[mapping[i], mapping[j]];
        }
     }
 
@@ -179,8 +164,6 @@ class Problem_QubitAlloc : Problem
   {
     var w, j_cur, j_next: int(32);
 
-    const inf: int(32) = max(int(32)) / 2;
-
     // job[j] = worker assigned to job j, or -1 if unassigned
     var job: [0..n] int(32) = -1;
 
@@ -190,26 +173,22 @@ class Problem_QubitAlloc : Problem
     var yj: [0..n] int(32);
 
     // main Hungarian algorithm
-    for w_cur in 0..<n
-    {
+    for w_cur in 0..<n {
       j_cur = n;
       job[j_cur] = w_cur:int(32);
 
-      var min_to: [0..n] int(32) = inf;
+      var min_to: [0..n] int(32) = INFD2;
       var prv: [0..n] int(32) = -1;
       var in_Z: [0..n] bool = false;
 
-      while (job[j_cur] != -1)
-      {
+      while (job[j_cur] != -1) {
         in_Z[j_cur] = true;
         w = job[j_cur];
-        var delta = inf;
+        var delta = INFD2;
         j_next = 0;
 
-        for j in 0..<n
-        {
-          if (!in_Z[j])
-          {
+        for j in 0..<n {
+          if (!in_Z[j]) {
             // reduced cost = C[w][j] - yw[w] - yj[j]
             var cur_cost = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
 
@@ -221,15 +200,12 @@ class Problem_QubitAlloc : Problem
         }
 
         // update potentials
-        for j in 0..n
-        {
-          if (in_Z[j])
-          {
+        for j in 0..n {
+          if (in_Z[j]) {
             yw[job[j]] += delta;
             yj[j] -= delta;
           }
-          else
-          {
+          else {
             min_to[j] -= delta;
           }
         }
@@ -246,23 +222,19 @@ class Problem_QubitAlloc : Problem
     }
 
     // compute total cost
-    var total_cost: int(32) = 0;
+    var total_cost: int(32);
 
     // for j in [0..n-1], job[j] is the worker assigned to job j
-    for j in 0..<n
-    {
+    for j in 0..<n {
       if (job[j] != -1) then
         total_cost += C[idx4D(i0, j0, job[j], j, n)];
     }
 
     // OPTIONAL: Reflecting the "reduced costs" after the Hungarian
     // algorithm by applying the final potentials:
-    for w in 0..<n
-    {
-      for j in 0..<n
-      {
-        if (C[idx4D(i0, j0, w, j, n)] < inf)
-        {
+    for w in 0..<n {
+      for j in 0..<n {
+        if (C[idx4D(i0, j0, w, j, n)] < INFD2) {
           // subtract the final potentials from the original cost
           C[idx4D(i0, j0, w, j, n)] = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
         }
@@ -274,43 +246,36 @@ class Problem_QubitAlloc : Problem
 
   proc distributeLeader(ref C, ref L, n)
   {
-    var leader_cost_div, leader_cost_rem, val: int(32);
-    var leader_cost: int(32);
+    var leader_cost, leader_cost_div, leader_cost_rem, val: int(32);
 
-    if (n == 1)
-    {
+    if (n == 1) {
       C[0] = 0:int(32);
       L[0] = 0:int(32);
 
       return;
     }
 
-    for i in 0..<n
-    {
-      for j in 0..<n
-      {
+    for i in 0..<n {
+      for j in 0..<n {
         leader_cost = L[i*n + j];
 
         C[idx4D(i, j, i, j, n)] = 0:int(32);
         L[i*n + j] = 0:int(32);
 
-        if (leader_cost == 0)
-        {
+        if (leader_cost == 0) {
           continue;
         }
 
         leader_cost_div = leader_cost / (n - 1);
         leader_cost_rem = leader_cost % (n - 1);
 
-        for k in 0..<n
-        {
+        for k in 0..<n {
           if (k == i) then
             continue;
 
           val = leader_cost_div + (k < leader_cost_rem || (k == leader_cost_rem && i < k));
 
-          for l in 0..<n
-          {
+          for l in 0..<n {
             if (l != j) then
               C[idx4D(i, j, k, l, n)] += val;
           }
@@ -323,22 +288,16 @@ class Problem_QubitAlloc : Problem
   {
     var cost_sum: int(32);
 
-    for i in 0..<n
-    {
-      for j in 0..<n
-      {
-        for k in i..<n
-        {
-          for l in 0..<n
-          {
-            if ((k != i) && (l != j))
-            {
+    for i in 0..<n {
+      for j in 0..<n {
+        for k in i..<n {
+          for l in 0..<n {
+            if ((k != i) && (l != j)) {
               cost_sum = C[idx4D(i, j, k, l, n)] + C[idx4D(k, l, i, j, n)];
               C[idx4D(i, j, k, l, n)] = cost_sum / 2;
               C[idx4D(k, l, i, j, n)] = cost_sum / 2;
 
-              if (cost_sum % 2 == 1)
-              {
+              if (cost_sum % 2 == 1) {
                 if ((i + j + k + l) % 2 == 0) then // total index parity for balance
                   C[idx4D(i, j, k, l, n)] += 1;
                 else
@@ -362,18 +321,15 @@ class Problem_QubitAlloc : Problem
 
     var it = 0;
 
-    while (it < it_max && lb <= best)
-    {
+    while (it < it_max && lb <= best) {
       it += 1;
 
       distributeLeader(C, L, m);
       halveComplementary(C, m);
 
       // apply Hungarian algorithm to each sub-matrix
-      for i in 0..<m
-      {
-        for j in 0..<m
-        {
+      for i in 0..<m {
+        for j in 0..<m {
           cost = Hungarian(C, i, j, m);
 
           L[i*m + j] += cost;
@@ -415,15 +371,12 @@ class Problem_QubitAlloc : Problem
     var x2, y2, p2, q2: int(32);
 
     // Updating the leader
-    for x in 0..<n
-    {
+    for x in 0..<n {
       if (x == k) then
         continue;
 
-      for y in 0..<n
-      {
-        if (y != l)
-        {
+      for y in 0..<n {
+        if (y != l) {
           L_copy[x*n + y] += (parent.costs[idx4D(x, y, k, l, n)] + parent.costs[idx4D(k, l, x, y, n)]);
         }
       }
@@ -431,27 +384,23 @@ class Problem_QubitAlloc : Problem
 
     // reducing the matrix
     x2 = 0;
-    for x in 0..<n
-    {
+    for x in 0..<n {
       if (x == k) then
         continue;
 
       y2 = 0;
-      for y in 0..<n
-      {
+      for y in 0..<n {
         if (y == l) then
           continue;
 
         // copy C_xy into C_x2y2
         p2 = 0;
-        for p in 0..<n
-        {
+        for p in 0..<n {
           if (p == k) then
             continue;
 
           q2 = 0;
-          for q in 0..<n
-          {
+          for q in 0..<n {
             if (q == l) then
               continue;
 
@@ -497,8 +446,7 @@ class Problem_QubitAlloc : Problem
     else {
       var i = this.priority[depth];
 
-      for l in 0..(this.N - depth - 1) by -1
-      {
+      for l in 0..(this.N - depth - 1) by -1 {
         // next available physical qubit
         var j = parent.available[l];
 
@@ -510,8 +458,7 @@ class Problem_QubitAlloc : Problem
         var lb_new = parent.lower_bound + incre;
 
         // prune
-        if (lb_new > best)
-        {
+        if (lb_new > best) {
           continue;
         }
 
