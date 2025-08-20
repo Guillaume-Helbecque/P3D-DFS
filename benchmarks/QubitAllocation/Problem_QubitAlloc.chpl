@@ -16,9 +16,10 @@ class Problem_QubitAlloc : Problem
 
   var priority: [0..<sizeMax] int(32);
 
+  var it_max: int(32);
   var initUB: int(32);
 
-  proc init(filenameInter, filenameDist): void
+  proc init(filenameInter, filenameDist, itmax): void
   {
     init this;
 
@@ -49,6 +50,7 @@ class Problem_QubitAlloc : Problem
     f.close();
 
     Prioritization(this.F, this.n, this.N);
+    this.it_max = itmax;
     this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
   }
 
@@ -310,7 +312,7 @@ class Problem_QubitAlloc : Problem
     }
   }
 
-  proc bound(ref node, it_max, best)
+  proc bound(ref node, best)
   {
     ref lb = node.lower_bound;
     ref C = node.costs;
@@ -321,7 +323,7 @@ class Problem_QubitAlloc : Problem
 
     var it = 0;
 
-    while (it < it_max && lb <= best) {
+    while (it < this.it_max && lb <= best) {
       it += 1;
 
       distributeLeader(C, L, m);
@@ -465,7 +467,7 @@ class Problem_QubitAlloc : Problem
         var child = reduceNode(Node, parent, i, j, k, l, lb_new);
 
         if (child.depth < this.n) {
-          var lb = bound(child, 15, best_task);
+          var lb = bound(child, best_task);
           if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
