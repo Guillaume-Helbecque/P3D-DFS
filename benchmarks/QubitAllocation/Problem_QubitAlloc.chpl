@@ -188,9 +188,10 @@ class Problem_QubitAlloc : Problem
 
   override proc copy()
   {
-    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
+    /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
       this.N, this.dom, this.D, this.n, this.F, this.priority,
-      this.it_max, this.ub_init, this.initUB);
+      this.it_max, this.ub_init, this.initUB); */
+    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init);
   }
 
   proc Hungarian(ref C, i0, j0, n)
