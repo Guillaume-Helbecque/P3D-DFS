@@ -2,12 +2,12 @@ module Util
 {
   proc idx4D(i, j, k, l, n)
   {
-    return n*n*n*i + n*n*j + n*k + l;
+    return (n*n*n*i + n*n*j + n*k + l):int(32);
   }
 
   proc getLocalIndex(mapping, i)
   {
-    var j, k: int;
+    var j, k: int(32);
 
     while (j < i)
     {

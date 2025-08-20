@@ -5,7 +5,7 @@ module Node_QubitAlloc
 
   use Util;
 
-  config param sizeMax: int = 27;
+  config param sizeMax: int(32) = 27;
 
   /* class CostMatrix {
     var domCost: domain(1);
@@ -27,18 +27,18 @@ module Node_QubitAlloc
 
   record Node_QubitAlloc
   {
-    var mapping: c_array(c_int, sizeMax);
+    var mapping: c_array(int(32), sizeMax);
     /* var cost: c_int; */
-    var lower_bound: int;
-    var depth: c_int;
-    var available: list(int);
+    var lower_bound: int(32);
+    var depth: int(32);
+    var available: list(int(32));
     /* var costMatrix: owned CostMatrix; */
 
-    var domCost: domain(1);
-    var costs: [domCost] c_int;
-    var domLeader: domain(1);
-    var leader: [domLeader] c_int;
-    var size: int;
+    var domCost: domain(1, idxType = int(32));
+    var costs: [domCost] int(32);
+    var domLeader: domain(1, idxType = int(32));
+    var leader: [domLeader] int(32);
+    var size: int(32);
 
     // default-initializer
     proc init()
