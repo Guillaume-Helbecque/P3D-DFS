@@ -23,7 +23,7 @@ class Problem_QubitAlloc : Problem
   {
     init this;
 
-    var f = open(filenameDist, ioMode.r);
+    var f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist, ioMode.r);
     var channel = f.reader(locking=false);
 
     channel.read(this.N);
@@ -33,7 +33,7 @@ class Problem_QubitAlloc : Problem
     channel.close();
     f.close();
 
-    f = open(filenameInter, ioMode.r);
+    f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter, ioMode.r);
     channel = f.reader(locking=false);
 
     channel.read(this.n);

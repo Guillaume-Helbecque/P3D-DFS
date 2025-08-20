@@ -17,14 +17,14 @@ module main_qubitAlloc
 
   // Problem-specific option
   // TODO: add, if any
-  config const file_inter = "";
-  config const file_dist = "";
-  config const it_max: int(32) = 10;
+  config const inter = "";
+  config const dist = "";
+  config const itmax: int(32) = 10;
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc(file_inter, file_dist, it_max);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax);
 
     // Helper
     for a in args[1..] {
