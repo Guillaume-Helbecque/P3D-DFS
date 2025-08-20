@@ -8,6 +8,16 @@ module Util
     return (n*n*n*i + n*n*j + n*k + l):int(32);
   }
 
+  proc ckmin(ref a, const ref b)
+  {
+    if (b < a) {
+      a = b;
+      return true;
+    }
+
+    return false;
+  }
+
   proc getLocalIndex(mapping, i)
   {
     var j, k: int(32);

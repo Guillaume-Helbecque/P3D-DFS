@@ -76,19 +76,21 @@ class Problem_QubitAlloc : Problem
     }
   }
 
-  proc init(other): void
+  proc init(const filenameInter: string, const filenameDist: string,
+    const N, const dom, const D, const n, const F, const priority,
+    const it_max, const ub_init, const initUB): void
   {
-    this.filenameInter = other.filenameInter;
-    this.filenameDist = other.filenameDist;
-    this.N = other.N;
-    this.dom = other.dom;
-    this.D = other.D;
-    this.n = other.n;
-    this.F = other.F;
-    this.priority = other.priority;
-    this.it_max = other.it_max;
-    this.ub_init = other.ub_init;
-    this.initUB = other.initUB;
+    this.filenameInter = filenameInter;
+    this.filenameDist = filenameDist;
+    this.N = N;
+    this.dom = dom;
+    this.D = D;
+    this.n = n;
+    this.F = F;
+    this.priority = priority;
+    this.it_max = it_max;
+    this.ub_init = ub_init;
+    this.initUB = initUB;
   }
 
   proc Prioritization(F, n: int(32), N: int(32))
@@ -186,17 +188,9 @@ class Problem_QubitAlloc : Problem
 
   override proc copy()
   {
-    return new Problem_QubitAlloc(this);
-  }
-
-  proc ckmin(ref a, const ref b)
-  {
-    if (b < a) {
-      a = b;
-      return true;
-    }
-
-    return false;
+    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
+      this.N, this.dom, this.D, this.n, this.F, this.priority,
+      this.it_max, this.ub_init, this.initUB);
   }
 
   proc Hungarian(ref C, i0, j0, n)
