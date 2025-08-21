@@ -1,5 +1,6 @@
 use IO;
 use List;
+use CTypes;
 
 use Util;
 use Problem;
@@ -64,12 +65,12 @@ class Problem_QubitAlloc : Problem
     else {
       try! this.initUB = ub:int(32);
 
-      // NOTE: If `ub` cannot be cast into `int`, an errow is thrown. For now, we cannot
+      // NOTE: If `ub` cannot be cast into `int(32)`, an errow is thrown. For now, we cannot
       // manage it as only catch-less try! statements are allowed in initializers.
       // Ideally, we'd like to do this:
 
       /* try {
-        this.initUB = ub:int;
+        this.initUB = ub:int(32);
       } catch {
         halt("Error - Unsupported initial upper bound");
       } */
@@ -93,7 +94,7 @@ class Problem_QubitAlloc : Problem
     this.initUB = initUB;
   }
 
-  proc Prioritization(F, n: int(32), N: int(32))
+  proc Prioritization(const ref F, n: int(32), N: int(32))
   {
     var sF: [0..<N] int(32);
 
@@ -124,7 +125,7 @@ class Problem_QubitAlloc : Problem
     }
   }
 
-  proc GreedyAllocation(const D, const F, const priority, n, N)
+  proc GreedyAllocation(const ref D, const ref F, const ref priority, n, N)
   {
     var route_cost = INF;
 
@@ -173,7 +174,7 @@ class Problem_QubitAlloc : Problem
     return route_cost;
   }
 
-  proc ObjectiveFunction(const mapping, const D, const F, n)
+  proc ObjectiveFunction(const mapping, const ref D, const ref F, n)
   {
     var route_cost: int(32);
 
@@ -199,21 +200,27 @@ class Problem_QubitAlloc : Problem
     var w, j_cur, j_next: int(32);
 
     // job[j] = worker assigned to job j, or -1 if unassigned
-    var job: [0..n] int(32) = -1;
+    var job = allocate(int(32), n+1);
+    for i in 0..n do job[i] = -1:int(32);
 
     // yw[w] is the potential for worker w
     // yj[j] is the potential for job j
-    var yw: [0..<n] int(32);
-    var yj: [0..n] int(32);
+    var yw = allocate(int(32), n);
+    for i in 0..<n do yw[i] = 0:int(32);
+    var yj = allocate(int(32), n+1);
+    for i in 0..n do yj[i] = 0:int(32);
 
     // main Hungarian algorithm
     for w_cur in 0..<n {
       j_cur = n;
       job[j_cur] = w_cur:int(32);
 
-      var min_to: [0..n] int(32) = INFD2;
-      var prv: [0..n] int(32) = -1;
-      var in_Z: [0..n] bool = false;
+      var min_to = allocate(int(32), n+1);
+      for i in 0..n do min_to[i] = INFD2;
+      var prv = allocate(int(32), n+1);
+      for i in 0..n do prv[i] = -1:int(32);
+      var in_Z = allocate(bool, n+1);
+      for i in 0..n do in_Z[i] = false;
 
       while (job[j_cur] != -1) {
         in_Z[j_cur] = true;
@@ -253,6 +260,10 @@ class Problem_QubitAlloc : Problem
         job[j_cur] = job[j];
         j_cur = j;
       }
+
+      deallocate(min_to);
+      deallocate(prv);
+      deallocate(in_Z);
     }
 
     // compute total cost
@@ -274,6 +285,10 @@ class Problem_QubitAlloc : Problem
         }
       }
     }
+
+    deallocate(job);
+    deallocate(yw);
+    deallocate(yj);
 
     return total_cost;
   }
@@ -450,7 +465,7 @@ class Problem_QubitAlloc : Problem
       x2 += 1;
     }
 
-    child.available.getAndRemove(l);
+    child.available[j] = false;
 
     child.lower_bound = lb_new;
 
@@ -480,12 +495,14 @@ class Problem_QubitAlloc : Problem
     else {
       var i = this.priority[depth];
 
-      for l in 0..(this.N - depth - 1) by -1 {
-        // next available physical qubit
-        var j = parent.available[l];
+      // local index of q_i in the cost matrix
+      var k = localLogicalQubitIndex(parent.mapping, i);
 
-        // local index of q_i in the cost matrix
-        var k = getLocalIndex(parent.mapping, i);
+      for j in 0..(this.N - 1) by -1 {
+        if (!parent.available[j]) then continue; // skip if not available
+
+        // next available physical qubit
+        var l = localPhysicalQubitIndex(parent.available, j);
 
         // increment lower bound
         var incre = parent.leader[k*(this.N - depth) + l];

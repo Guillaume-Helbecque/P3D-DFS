@@ -18,7 +18,7 @@ module Util
     return false;
   }
 
-  proc getLocalIndex(mapping, i)
+  proc localLogicalQubitIndex(const mapping, i)
   {
     var j, k: int(32);
 
@@ -31,5 +31,17 @@ module Util
     }
 
     return k;
+  }
+
+  proc localPhysicalQubitIndex(const av, j)
+  {
+    var l: int(32);
+
+    for i in 0..<j {
+      if (av[i]) then
+        l += 1;
+    }
+
+    return l;
   }
 }

@@ -30,7 +30,7 @@ module Node_QubitAlloc
     /* var cost: c_int; */
     var lower_bound: int(32);
     var depth: int(32);
-    var available: list(int(32));
+    var available: [0..<sizeMax] bool;
     /* var costMatrix: owned CostMatrix; */
 
     var domCost: domain(1, idxType = int(32));
@@ -51,10 +51,10 @@ module Node_QubitAlloc
       /* this.costMatrix = new CostMatrix(problem.D, problem.F, problem.N); */
       init this;
       for i in 0..<problem.n do this.mapping[i] = -1:int(32);
-      this.available.pushBack(0..<problem.N);
+      this.available = true;
 
-      this.domCost = 0..<(problem.N**4);
-      this.domLeader = 0..<(problem.N**2);
+      this.domCost = {0..<(problem.N**4)};
+      this.domLeader = {0..<(problem.N**2)};
       this.size = problem.N;
       Assemble(problem.D, problem.F, problem.N);
     }
