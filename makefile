@@ -19,16 +19,16 @@ EXECUTABLES = $(MAIN_FILES:.chpl=.out)
 
 all: $(EXECUTABLES)
 
-# ==========
+# ==================
 # Generic
-# ==========
+# ==================
 
 main_%.out: main_%.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $< -o $@
 
-# ==========
+# ==================
 # PFSP
-# ==========
+# ==================
 
 CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
 CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instances
@@ -36,9 +36,19 @@ CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instanc
 main_pfsp.out: main_pfsp.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) $< -o $@
 
-# ==========
+# ==================
+# Qubit allocation
+# ==================
+
+CHPL_QUBIT_ALLOC_MODULES_DIR = ./benchmarks/QubitAllocation
+CHPL_QUBIT_ALLOC_OPTS = -M $(CHPL_QUBIT_ALLOC_MODULES_DIR) -M $(CHPL_QUBIT_ALLOC_MODULES_DIR)/instances
+
+main_qubitAlloc.out: main_qubitAlloc.chpl
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -snewRangeLiteralType $< -o $@
+
+# ==================
 # UTS
-# ==========
+# ==================
 
 CHPL_UTS_MODULES_DIR = ./benchmarks/UTS
 
@@ -69,9 +79,9 @@ CHPL_UTS_OPTS = -M $(CHPL_UTS_MODULES_DIR) $(C_OPTS) $(C_FILES)
 main_uts.out: main_uts.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) $< -o $@
 
-# ==========
+# ==================
 # NQueens
-# ==========
+# ==================
 
 CHPL_NQUEENS_MODULES_DIR = ./benchmarks/NQueens
 CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
@@ -79,9 +89,9 @@ CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
 main_nqueens.out: main_nqueens.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) $< -o $@
 
-# ==========
+# ==================
 # Knapsack
-# ==========
+# ==================
 
 CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
 CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR) -M $(CHPL_KNAPSACK_MODULES_DIR)/instances

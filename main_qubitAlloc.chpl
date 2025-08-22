@@ -1,4 +1,4 @@
-module main_queens
+module main_qubitAlloc
 {
   // Common modules
   use util;
@@ -7,8 +7,8 @@ module main_queens
   use search_distributed;
 
   // Problem-specific modules
-  use Node_NQueens;
-  use Problem_NQueens;
+  use Node_QubitAlloc;
+  use Problem_QubitAlloc;
 
   // Common options
   config const mode: string    = "multicore"; // sequential, multicore, distributed
@@ -16,18 +16,21 @@ module main_queens
   config const saveTime: bool  = false;
 
   // Problem-specific option
-  config const N: int = 13;
+  config const inter = "10_sqn";
+  config const dist = "16_melbourne";
+  config const itmax: int(32) = 10;
+  config const ub: string = "heuristic";  // heuristic
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var nqueens = new Problem_NQueens(N);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub);
 
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
         common_help_message(args[0]);
-        nqueens.help_message();
+        qubitAlloc.help_message();
 
         return 1;
       }
@@ -37,13 +40,13 @@ module main_queens
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_NQueens, nqueens, saveTime);
+        search_sequential(Node_QubitAlloc, qubitAlloc, saveTime);
       }
       when "multicore" {
-        search_multicore(Node_NQueens, nqueens, saveTime, activeSet);
+        search_multicore(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
+        search_distributed(Node_QubitAlloc, qubitAlloc, saveTime, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

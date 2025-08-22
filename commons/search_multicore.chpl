@@ -23,6 +23,7 @@ module search_multicore
     var eachMaxDepth: [0..#numTasks] int;
     var globalTimer: stopwatch;
 
+    writeln("Multi-core execution mode with ", numTasks, " tasks");
     problem.print_settings();
 
     // ===============

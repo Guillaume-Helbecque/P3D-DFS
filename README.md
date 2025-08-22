@@ -28,6 +28,10 @@ where the available options are:
   - `multicore`: single-node multi-core execution
   - `distributed`: multi-node multi-core execution
 
+- **`--activeSet`**: compute and distribute an initial set of elements
+
+- **`--saveTime`**: save execution time in a file
+
 - **`-nl`**: number of Chapel's locales
   - any positive integer, typically the number of compute nodes
 
@@ -40,6 +44,7 @@ Other problem-specific options are supported; see next section.
 The B&B skeletons have already been tested on the following benchmark problems:
 - [The Permutation Flowshop Scheduling problem](./benchmarks/PFSP) (PFSP)
 - [The 0/1-Knapsack problem](./benchmarks/Knapsack)
+- [The Qubit Allocation problem](./benchmarks/QubitAllocation)
 - [The Unbalanced Tree Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
 

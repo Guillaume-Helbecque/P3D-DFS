@@ -18,6 +18,7 @@ module search_sequential
     var maxDepth: int;
     var globalTimer: stopwatch;
 
+    writeln("Sequential execution mode");
     problem.print_settings();
 
     // ===============

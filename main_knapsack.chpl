@@ -8,7 +8,7 @@ module main_knapsack
   use search_multicore;
   use search_distributed;
 
-  // Knapsack-specific modules
+  // Problem-specific modules
   use Node_Knapsack;
   use Problem_Knapsack;
 
@@ -17,7 +17,7 @@ module main_knapsack
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
-  // Knapsack-specific option
+  // Problem-specific option
   config const inst: string = "";
   config const ub: string   = "dantzig"; // dantzig, martello
   config const lb: string   = "opt"; // opt, inf
@@ -36,7 +36,7 @@ module main_knapsack
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         knapsack.help_message();
 
         return 1;

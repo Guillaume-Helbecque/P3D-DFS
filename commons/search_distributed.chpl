@@ -24,6 +24,7 @@ module search_distributed
     var eachMaxDepth: [PrivateSpace] int;
     var globalTimer: stopwatch;
 
+    writeln("Distributed execution mode with ", numLocales, " locales and ", here.maxTaskPar, " tasks each");
     problem.print_settings();
 
     // ===============
