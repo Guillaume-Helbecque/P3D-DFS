@@ -1,37 +1,15 @@
 module Node_QubitAlloc
 {
-  use List;
-
   use Util;
 
   config param sizeMax: int(32) = 27;
 
-  /* class CostMatrix {
-    var domCost: domain(1);
-    var costs: [domCost] c_int;
-    var domLeader: domain(1);
-    var leader: [domLeader] c_int;
-    var size: int;
-
-    proc init() {}
-
-    proc init(D, F, N) {
-      init this;
-      this.domCost = 0..<(N**4);
-      this.domLeader = 0..<(N**2);
-      this.size = N;
-      Assemble(D, F, N);
-    }
-  } */
-
   record Node_QubitAlloc
   {
     var mapping: sizeMax*int(32);
-    /* var cost: c_int; */
     var lower_bound: int(32);
     var depth: int(32);
     var available: [0..<sizeMax] bool;
-    /* var costMatrix: owned CostMatrix; */
 
     var domCost: domain(1, idxType = int(32));
     var costs: [domCost] int(32);
@@ -41,14 +19,11 @@ module Node_QubitAlloc
 
     // default-initializer
     proc init()
-    {
-      /* this.costMatrix = new CostMatrix(); */
-    }
+    {}
 
     // root-initializer
     proc init(problem)
     {
-      /* this.costMatrix = new CostMatrix(problem.D, problem.F, problem.N); */
       init this;
       for i in 0..<problem.n do this.mapping[i] = -1:int(32);
       this.available = true;
