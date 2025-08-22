@@ -587,9 +587,10 @@ class Problem_QubitAlloc : Problem
   override proc help_message(): void
   {
     writeln("\n  Qubit Allocation Problem Parameters:\n");
-    writeln("   --dist   str  interaction frequency matrix file name");
-    writeln("   --inter  str  coupling distance matrix file name");
-    writeln("   --itmax  int  maximum number of bounding iterations (optional, default: 10)\n");
+    writeln("   --inter   str       file containing the coupling distance matrix");
+    writeln("   --dist    str       file containing the interaction frequency matrix");
+    writeln("   --itmax   int       maximum number of bounding iterations");
+    writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
   }
 
 } // end class

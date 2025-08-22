@@ -26,7 +26,7 @@ module main_queens
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         nqueens.help_message();
 
         return 1;

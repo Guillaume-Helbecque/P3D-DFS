@@ -29,7 +29,7 @@ module main_qubitAlloc
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         qubitAlloc.help_message();
 
         return 1;

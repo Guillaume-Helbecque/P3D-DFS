@@ -289,16 +289,16 @@ module Problem_Knapsack
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
-      writeln("   --ub     str   upper bound function (dantzig, martello)");
-      writeln("   --lb     str   lower bound initialization (opt, inf)\n");
+      writeln("   --ub      str       upper bound function (dantzig, martello)");
+      writeln("   --lb      str/int   lower bound initialization ('opt', 'inf', or any integer)\n");
       writeln("   For user-defined instances:\n");
-      writeln("    --inst   str   file containing the data\n");
+      writeln("    --inst   str       file containing the data\n");
       writeln("   For Pisinger's instances:\n");
-      writeln("    --n      int   number of items");
-      writeln("    --r      int   range of coefficients");
-      writeln("    --t      int   type of instance (between 1 and 16, except 10)");
-      writeln("    --id     int   instance index");
-      writeln("    --s      int   number of tests in series\n");
+      writeln("    --n      int       number of items");
+      writeln("    --r      int       range of coefficients");
+      writeln("    --t      int       type of instance (between 1 and 16, except 10)");
+      writeln("    --id     int       instance index");
+      writeln("    --s      int       number of tests in series\n");
     }
 
   } // end class

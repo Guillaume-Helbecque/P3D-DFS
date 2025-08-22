@@ -36,7 +36,7 @@ module main_knapsack
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         knapsack.help_message();
 
         return 1;

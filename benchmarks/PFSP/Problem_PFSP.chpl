@@ -376,10 +376,10 @@ module Problem_PFSP
     override proc help_message(): void
     {
       writeln("\n  PFSP Benchmark Parameters:\n");
-      writeln("   --inst  str   instance's name");
-      writeln("   --lb    str   lower bound function (lb1, lb1_d, lb2)");
-      writeln("   --br    str   branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
-      writeln("   --ub    str   upper bound initialization (opt, inf)\n");
+      writeln("   --inst   str       instance's name");
+      writeln("   --lb     str       lower bound function (lb1, lb1_d, lb2)");
+      writeln("   --br     str       branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
+      writeln("   --ub     str/int   upper bound initialization ('opt', 'inf', or any integer)\n");
     }
 
   } // end class
