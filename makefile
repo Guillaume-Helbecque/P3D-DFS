@@ -44,7 +44,7 @@ CHPL_QUBIT_ALLOC_MODULES_DIR = ./benchmarks/QubitAllocation
 CHPL_QUBIT_ALLOC_OPTS = -M $(CHPL_QUBIT_ALLOC_MODULES_DIR) -M $(CHPL_QUBIT_ALLOC_MODULES_DIR)/instances
 
 main_qubitAlloc.out: main_qubitAlloc.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -snewRangeLiteralType $< -o $@
 
 # ==================
 # UTS
