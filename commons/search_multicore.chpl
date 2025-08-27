@@ -7,6 +7,8 @@ module search_multicore
   use util;
   use Problem;
 
+  config param activeSetSize: int = 2;
+
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     const numTasks = here.maxTaskPar;
@@ -36,9 +38,9 @@ module search_multicore
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across tasks.
-        We require at least 2 elements per task.
+        We require at least `activeSetSize` elements per task.
       */
-      var initSize: int = 2 * numTasks;
+      var initSize: int = activeSetSize * numTasks;
       var initList: list(Node);
       initList.pushBack(root);
 
