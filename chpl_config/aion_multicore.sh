@@ -4,7 +4,7 @@
 # Université du Luxembourg (https://hpc-docs.uni.lu/systems/aion/).
 
 # Load the foss toolchain to get access to gcc, mpi, etc...
-module load toolchain/foss/2020b
+module load toolchain/foss/2023b
 module load devel/CMake
 
 export CHPL_VERSION=$(cat CHPL_VERSION)
@@ -19,6 +19,7 @@ fi
 CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$CHPL_HOME/util"
 
+export CHPL_COMM="none"
 export CHPL_HOST_PLATFORM="linux64"
 export CHPL_HOST_COMPILER="gnu"
 export CHPL_LLVM="none"
