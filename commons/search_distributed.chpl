@@ -27,6 +27,8 @@ module search_distributed
     writeln("Distributed execution mode with ", numLocales, " locales and ", here.maxTaskPar, " tasks each");
     problem.print_settings();
 
+    globalTimer.start();
+
     // ===============
     // INITIALIZATION
     // ===============
@@ -78,8 +80,6 @@ module search_distributed
       */
       bag.add(root, 0);
     }
-
-    globalTimer.start();
 
     // =====================
     // PARALLEL EXPLORATION

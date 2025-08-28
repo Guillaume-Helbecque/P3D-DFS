@@ -21,6 +21,8 @@ module search_sequential
     writeln("Sequential execution mode");
     problem.print_settings();
 
+    globalTimer.start();
+
     // ===============
     // INITIALIZATION
     // ===============
@@ -30,11 +32,9 @@ module search_sequential
 
     pool.pushBack(root);
 
-    globalTimer.start();
-
-    // =====================
-    // PARALLEL EXPLORATION
-    // =====================
+    // ============
+    // EXPLORATION
+    // ============
 
     // Exploration of the tree
     while !pool.isEmpty() do {

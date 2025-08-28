@@ -26,6 +26,8 @@ module search_multicore
     writeln("Multi-core execution mode with ", numTasks, " tasks");
     problem.print_settings();
 
+    globalTimer.start();
+
     // ===============
     // INITIALIZATION
     // ===============
@@ -73,8 +75,6 @@ module search_multicore
       */
       bag.add(root, 0);
     }
-
-    globalTimer.start();
 
     // =====================
     // PARALLEL EXPLORATION
