@@ -9,6 +9,8 @@ module search_distributed
   use util;
   use Problem;
 
+  config param activeSetSize: int = 2;
+
   proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
@@ -27,6 +29,8 @@ module search_distributed
     writeln("Distributed execution mode with ", numLocales, " locales and ", here.maxTaskPar, " tasks each");
     problem.print_settings();
 
+    globalTimer.start();
+
     // ===============
     // INITIALIZATION
     // ===============
@@ -37,9 +41,9 @@ module search_distributed
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least 2 elements per task.
+        We require at least `activeSetSize` elements per task.
       */
-      var initSize: int = 2 * here.maxTaskPar * numLocales;
+      var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
       var initList: list(Node);
       initList.pushBack(root);
 
@@ -78,8 +82,6 @@ module search_distributed
       */
       bag.add(root, 0);
     }
-
-    globalTimer.start();
 
     // =====================
     // PARALLEL EXPLORATION
