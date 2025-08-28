@@ -540,7 +540,8 @@ class Problem_QubitAlloc : Problem
     writeln("Number of logical qubits: ", this.n);
     writeln("Number of physical qubits: ", this.N);
     writeln("Max bounding iterations: ", this.it_max);
-    writeln("Initial upper bound: ", this.initUB);
+    const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
+    writeln("Initial upper bound: ", this.initUB, heuristic);
     writeln("=================================================");
   }
 
