@@ -41,37 +41,42 @@ module search_distributed
         An initial set is sequentially computed and distributed across locales.
         We require at least `activeSetSize` elements per task.
       */
-      var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
       var initList: list(Node);
       initList.pushBack(root);
+      var lockList: sync bool = false;
 
-      var best_task: int = best;
       ref tree_loc = eachExploredTree[0];
       ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
 
-      // Computation of the initial set
-      while (initList.size < initSize) {
-        var parent = initList.popBack();
+      coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
-        {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+        var best_task: int = best;
+        var tree = tree_loc;
+        var num = num_sol;
+        var max = max_depth;
 
-          for elt in children do initList.insert(0, elt);
+        var parent: Node;
+        while (initList.size < activeSetSize * here.maxTaskPar * numLocales) {
+          if !popBackSafe(initList, lockList, parent) then continue;
+
+          var children = problem.decompose(Node, parent, tree, num,
+            max, best, lockBest, best_task);
+
+          for elt in children do pushFrontSafe(initList, lockList, elt);
         }
+
+        tree_loc += tree;
+        num_sol += num;
+        max_depth += max;
       }
 
-      // Static distribution of the initial set
-      var seg, loc: int;
+      var loc = 0;
       for elt in initList {
-        on Locales[loc % numLocales] do bag.add(elt, seg);
+        on Locales[loc] do bag.add(elt, 0);
         loc += 1;
-        if (loc % numLocales == 0) {
-          loc = loc % numLocales;
-          seg += 1;
-        }
-        if (seg == here.maxTaskPar) then seg = 0;
+        if (loc == numLocales) then loc = 0;
       }
     }
     else {
