@@ -45,26 +45,37 @@ module search_multicore
       var initSize: int = activeSetSize * numTasks;
       var initList: list(Node);
       initList.pushBack(root);
+      var lockList: sync bool = false;
 
-      var best_task: int = best;
       ref tree_loc = eachExploredTree[0];
       ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
 
-      // Computation of the initial set
-      while (initList.size < initSize) {
-        var parent = initList.popBack();
+      coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
-        {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+        var best_task: int = best;
+        var tree = tree_loc;
+        var num = num_sol;
+        var max = max_depth;
 
-          for elt in children do initList.insert(0, elt);
+        var parent: Node;
+        while (initList.size < initSize) {
+          if !popBackSafe(initList, lockList, parent) then continue;
+
+          var children = problem.decompose(Node, parent, tree, num,
+            max, best, lockBest, best_task);
+
+          for elt in children do pushFrontSafe(initList, lockList, elt);
         }
+
+        tree_loc += tree;
+        num_sol += num;
+        max_depth += max;
       }
 
       // Static distribution of the set
-      var seg: int;
+      var seg = 0;
       for elt in initList {
         bag.add(elt, seg);
         seg += 1;

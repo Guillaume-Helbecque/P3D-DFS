@@ -43,6 +43,7 @@ module search_distributed
         An initial set is sequentially computed and distributed across locales.
         We require at least `activeSetSize` elements per task.
       */
+      var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
       var initList: list(Node);
       initList.pushBack(root);
       var lockList: sync bool = false;
@@ -60,7 +61,7 @@ module search_distributed
         var max = max_depth;
 
         var parent: Node;
-        while (initList.size < activeSetSize * here.maxTaskPar * numLocales) {
+        while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(Node, parent, tree, num,
