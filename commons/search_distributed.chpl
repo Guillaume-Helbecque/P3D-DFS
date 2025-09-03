@@ -75,11 +75,19 @@ module search_distributed
         max_depth += max;
       }
 
-      var loc = 0;
-      for elt in initList {
-        on Locales[loc] do bag.add(elt, 0);
-        loc += 1;
-        if (loc == numLocales) then loc = 0;
+      // Static distribution of the set
+      var a = initList.toArray();
+      const size = a.size;
+      const r_size = size - (size % numLocales);
+
+      coforall loc in 0..<numLocales do on Locales[loc] {
+        for i in loc..<r_size by numLocales do
+          bag.add(a[i], 0);
+
+        if (loc == 0) {
+          for i in r_size..<size do
+            bag.add(a[i], 0);
+        }
       }
     }
     else {
