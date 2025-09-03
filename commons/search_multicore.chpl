@@ -7,7 +7,7 @@ module search_multicore
   use util;
   use Problem;
 
-  config param activeSetSize: int = 2;
+  config param activeSetSize: int = 1;
 
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
