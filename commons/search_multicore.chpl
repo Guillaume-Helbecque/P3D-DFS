@@ -51,7 +51,7 @@ module search_multicore
       ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
 
-      coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
+      coforall taskId in 0..<numTasks with (ref tree_loc,
         ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
         var best_task: int = best;
@@ -75,11 +75,18 @@ module search_multicore
       }
 
       // Static distribution of the set
-      var seg = 0;
-      for elt in initList {
-        bag.add(elt, seg);
-        seg += 1;
-        if (seg == numTasks) then seg = 0;
+      var a = initList.toArray();
+      const size = a.size;
+      const r_size = size - (size % numTasks);
+
+      coforall taskId in 0..<numTasks {
+        for i in taskId..<r_size by numTasks do
+          bag.add(a[i], taskId);
+
+        if (taskId == 0) {
+          for i in r_size..<size do
+            bag.add(a[i], taskId);
+        }
       }
     }
     else {
