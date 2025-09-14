@@ -2,18 +2,18 @@ module Node_QubitAlloc
 {
   use Util;
 
-  config param sizeMax: int(32) = 27;
+  config param sizeMax: uint(8) = 27;
 
   record Node_QubitAlloc
   {
-    var mapping: sizeMax*int(32);
+    var mapping: sizeMax*int(8);
     var lower_bound: int(32);
-    var depth: int(32);
+    var depth: uint(32);
     var available: [0..<sizeMax] bool;
 
-    var domCost: domain(1, idxType = int(32));
+    var domCost: domain(1, idxType = uint(8));
     var costs: [domCost] int(32);
-    var domLeader: domain(1, idxType = int(32));
+    var domLeader: domain(1, idxType = uint(8));
     var leader: [domLeader] int(32);
     var size: int(32);
 
@@ -25,7 +25,7 @@ module Node_QubitAlloc
     proc init(problem)
     {
       init this;
-      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
+      for i in 0..<problem.n do this.mapping[i] = -1:int(8);
       this.available = true;
 
       this.domCost = {0..<(problem.N**4)};
@@ -39,14 +39,15 @@ module Node_QubitAlloc
     {
       this.mapping = other.mapping;
       this.lower_bound = other.lower_bound;
-      this.depth = other.depth;
+      this.depth = other.depth + 1;
       this.available = other.available;
 
-      this.domCost = other.domCost;
-      this.costs = other.costs;
-      this.domLeader = other.domLeader;
-      this.leader = other.leader;
-      this.size = other.size;
+      const m = other.size - 1;
+      this.domCost = {0..<(m**4)}; // other.domCost;
+      this.costs = noinit; //other.costs;
+      this.domLeader = {0..<(m**2)}; //other.domLeader;
+      this.leader = noinit; //other.leader;
+      this.size = m;
     }
 
     proc deinit()

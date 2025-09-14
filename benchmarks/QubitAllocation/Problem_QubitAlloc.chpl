@@ -5,21 +5,21 @@ use CTypes;
 use Util;
 use Problem;
 
-config param sizeMax: int(32) = 27;
+config param sizeMax: uint(8) = 27;
 
 class Problem_QubitAlloc : Problem
 {
   var filenameInter: string;
   var filenameDist: string;
-  var N: int(32);
-  var dom: domain(2, idxType = int(32));
+  var N: uint(8);
+  var dom: domain(2, idxType = uint(8));
   var D: [dom] int(32);
-  var n: int(32);
+  var n: uint(8);
   var F: [dom] int(32);
 
-  var priority: [0..<sizeMax] int(32);
+  var priority: [0..<sizeMax] uint(8);
 
-  var it_max: int(32);
+  var it_max: uint(8);
 
   var ub_init: string;
   var initUB: int(32);
@@ -94,14 +94,14 @@ class Problem_QubitAlloc : Problem
     this.initUB = initUB;
   }
 
-  proc Prioritization(const ref F, n: int(32), N: int(32))
+  proc Prioritization(const ref F, n: uint(8), N: uint(8))
   {
     var sF: [0..<N] int(32);
 
     for i in 0..<N do
       sF[i] = (+ reduce F[i, 0..<n]);
 
-    var min_inter, min_inter_index: int(32);
+    var min_inter, min_inter_index: uint(8);
 
     for i in 0..<N {
       min_inter = sF[0];
@@ -110,7 +110,7 @@ class Problem_QubitAlloc : Problem
       for j in 1..<N {
         if (sF[j] < min_inter) {
           min_inter = sF[j];
-          min_inter_index = j:int(32);
+          min_inter_index = j:uint(8);
         }
       }
 
@@ -400,22 +400,22 @@ class Problem_QubitAlloc : Problem
   proc reduceNode(type Node, parent, i, j, k, l, lb_new)
   {
     var child = new Node(parent);
-    child.depth += 1;
+    /* child.depth += 1; */
 
     // assign q_i to P_j
     child.mapping[i] = j;
 
     const n = parent.size;
     const m = n - 1;
-    child.size -= 1;
+    /* child.size -= 1; */
 
     /* assert(n > 0 && "Cannot reduce problem of size 0.");
     assert(std::min(i, j) >= 0 && std::max(i, j) < n && "Invalid reduction indices."); */
 
     var L_copy = parent.leader;
 
-    child.domCost = {0..<m**4};
-    child.domLeader = {0..<m**2};
+    /* child.domCost = {0..<m**4};
+    child.domLeader = {0..<m**2}; */
 
     var x2, y2, p2, q2: int(32);
 

@@ -969,13 +969,31 @@ module DistributedBag_DFS
 
       // allocate a larger block.
       if (block.tailId + size > block.cap) {
-        const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
-        if (neededCap >= distributedBagMaxSegmentCap) then
-          size = distributedBagMaxSegmentCap - block.tailId - 1;
-        lock_block.readFE();
-        block.cap = min(distributedBagMaxSegmentCap, neededCap);
-        block.dom = {0..#block.cap};
-        lock_block.writeEF(true);
+        if (block.tailId - block.headId < (block.cap / 2)) {
+          lock_block.readFE();
+          /* block.cap = min(distributedBagMaxSegmentCap, neededCap); */
+          /* writeln("Reallocating to cap = ", block.cap); */
+          block.dom = {block.headId..#block.cap};
+          lock_block.writeEF(true);
+        }
+        else {
+          /* writeln("Start resizing"); */
+          /* writeln("block cap = ", block.cap); */
+          /* writeln("size = ", size); */
+          /* writeln("block head = ", block.headId); */
+          /* writeln("block tail = ", block.tailId); */
+          const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
+          if (neededCap >= distributedBagMaxSegmentCap) {
+            /* writeln("We reach max cap"); */
+            size = distributedBagMaxSegmentCap - block.tailId - 1;
+          }
+          lock_block.readFE();
+          block.cap = min(distributedBagMaxSegmentCap, neededCap);
+          /* writeln("Reallocating to cap = ", block.cap); */
+          block.dom = {block.headId..#block.cap};
+          lock_block.writeEF(true);
+          /* writeln("End resizing"); */
+        }
       }
 
       // add the elements to the tail
