@@ -990,8 +990,8 @@ module DistributedBag_DFS
       catch {
         writeln("Catch the error");
         writeln("On locale: ", here.id);
-        writeln("block tail: ", block.tail);
-        writeln("block head: ", block.head);
+        writeln("block tail: ", block.tailId);
+        writeln("block head: ", block.headId);
         writeln("Memory used: ", memoryUsed());
       }
 
