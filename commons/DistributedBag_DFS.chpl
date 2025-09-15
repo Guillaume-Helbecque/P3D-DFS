@@ -139,6 +139,7 @@ module DistributedBag_DFS
   public use Collection;
   private use IO;
 
+  use MemDiagnostics;
   use Random;
   use List;
   use Math;
@@ -967,23 +968,32 @@ module DistributedBag_DFS
     {
       var size = elts.size;
 
-      // allocate a larger block.
-      if (block.tailId + size > block.cap) {
-        const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
-        if (neededCap >= distributedBagMaxSegmentCap) then
-          size = distributedBagMaxSegmentCap - block.tailId - 1;
-        lock_block.readFE();
-        block.cap = min(distributedBagMaxSegmentCap, neededCap);
-        block.dom = {0..#block.cap};
-        lock_block.writeEF(true);
+      try! {
+        // allocate a larger block.
+        if (block.tailId + size > block.cap) {
+          const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
+          if (neededCap >= distributedBagMaxSegmentCap) then
+            size = distributedBagMaxSegmentCap - block.tailId - 1;
+          lock_block.readFE();
+          block.cap = min(distributedBagMaxSegmentCap, neededCap);
+          block.dom = {0..#block.cap};
+          lock_block.writeEF(true);
+        }
+
+        // add the elements to the tail
+        for elt in elts[0..#size] do block.pushTail(elt);
+        tail += size;
+
+        // check split request
+        if split_request.read() then split_release();
       }
-
-      // add the elements to the tail
-      for elt in elts[0..#size] do block.pushTail(elt);
-      tail += size;
-
-      // check split request
-      if split_request.read() then split_release();
+      catch {
+        writeln("Catch the error");
+        writeln("On locale: ", here.id);
+        writeln("block tail: ", block.tail);
+        writeln("block head: ", block.head);
+        writeln("Memory used: ", memoryUsed());
+      }
 
       return size;
     }
