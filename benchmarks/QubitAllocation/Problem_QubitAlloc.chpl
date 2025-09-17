@@ -11,11 +11,11 @@ class Problem_QubitAlloc : Problem
 {
   var filenameInter: string;
   var filenameDist: string;
-  var N: int(32);
-  var dom: domain(2, idxType = int(32));
-  var D: [dom] int(32);
   var n: int(32);
+  var dom: domain(2, idxType = int(32));
   var F: [dom] int(32);
+  var N: int(32);
+  var D: [dom] int(32);
 
   var priority: [0..<sizeMax] int(32);
 
@@ -31,28 +31,23 @@ class Problem_QubitAlloc : Problem
 
     init this;
 
-    var f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist + ".csv", ioMode.r);
+    var f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter + ".csv", ioMode.r);
     var channel = f.reader(locking=false);
 
-    channel.read(this.N);
-    this.dom = {0..<this.N, 0..<this.N};
-    channel.read(this.D);
+    channel.read(this.n);
+    this.dom = {0..<this.n, 0..<this.n};
+    channel.read(this.F);
 
     channel.close();
     f.close();
 
-    f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter + ".csv", ioMode.r);
+    f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist + ".csv", ioMode.r);
     channel = f.reader(locking=false);
 
-    channel.read(this.n);
-    // TODO: add an error message
-    assert(this.n <= this.N);
-
-    for i in 0..<this.n {
-      for j in 0..<this.n {
-        this.F[i, j] = channel.read(int(32));
-      }
-    }
+    channel.read(this.N);
+    assert(this.n <= this.N, "More logical qubits than physical ones");
+    this.dom = {0..<this.N, 0..<this.N};
+    channel.read(this.D);
 
     channel.close();
     f.close();
@@ -83,11 +78,11 @@ class Problem_QubitAlloc : Problem
   {
     this.filenameInter = filenameInter;
     this.filenameDist = filenameDist;
-    this.N = N;
-    this.dom = dom;
-    this.D = D;
     this.n = n;
+    this.dom = dom;
     this.F = F;
+    this.N = N;
+    this.D = D;
     this.priority = priority;
     this.it_max = it_max;
     this.ub_init = ub_init;
