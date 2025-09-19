@@ -5,7 +5,7 @@ module Util
 
   proc idx4D(i, j, k, l, n)
   {
-    return (n*n*n*i + n*n*j + n*k + l):int(32);
+    return n**3*i + n**2*j + n*k + l;
   }
 
   proc ckmin(ref a, const ref b)

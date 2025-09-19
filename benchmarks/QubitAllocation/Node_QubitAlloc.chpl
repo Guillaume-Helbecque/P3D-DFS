@@ -25,7 +25,7 @@ module Node_QubitAlloc
     proc init(problem)
     {
       init this;
-      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
+      for i in 0..<problem.n do this.mapping[i] = -1;
       this.available = true;
 
       this.domCost = {0..<(problem.N**4)};
