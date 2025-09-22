@@ -15,15 +15,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Cache Chapel-2.5.0
-      id: cache-chapel-250
+    - name: Cache Chapel-2.6.0
+      id: cache-chapel-260
       uses: actions/cache@v4
       with:
-        path: ~/chapel-2.5.0MC
-        key: ${{ runner.os }}-chapel-2.5.0MC
+        path: ~/chapel-2.6.0MC
+        key: ${{ runner.os }}-chapel-2.6.0MC
 
-    - name: Build Chapel 2.5.0 (if not cached)
-      if: steps.cache-chapel-250.outputs.cache-hit != 'true'
+    - name: Build Chapel 2.6.0 (if not cached)
+      if: steps.cache-chapel-260.outputs.cache-hit != 'true'
       run: |
         cd chpl_config
         source laptop_multicore.sh
