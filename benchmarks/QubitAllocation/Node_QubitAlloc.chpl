@@ -12,9 +12,9 @@ module Node_QubitAlloc
     var available: [0..<sizeMax] bool;
 
     var domCost: domain(1, idxType = int(32));
-    var costs: [domCost] int(32);
+    var costs: [domCost] uint(16);
     var domLeader: domain(1, idxType = int(32));
-    var leader: [domLeader] int(32);
+    var leader: [domLeader] uint(16);
     var size: int(32);
 
     // default-initializer
@@ -58,7 +58,7 @@ module Node_QubitAlloc
               if ((k == i) ^ (l == j)) then
                 this.costs[idx4D(i, j, k, l, N)] = INFD2;
               else
-                this.costs[idx4D(i, j, k, l, N)] = F[i, k] * D[j, l];
+                this.costs[idx4D(i, j, k, l, N)] = (F[i, k] * D[j, l]):uint(16);
             }
           }
           this.leader[i*N + j] = this.costs[idx4D(i, j, i, j, N)];
