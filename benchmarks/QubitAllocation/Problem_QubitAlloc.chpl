@@ -142,7 +142,7 @@ class Problem_QubitAlloc : Problem
 
         // find physical qubit with least increasing route cost
         for l in 0..<N {
-          if (available[l]) {
+          if available[l] {
             cost_incre = 0;
             for q in 0..<p {
               i = priority[q];
@@ -200,10 +200,8 @@ class Problem_QubitAlloc : Problem
 
     // yw[w] is the potential for worker w
     // yj[j] is the potential for job j
-    var yw = allocate(int(32), n);
-    for i in 0..<n do yw[i] = 0;
-    var yj = allocate(int(32), n+1);
-    for i in 0..n do yj[i] = 0;
+    var yw = allocate(int(32), n, clear = true);
+    var yj = allocate(int(32), n+1, clear = true);
 
     // main Hungarian algorithm
     for w_cur in 0..<n {
@@ -224,20 +222,20 @@ class Problem_QubitAlloc : Problem
         j_next = 0;
 
         for j in 0..<n {
-          if (!in_Z[j]) {
+          if !in_Z[j] {
             // reduced cost = C[w][j] - yw[w] - yj[j]
             var cur_cost = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
 
-            if (ckmin(min_to[j], cur_cost)) then
+            if ckmin(min_to[j], cur_cost) then
               prv[j] = j_cur;
-            if (ckmin(delta, min_to[j])) then
+            if ckmin(delta, min_to[j]) then
               j_next = j;
           }
         }
 
         // update potentials
         for j in 0..n {
-          if (in_Z[j]) {
+          if in_Z[j] {
             yw[job[j]] += delta;
             yj[j] -= delta;
           }
@@ -472,9 +470,9 @@ class Problem_QubitAlloc : Problem
   {
     var children: list(Node);
 
-    var depth = parent.depth;
+    const depth = parent.depth;
 
-    if (parent.depth == this.n) {
+    if (depth == this.n) {
       const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
       if (eval < best_task) {
@@ -493,8 +491,8 @@ class Problem_QubitAlloc : Problem
       // local index of q_i in the cost matrix
       var k = localLogicalQubitIndex(parent.mapping, i);
 
-      for j in 0..(this.N - 1) by -1 {
-        if (!parent.available[j]) then continue; // skip if not available
+      for j in 0..<this.N by -1 {
+        if !parent.available[j] then continue; // skip if not available
 
         // next available physical qubit
         var l = localPhysicalQubitIndex(parent.available, j);
@@ -511,7 +509,7 @@ class Problem_QubitAlloc : Problem
         var child = reduceNode(Node, parent, i, j, k, l, lb_new);
 
         if (child.depth < this.n) {
-          var lb = bound(child, best_task);
+          const lb = bound(child, best_task);
           if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;

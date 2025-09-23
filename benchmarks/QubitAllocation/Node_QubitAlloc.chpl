@@ -8,7 +8,7 @@ module Node_QubitAlloc
   {
     var mapping: sizeMax*int(32);
     var lower_bound: int(32);
-    var depth: int(32);
+    var depth: uint(8);
     var available: [0..<sizeMax] bool;
 
     var domCost: domain(1, idxType = int(32));
@@ -48,9 +48,6 @@ module Node_QubitAlloc
       this.leader = other.leader;
       this.size = other.size;
     }
-
-    proc deinit()
-    {}
 
     proc ref Assemble(D, F, N)
     {

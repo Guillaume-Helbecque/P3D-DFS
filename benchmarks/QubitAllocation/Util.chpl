@@ -22,8 +22,7 @@ module Util
   {
     var j, k: int(32);
 
-    while (j < i)
-    {
+    while (j < i) {
       if (mapping[j] == -1) then
         k += 1;
 
@@ -33,12 +32,12 @@ module Util
     return k;
   }
 
-  proc localPhysicalQubitIndex(const av, j)
+  proc localPhysicalQubitIndex(const ref av, j)
   {
     var l: int(32);
 
     for i in 0..<j {
-      if (av[i]) then
+      if av[i] then
         l += 1;
     }
 
