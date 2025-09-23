@@ -1,7 +1,9 @@
 module Util
 {
-  param INF: uint(16) = max(int(16));
-  param INFD2: uint(16) = INF / 2;
+  config type eltType = int(32);
+
+  param INF: eltType = max(eltType);
+  param INFD2: eltType = INF / 2;
 
   proc idx4D(i, j, k, l, n)
   {

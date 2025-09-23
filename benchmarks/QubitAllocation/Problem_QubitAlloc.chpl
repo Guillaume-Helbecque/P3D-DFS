@@ -6,6 +6,7 @@ use Util;
 use Problem;
 
 config param sizeMax: int(32) = 27;
+config type eltType = int(32);
 
 class Problem_QubitAlloc : Problem
 {
@@ -163,7 +164,7 @@ class Problem_QubitAlloc : Problem
       route_cost_temp = ObjectiveFunction(alloc_temp, D, F, n);
 
       if (route_cost_temp < route_cost) then
-        route_cost = route_cost_temp:uint(16);
+        route_cost = route_cost_temp:eltType;
     }
 
     return route_cost;
@@ -274,7 +275,7 @@ class Problem_QubitAlloc : Problem
       for j in 0..<n {
         if (C[idx4D(i0, j0, w, j, n)] < INFD2) {
           // subtract the final potentials from the original cost
-          C[idx4D(i0, j0, w, j, n)] = (C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j]):uint(16);
+          C[idx4D(i0, j0, w, j, n)] = (C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j]):eltType;
         }
       }
     }
@@ -319,7 +320,7 @@ class Problem_QubitAlloc : Problem
 
           for l in 0..<n {
             if (l != j) then
-              C[idx4D(i, j, k, l, n)] += val:uint(16);
+              C[idx4D(i, j, k, l, n)] += val:eltType;
           }
         }
       }
@@ -336,8 +337,8 @@ class Problem_QubitAlloc : Problem
           for l in 0..<n {
             if ((k != i) && (l != j)) {
               cost_sum = C[idx4D(i, j, k, l, n)] + C[idx4D(k, l, i, j, n)];
-              C[idx4D(i, j, k, l, n)] = (cost_sum / 2):uint(16);
-              C[idx4D(k, l, i, j, n)] = (cost_sum / 2):uint(16);
+              C[idx4D(i, j, k, l, n)] = (cost_sum / 2):eltType;
+              C[idx4D(k, l, i, j, n)] = (cost_sum / 2):eltType;
 
               if (cost_sum % 2 == 1) {
                 if ((i + j + k + l) % 2 == 0) then // total index parity for balance
@@ -374,7 +375,7 @@ class Problem_QubitAlloc : Problem
         for j in 0..<m {
           cost = Hungarian(C, i, j, m);
 
-          L[i*m + j] += cost:uint(16);
+          L[i*m + j] += cost:eltType;
         }
       }
 
