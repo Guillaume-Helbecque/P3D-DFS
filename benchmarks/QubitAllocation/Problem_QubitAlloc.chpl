@@ -5,8 +5,10 @@ use CTypes;
 use Util;
 use Problem;
 
+import Node_QubitAlloc.eltType;
+
 config param sizeMax: int(32) = 27;
-config type eltType = int(32);
+/* config type eltType = int(32); */
 
 class Problem_QubitAlloc : Problem
 {

@@ -43,8 +43,13 @@ main_pfsp.out: main_pfsp.chpl
 CHPL_QUBIT_ALLOC_MODULES_DIR = ./benchmarks/QubitAllocation
 CHPL_QUBIT_ALLOC_OPTS = -M $(CHPL_QUBIT_ALLOC_MODULES_DIR) -M $(CHPL_QUBIT_ALLOC_MODULES_DIR)/instances
 
-main_qubitAlloc.out: main_qubitAlloc.chpl
+_CHPL_QUBIT_ALLOC_BIT_OPT =
+
+main_qubitAlloc_opt.out: main_qubitAlloc_opt.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -snewRangeLiteralType $< -o $@
+
+main_qubitAlloc.out: main_qubitAlloc.chpl
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) $(_CHPL_QUBIT_ALLOC_BIT_OPT) -snewRangeLiteralType $< -o $@
 
 # ==================
 # UTS

@@ -1,6 +1,6 @@
 module Util
 {
-  config type eltType = int(32);
+  import Node_QubitAlloc.eltType;
 
   param INF: eltType = max(eltType);
   param INFD2: eltType = INF / 2;
