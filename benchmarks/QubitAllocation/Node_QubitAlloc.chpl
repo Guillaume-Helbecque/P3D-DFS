@@ -8,7 +8,7 @@ module Node_QubitAlloc
   {
     var mapping: sizeMax*int(32);
     var lower_bound: int(32);
-    var depth: int(32);
+    var depth: uint(8);
     var available: [0..<sizeMax] bool;
 
     var domCost: domain(1, idxType = int(32));
@@ -25,7 +25,7 @@ module Node_QubitAlloc
     proc init(problem)
     {
       init this;
-      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
+      for i in 0..<problem.n do this.mapping[i] = -1;
       this.available = true;
 
       this.domCost = {0..<(problem.N**4)};
@@ -70,7 +70,7 @@ module Node_QubitAlloc
   record Node_QubitAlloc_GLB
   {
     var mapping: sizeMax*int(32);
-    var depth: int(32);
+    var depth: uint(8);
     var available: [0..<sizeMax] bool;
 
     // default-initializer
@@ -81,7 +81,7 @@ module Node_QubitAlloc
     proc init(problem)
     {
       init this;
-      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
+      for i in 0..<problem.n do this.mapping[i] = -1;
       this.available = true;
     }
 

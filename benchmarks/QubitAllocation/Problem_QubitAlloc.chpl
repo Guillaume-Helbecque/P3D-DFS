@@ -124,7 +124,7 @@ class Problem_QubitAlloc : Problem
       for j in 1..<N {
         if (sF[j] < min_inter) {
           min_inter = sF[j];
-          min_inter_index = j:int(32);
+          min_inter_index = j;
         }
       }
 
@@ -150,7 +150,7 @@ class Problem_QubitAlloc : Problem
       var alloc_temp: [0..<sizeMax] int(32) = -1;
       var available: [0..<N] bool = true;
 
-      alloc_temp[priority[0]] = j:int(32);
+      alloc_temp[priority[0]] = j;
       available[j] = false;
 
       // for each logical qubit (after the first one)
@@ -161,7 +161,7 @@ class Problem_QubitAlloc : Problem
 
         // find physical qubit with least increasing route cost
         for l in 0..<N {
-          if (available[l]) {
+          if available[l] {
             cost_incre = 0;
             for q in 0..<p {
               i = priority[q];
@@ -169,7 +169,7 @@ class Problem_QubitAlloc : Problem
             }
 
             if (cost_incre < min_cost_incre) {
-              l_min = l:int(32);
+              l_min = l;
               min_cost_incre = cost_incre;
             }
           }
@@ -217,24 +217,24 @@ class Problem_QubitAlloc : Problem
 
    // job[j] = worker assigned to job j, or -1 if unassigned
    var job = allocate(int(32), n+1);
-   for i in 0..n do job[i] = -1:int(32);
+   for i in 0..n do job[i] = -1;
 
    // yw[w] is the potential for worker w
    // yj[j] is the potential for job j
    var yw = allocate(int(32), n);
-   for i in 0..<n do yw[i] = 0:int(32);
+   for i in 0..<n do yw[i] = 0;
    var yj = allocate(int(32), n+1);
-   for i in 0..n do yj[i] = 0:int(32);
+   for i in 0..n do yj[i] = 0;
 
    // main Hungarian algorithm
    for w_cur in 0..<n {
      j_cur = n;
-     job[j_cur] = w_cur:int(32);
+     job[j_cur] = w_cur;
 
      var min_to = allocate(int(32), n+1);
      for i in 0..n do min_to[i] = INFD2;
      var prv = allocate(int(32), n+1);
-     for i in 0..n do prv[i] = -1:int(32);
+     for i in 0..n do prv[i] = -1;
      var in_Z = allocate(bool, n+1);
      for i in 0..n do in_Z[i] = false;
 
@@ -245,20 +245,20 @@ class Problem_QubitAlloc : Problem
        j_next = 0;
 
        for j in 0..<n {
-         if (!in_Z[j]) {
+         if !in_Z[j] {
            // reduced cost = C[w][j] - yw[w] - yj[j]
            var cur_cost = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
 
-           if (ckmin(min_to[j], cur_cost)) then
+           if ckmin(min_to[j], cur_cost) then
              prv[j] = j_cur;
-           if (ckmin(delta, min_to[j])) then
+           if ckmin(delta, min_to[j]) then
              j_next = j;
          }
        }
 
        // update potentials
        for j in 0..n {
-         if (in_Z[j]) {
+         if in_Z[j] {
            yw[job[j]] += delta;
            yj[j] -= delta;
          }
@@ -314,8 +314,8 @@ class Problem_QubitAlloc : Problem
     var leader_cost, leader_cost_div, leader_cost_rem, val: int(32);
 
     if (n == 1) {
-      C[0] = 0:int(32);
-      L[0] = 0:int(32);
+      C[0] = 0;
+      L[0] = 0;
 
       return;
     }
@@ -324,8 +324,8 @@ class Problem_QubitAlloc : Problem
       for j in 0..<n {
         leader_cost = L[i*n + j];
 
-        C[idx4D(i, j, i, j, n)] = 0:int(32);
-        L[i*n + j] = 0:int(32);
+        C[idx4D(i, j, i, j, n)] = 0;
+        L[i*n + j] = 0;
 
         if (leader_cost == 0) {
           continue;
@@ -514,8 +514,8 @@ class Problem_QubitAlloc : Problem
       // local index of q_i in the cost matrix
       var k = localLogicalQubitIndex(parent.mapping, i);
 
-      for j in 0..(this.N - 1) by -1 {
-        if (!parent.available[j]) then continue; // skip if not available
+      for j in 0..<this.N by -1 {
+        if !parent.available[j] then continue; // skip if not available
 
         // next available physical qubit
         var l = localPhysicalQubitIndex(parent.available, j);
@@ -558,24 +558,24 @@ class Problem_QubitAlloc : Problem
 
     // job[j] = worker assigned to job j, or -1 if unassigned
     var job = allocate(int(32), m+1);
-    for i in 0..m do job[i] = -1:int(32);
+    for i in 0..m do job[i] = -1;
 
     // yw[w] is the potential for worker w
     // yj[j] is the potential for job j
     var yw = allocate(int(32), n);
-    for i in 0..<n do yw[i] = 0:int(32);
+    for i in 0..<n do yw[i] = 0;
     var yj = allocate(int(32), m+1);
-    for i in 0..m do yj[i] = 0:int(32);
+    for i in 0..m do yj[i] = 0;
 
     // main Hungarian algorithm
     for w_cur in 0..<n {
       j_cur = m;                       // dummy job index
-      job[j_cur] = w_cur:int(32);
+      job[j_cur] = w_cur;
 
       var min_to = allocate(int(32), m+1);
       for i in 0..m do min_to[i] = INFD2;
       var prv = allocate(int(32), m+1);
-      for i in 0..m do prv[i] = -1:int(32);
+      for i in 0..m do prv[i] = -1;
       var in_Z = allocate(bool, m+1);
       for i in 0..m do in_Z[i] = false;
 
@@ -586,20 +586,20 @@ class Problem_QubitAlloc : Problem
         j_next = 0;
 
         for j in 0..<m {
-          if (!in_Z[j]) {
+          if !in_Z[j] {
             // reduced cost = C[w][j] - yw[w] - yj[j]
             var cur_cost = C[w*m + j] - yw[w] - yj[j];
 
-            if (ckmin(min_to[j], cur_cost)) then
+            if ckmin(min_to[j], cur_cost) then
               prv[j] = j_cur;
-            if (ckmin(delta, min_to[j])) then
+            if ckmin(delta, min_to[j]) then
               j_next = j;
           }
         }
 
         // update potentials
         for j in 0..m {
-          if (in_Z[j]) {
+          if in_Z[j] {
             yw[job[j]] += delta;
             yj[j] -= delta;
           }
@@ -673,7 +673,7 @@ class Problem_QubitAlloc : Problem
     var L: [0..<(u*r)] int(32) = 0;
 
     record MinPair {
-      var min1, min2, idx1: int;
+      var min1, min2, idx1: int(32);
     }
 
     var best = allocate(MinPair, r);
@@ -681,7 +681,7 @@ class Problem_QubitAlloc : Problem
     for k_idx in 0..<r {
       var k = unassigned_loc[k_idx];
       var min1 = INF;
-      var idx1 = -1;
+      var idx1: int(32) = -1;
       var min2 = INF;
 
       for l_idx in 0..<r {
@@ -709,7 +709,7 @@ class Problem_QubitAlloc : Problem
 
       for k_idx in 0..<r {
         var k = unassigned_loc[k_idx];
-        var cost = 0;
+        var cost: int(32) = 0;
 
         // Interaction with other unassigned facilities
         for j_idx in 0..<u {
@@ -732,7 +732,7 @@ class Problem_QubitAlloc : Problem
           cost += this.F[i, j] * this.D[k, l];
         }
 
-        L[i_idx * r + k_idx] = cost:int(32);
+        L[i_idx * r + k_idx] = cost;
       }
     }
 
@@ -788,7 +788,7 @@ class Problem_QubitAlloc : Problem
       var i = this.priority[depth];
 
       for j in 0..<this.N by -1 {
-        if (!parent.available[j]) then continue; // skip if not available
+        if !parent.available[j] then continue; // skip if not available
 
         var child = new Node(parent);
         child.depth += 1;
@@ -835,7 +835,8 @@ class Problem_QubitAlloc : Problem
     writeln("Device: ", this.filenameDist);
     writeln("Number of logical qubits: ", this.n);
     writeln("Number of physical qubits: ", this.N);
-    writeln("Max bounding iterations: ", this.it_max);
+    if (paramLB == allowedLowerBound1) then
+      writeln("Max bounding iterations: ", this.it_max);
     const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
     writeln("Initial upper bound: ", this.initUB, heuristic);
     writeln("Lower bound function: ", paramLB);
