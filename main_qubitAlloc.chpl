@@ -20,11 +20,12 @@ module main_qubitAlloc
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
   config const ub: string = "heuristic";  // heuristic
+  config const lb: string = "hhb";  // hhb, glb
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub, lb);
 
     // Helper
     for a in args[1..] {

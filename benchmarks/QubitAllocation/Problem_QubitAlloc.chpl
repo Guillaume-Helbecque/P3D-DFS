@@ -7,6 +7,8 @@ use Problem;
 
 config param sizeMax: int(32) = 27;
 
+const allowedLowerBounds = ["hhb", "glb"];
+
 class Problem_QubitAlloc : Problem
 {
   var filenameInter: string;
@@ -21,10 +23,12 @@ class Problem_QubitAlloc : Problem
 
   var it_max: int(32);
 
+  var lb_name: string;
+
   var ub_init: string;
   var initUB: int(32);
 
-  proc init(filenameInter, filenameDist, itmax, ub): void
+  proc init(filenameInter, filenameDist, itmax, ub, lb): void
   {
     this.filenameInter = filenameInter;
     this.filenameDist = filenameDist;
@@ -60,6 +64,9 @@ class Problem_QubitAlloc : Problem
     Prioritization(this.F, this.n, this.N);
     this.it_max = itmax;
 
+    if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
+      else halt("Error - Unsupported lower bound");
+
     this.ub_init = ub;
     if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
     else {
@@ -79,7 +86,7 @@ class Problem_QubitAlloc : Problem
 
   proc init(const filenameInter: string, const filenameDist: string,
     const N, const dom, const D, const n, const F, const priority,
-    const it_max, const ub_init, const initUB): void
+    const it_max, const lb_name, const ub_init, const initUB): void
   {
     this.filenameInter = filenameInter;
     this.filenameDist = filenameDist;
@@ -90,6 +97,7 @@ class Problem_QubitAlloc : Problem
     this.F = F;
     this.priority = priority;
     this.it_max = it_max;
+    this.lb_name = lb_name;
     this.ub_init = ub_init;
     this.initUB = initUB;
   }
@@ -191,8 +199,8 @@ class Problem_QubitAlloc : Problem
   {
     /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
       this.N, this.dom, this.D, this.n, this.F, this.priority,
-      this.it_max, this.ub_init, this.initUB); */
-    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init);
+      this.it_max, this.lb_name, this.ub_init, this.initUB); */
+    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init, this.lb_name);
   }
 
   proc Hungarian(ref C, i0, j0, n)
@@ -472,7 +480,7 @@ class Problem_QubitAlloc : Problem
     return child;
   }
 
-  override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+  proc decompose_hhb(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
     ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
   {
     var children: list(Node);
@@ -532,6 +540,23 @@ class Problem_QubitAlloc : Problem
     return children;
   }
 
+  override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      select this.lb_name {
+        when "hhb" {
+          return decompose_hhb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "glb" {
+          halt("glb bound not yet implemented");
+          return decompose_hhb(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        otherwise {
+          halt("DEADCODE");
+        }
+      }
+    }
+
   override proc print_settings(): void
   {
     writeln("\n=================================================");
@@ -542,6 +567,7 @@ class Problem_QubitAlloc : Problem
     writeln("Max bounding iterations: ", this.it_max);
     const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
     writeln("Initial upper bound: ", this.initUB, heuristic);
+    writeln("Lower bound function: ", this.lb_name);
     writeln("=================================================");
   }
 
