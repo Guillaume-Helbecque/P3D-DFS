@@ -20,7 +20,7 @@ module main_qubitAlloc
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
   config const ub: string = "heuristic";  // heuristic
-  config const lb: string = "hhb";  // hhb, glb
+  config const lb: string = "glb";  // glb, hhb
 
   proc main(args: [] string): int
   {

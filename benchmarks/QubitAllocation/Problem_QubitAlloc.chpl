@@ -102,6 +102,14 @@ class Problem_QubitAlloc : Problem
     this.initUB = initUB;
   }
 
+  override proc copy()
+  {
+    /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
+      this.N, this.dom, this.D, this.n, this.F, this.priority,
+      this.it_max, this.lb_name, this.ub_init, this.initUB); */
+    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init, this.lb_name);
+  }
+
   proc Prioritization(const ref F, n: int(32), N: int(32))
   {
     var sF: [0..<N] int(32);
@@ -193,14 +201,6 @@ class Problem_QubitAlloc : Problem
     }
 
     return 2*route_cost;
-  }
-
-  override proc copy()
-  {
-    /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
-      this.N, this.dom, this.D, this.n, this.F, this.priority,
-      this.it_max, this.lb_name, this.ub_init, this.initUB); */
-    return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init, this.lb_name);
   }
 
   proc Hungarian(ref C, i0, j0, n)
@@ -617,7 +617,8 @@ class Problem_QubitAlloc : Problem
     writeln("   --inter   str       file containing the coupling distance matrix");
     writeln("   --dist    str       file containing the interaction frequency matrix");
     writeln("   --itmax   int       maximum number of bounding iterations");
-    writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
+    writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)");
+    writeln("   --lb      str       lower bound function ('hhb' or 'glb')\n");
   }
 
 } // end class
