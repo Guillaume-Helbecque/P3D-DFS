@@ -19,13 +19,13 @@ module main_qubitAlloc
   config const inter = "10_sqn";
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
-  config const ub: string = "heuristic";  // heuristic
-  config const lb: string = "glb";  // glb, hhb
+  config const ub: string = "heuristic"; // heuristic
+  config param lb: string = "glb"; // glb, hhb
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub, lb);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub);
 
     // Helper
     for a in args[1..] {
@@ -36,6 +36,8 @@ module main_qubitAlloc
         return 1;
       }
     }
+
+    type Node_QubitAlloc = if (lb == "glb") then Node_QubitAlloc_GLB else Node_QubitAlloc_HHB;
 
     // Search
     select mode {

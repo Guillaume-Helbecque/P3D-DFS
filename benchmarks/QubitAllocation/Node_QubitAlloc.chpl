@@ -4,7 +4,7 @@ module Node_QubitAlloc
 
   config param sizeMax: int(32) = 27;
 
-  record Node_QubitAlloc
+  record Node_QubitAlloc_HHB
   {
     var mapping: sizeMax*int(32);
     var lower_bound: int(32);
@@ -35,7 +35,7 @@ module Node_QubitAlloc
     }
 
     // copy-initializer
-    proc init(other: Node_QubitAlloc)
+    proc init(other: Node_QubitAlloc_HHB)
     {
       this.mapping = other.mapping;
       this.lower_bound = other.lower_bound;
@@ -48,9 +48,6 @@ module Node_QubitAlloc
       this.leader = other.leader;
       this.size = other.size;
     }
-
-    proc deinit()
-    {}
 
     proc ref Assemble(D, F, N)
     {
@@ -70,4 +67,30 @@ module Node_QubitAlloc
     }
   }
 
+  record Node_QubitAlloc_GLB
+  {
+    var mapping: sizeMax*int(32);
+    var depth: int(32);
+    var available: [0..<sizeMax] bool;
+
+    // default-initializer
+    proc init()
+    {}
+
+    // root-initializer
+    proc init(problem)
+    {
+      init this;
+      for i in 0..<problem.n do this.mapping[i] = -1:int(32);
+      this.available = true;
+    }
+
+    // copy-initializer
+    proc init(other: Node_QubitAlloc_GLB)
+    {
+      this.mapping = other.mapping;
+      this.depth = other.depth;
+      this.available = other.available;
+    }
+  }
 }
