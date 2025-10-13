@@ -4,8 +4,10 @@ use CTypes;
 
 use Util;
 use Problem;
+use Instances;
 
 import main_qubitAlloc._lb as paramLB;
+import main_qubitAlloc.bench;
 
 config param sizeMax: int(32) = 27;
 
@@ -18,9 +20,9 @@ class Problem_QubitAlloc : Problem
   var filenameInter: string;
   var filenameDist: string;
   var n: int(32);
+  var N: int(32);
   var dom: domain(2, idxType = int(32));
   var F: [dom] int(32);
-  var N: int(32);
   var D: [dom] int(32);
 
   var priority: [0..<sizeMax] int(32);
@@ -37,26 +39,16 @@ class Problem_QubitAlloc : Problem
 
     init this;
 
-    var f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter + ".csv", ioMode.r);
-    var channel = f.reader(locking=false);
+    var inst = new Instance();
+    if (bench == "qubitAlloc") then inst = new Instance_QubitAlloc(filenameInter, filenameDist);
+    else halt("Error - Unknown QAP instance class");
 
-    channel.read(this.n);
-    this.dom = {0..<this.n, 0..<this.n};
-    channel.read(this.F);
-
-    channel.close();
-    f.close();
-
-    f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist + ".csv", ioMode.r);
-    channel = f.reader(locking=false);
-
-    channel.read(this.N);
-    assert(this.n <= this.N, "More logical qubits than physical ones");
+    this.n = inst.get_nb_entities();
+    this.N = inst.get_nb_sites();
     this.dom = {0..<this.N, 0..<this.N};
-    channel.read(this.D);
+    inst.get_entities(this.F);
+    inst.get_sites(this.D);
 
-    channel.close();
-    f.close();
 
     Prioritization(this.F, this.n, this.N);
     this.it_max = itmax;
@@ -90,9 +82,9 @@ class Problem_QubitAlloc : Problem
     this.filenameInter = filenameInter;
     this.filenameDist = filenameDist;
     this.n = n;
+    this.N = N;
     this.dom = dom;
     this.F = F;
-    this.N = N;
     this.D = D;
     this.priority = priority;
     this.it_max = it_max;

@@ -21,6 +21,7 @@ module main_qubitAlloc
   config const itmax: int(32) = 10;
   config const ub: string = "heuristic"; // heuristic
   config param _lb: string = "glb"; // glb, hhb
+  config const bench: string = "qubitAlloc";
 
   proc main(args: [] string): int
   {
