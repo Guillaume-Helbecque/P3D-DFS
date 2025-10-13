@@ -20,6 +20,7 @@ module Problem_QubitAlloc
   {
     var filenameInter: string;
     var filenameDist: string;
+    var filename: string;
     var n: int(32);
     var N: int(32);
     var F: [0..<N, 0..<N] int(32);
@@ -32,13 +33,15 @@ module Problem_QubitAlloc
     var ub_init: string;
     var initUB: int(32);
 
-    proc init(filenameInter, filenameDist, itmax, ub): void
+    proc init(filenameInter, filenameDist, filenameQAP, itmax, ub): void
     {
       this.filenameInter = filenameInter;
       this.filenameDist = filenameDist;
+      this.filename = filenameQAP;
 
       var inst = new Instance();
       if (bench == "qubitAlloc") then inst = new Instance_QubitAlloc(filenameInter, filenameDist);
+      else if (bench == "qap") then inst = new Instance_QAP(filenameQAP);
       else halt("Error - Unknown QAP instance class");
 
       this.n = inst.get_nb_entities();
@@ -75,11 +78,12 @@ module Problem_QubitAlloc
     }
 
     proc init(const filenameInter: string, const filenameDist: string,
-      const N, const D, const n, const F, const priority,
-      const it_max, const ub_init, const initUB): void
+      const filename: string, const N, const D, const n, const F,
+      const priority, const it_max, const ub_init, const initUB): void
     {
       this.filenameInter = filenameInter;
       this.filenameDist = filenameDist;
+      this.filename = filename;
       this.n = n;
       this.N = N;
       this.F = F;
@@ -95,7 +99,7 @@ module Problem_QubitAlloc
       /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
         this.N, this.D, this.n, this.F, this.priority,
         this.it_max, this.ub_init, this.initUB); */
-      return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init);
+      return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.filename, this.it_max, this.ub_init);
     }
 
     proc Prioritization(const ref F, n: int(32), N: int(32))

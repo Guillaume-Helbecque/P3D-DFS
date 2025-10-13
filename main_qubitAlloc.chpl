@@ -18,6 +18,7 @@ module main_qubitAlloc
   // Problem-specific option
   config const inter = "10_sqn";
   config const dist = "16_melbourne";
+  config const inst = "nug12";
   config const itmax: int(32) = 10;
   config const ub: string = "heuristic"; // heuristic
   config param _lb: string = "glb"; // glb, hhb
@@ -26,7 +27,7 @@ module main_qubitAlloc
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qubitAlloc = new Problem_QubitAlloc(inter, dist, itmax, ub);
+    var qubitAlloc = new Problem_QubitAlloc(inter, dist, inst, itmax, ub);
 
     // Helper
     for a in args[1..] {
