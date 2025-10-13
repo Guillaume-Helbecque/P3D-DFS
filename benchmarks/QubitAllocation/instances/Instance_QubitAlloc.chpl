@@ -15,7 +15,7 @@ class Instance_QubitAlloc : Instance
   {
     init this;
 
-    var f = open("./benchmarks/QubitAllocation/instances/inter/" + filenameInter + ".csv", ioMode.r);
+    var f = open("./benchmarks/QubitAllocation/instances/data_QubitAlloc/inter/" + filenameInter + ".csv", ioMode.r);
     var channel = f.reader(locking=false);
 
     channel.read(this.n);
@@ -25,7 +25,7 @@ class Instance_QubitAlloc : Instance
     channel.close();
     f.close();
 
-    f = open("./benchmarks/QubitAllocation/instances/dist/" + filenameDist + ".csv", ioMode.r);
+    f = open("./benchmarks/QubitAllocation/instances/data_QubitAlloc/dist/" + filenameDist + ".csv", ioMode.r);
     channel = f.reader(locking=false);
 
     channel.read(this.N);
