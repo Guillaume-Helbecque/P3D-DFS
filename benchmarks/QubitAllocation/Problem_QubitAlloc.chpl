@@ -825,10 +825,16 @@ module Problem_QubitAlloc
     override proc print_settings(): void
     {
       writeln("\n=================================================");
-      writeln("Circuit: ", this.filenameInter);
-      writeln("Device: ", this.filenameDist);
-      writeln("Number of logical qubits: ", this.n);
-      writeln("Number of physical qubits: ", this.N);
+      if (bench == "qap") {
+        writeln("QAP instance: ", this.filename);
+        writeln("Number of localities: ", this.N);
+      }
+      else if (bench == "qubitAlloc") {
+        writeln("Circuit: ", this.filenameInter);
+        writeln("Device: ", this.filenameDist);
+        writeln("Number of logical qubits: ", this.n);
+        writeln("Number of physical qubits: ", this.N);
+      }
       if (paramLB == allowedLowerBound1) then
         writeln("Max bounding iterations: ", this.it_max);
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
