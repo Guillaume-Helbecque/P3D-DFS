@@ -46,7 +46,7 @@ CHPL_QUBIT_ALLOC_OPTS = -M $(CHPL_QUBIT_ALLOC_MODULES_DIR) -M $(CHPL_QUBIT_ALLOC
 QUBIT_ALLOC_BOUND ?= glb
 
 main_qubitAlloc.out: main_qubitAlloc.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -slb='"$(QUBIT_ALLOC_BOUND)"' -snewRangeLiteralType $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -s_lb='"$(QUBIT_ALLOC_BOUND)"' -snewRangeLiteralType $< -o $@
 
 # ==================
 # UTS

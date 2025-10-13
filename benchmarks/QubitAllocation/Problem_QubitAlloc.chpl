@@ -5,7 +5,7 @@ use CTypes;
 use Util;
 use Problem;
 
-import main_qubitAlloc.lb as paramLB;
+import main_qubitAlloc._lb as paramLB;
 
 config param sizeMax: int(32) = 27;
 
@@ -889,8 +889,7 @@ class Problem_QubitAlloc : Problem
     writeln("   --inter   str       file containing the coupling distance matrix");
     writeln("   --dist    str       file containing the interaction frequency matrix");
     writeln("   --itmax   int       maximum number of bounding iterations");
-    writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)");
-    writeln("   --lb      str       lower bound function ('hhb' or 'glb')\n");
+    writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
   }
 
 } // end class

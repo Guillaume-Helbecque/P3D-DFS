@@ -20,7 +20,7 @@ module main_qubitAlloc
   config const dist = "16_melbourne";
   config const itmax: int(32) = 10;
   config const ub: string = "heuristic"; // heuristic
-  config param lb: string = "glb"; // glb, hhb
+  config param _lb: string = "glb"; // glb, hhb
 
   proc main(args: [] string): int
   {
@@ -37,7 +37,7 @@ module main_qubitAlloc
       }
     }
 
-    type Node_QubitAlloc = if (lb == "glb") then Node_QubitAlloc_GLB else Node_QubitAlloc_HHB;
+    type Node_QubitAlloc = if (_lb == "glb") then Node_QubitAlloc_GLB else Node_QubitAlloc_HHB;
 
     // Search
     select mode {
