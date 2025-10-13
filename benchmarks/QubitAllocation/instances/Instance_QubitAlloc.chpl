@@ -3,8 +3,6 @@ use IO;
 
 class Instance_QubitAlloc : Instance
 {
-  var filenameInter: string;
-  var filenameDist: string;
   var n: int(32);
   var dom: domain(2, idxType = int(32));
   var F: [dom] int(32);
