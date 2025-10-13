@@ -22,9 +22,8 @@ module Problem_QubitAlloc
     var filenameDist: string;
     var n: int(32);
     var N: int(32);
-    var dom: domain(2, idxType = int(32));
-    var F: [dom] int(32);
-    var D: [dom] int(32);
+    var F: [0..<N, 0..<N] int(32);
+    var D: [0..<N, 0..<N] int(32);
 
     var priority: [0..<sizeMax] int(32);
 
@@ -38,15 +37,15 @@ module Problem_QubitAlloc
       this.filenameInter = filenameInter;
       this.filenameDist = filenameDist;
 
-      init this;
-
       var inst = new Instance();
       if (bench == "qubitAlloc") then inst = new Instance_QubitAlloc(filenameInter, filenameDist);
       else halt("Error - Unknown QAP instance class");
 
       this.n = inst.get_nb_entities();
       this.N = inst.get_nb_sites();
-      this.dom = {0..<this.N, 0..<this.N};
+
+      init this;
+
       inst.get_entities(this.F);
       inst.get_sites(this.D);
 
@@ -76,14 +75,13 @@ module Problem_QubitAlloc
     }
 
     proc init(const filenameInter: string, const filenameDist: string,
-      const N, const dom, const D, const n, const F, const priority,
+      const N, const D, const n, const F, const priority,
       const it_max, const ub_init, const initUB): void
     {
       this.filenameInter = filenameInter;
       this.filenameDist = filenameDist;
       this.n = n;
       this.N = N;
-      this.dom = dom;
       this.F = F;
       this.D = D;
       this.priority = priority;
@@ -95,7 +93,7 @@ module Problem_QubitAlloc
     override proc copy()
     {
       /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
-        this.N, this.dom, this.D, this.n, this.F, this.priority,
+        this.N, this.D, this.n, this.F, this.priority,
         this.it_max, this.ub_init, this.initUB); */
       return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.it_max, this.ub_init);
     }
