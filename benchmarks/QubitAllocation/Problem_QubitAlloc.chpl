@@ -8,7 +8,6 @@ module Problem_QubitAlloc
   use Instances;
 
   import main_qubitAlloc._lb as paramLB;
-  import main_qubitAlloc.bench;
 
   config param sizeMax: int(32) = 27;
 
@@ -18,9 +17,8 @@ module Problem_QubitAlloc
 
   class Problem_QubitAlloc : Problem
   {
-    var filenameInter: string;
-    var filenameDist: string;
     var filename: string;
+    var benchmark: string;
     var n: int(32);
     var N: int(32);
     var F: [0..<N, 0..<N] int(32);
@@ -33,16 +31,21 @@ module Problem_QubitAlloc
     var ub_init: string;
     var initUB: int(32);
 
-    proc init(filenameInter, filenameDist, filenameQAP, itmax, ub): void
+    proc init(filename, itmax, ub): void
     {
-      this.filenameInter = filenameInter;
-      this.filenameDist = filenameDist;
-      this.filename = filenameQAP;
+      this.filename = filename;
+      var getFilenames = filename.split(",");
 
       var inst = new Instance();
-      if (bench == "qubitAlloc") then inst = new Instance_QubitAlloc(filenameInter, filenameDist);
-      else if (bench == "qap") then inst = new Instance_QAP(filenameQAP);
-      else halt("Error - Unknown QAP instance class");
+      if (getFilenames.size == 1) {
+        this.benchmark = "qap";
+        inst = new Instance_QAP(getFilenames[0]);
+      }
+      else if (getFilenames.size == 2) {
+        this.benchmark = "qubitAlloc";
+        inst = new Instance_QubitAlloc(getFilenames[0], getFilenames[1]);
+      }
+      else halt("Error - Unknown instance");
 
       this.n = inst.get_nb_entities();
       this.N = inst.get_nb_sites();
@@ -77,13 +80,11 @@ module Problem_QubitAlloc
       }
     }
 
-    proc init(const filenameInter: string, const filenameDist: string,
-      const filename: string, const N, const D, const n, const F,
-      const priority, const it_max, const ub_init, const initUB): void
+    proc init(const filename: string, const benchmark, const N, const D, const n,
+      const F, const priority, const it_max, const ub_init, const initUB): void
     {
-      this.filenameInter = filenameInter;
-      this.filenameDist = filenameDist;
       this.filename = filename;
+      this.benchmark = benchmark;
       this.n = n;
       this.N = N;
       this.F = F;
@@ -96,10 +97,10 @@ module Problem_QubitAlloc
 
     override proc copy()
     {
-      /* return new Problem_QubitAlloc(this.filenameInter, this.filenameDist,
+      /* return new Problem_QubitAlloc(this.filename, this.benchmark,
         this.N, this.D, this.n, this.F, this.priority,
         this.it_max, this.ub_init, this.initUB); */
-      return new Problem_QubitAlloc(this.filenameInter, this.filenameDist, this.filename, this.it_max, this.ub_init);
+      return new Problem_QubitAlloc(this.filename, this.it_max, this.ub_init);
     }
 
     proc Prioritization(const ref F, n: int(32), N: int(32))
@@ -825,13 +826,14 @@ module Problem_QubitAlloc
     override proc print_settings(): void
     {
       writeln("\n=================================================");
-      if (bench == "qap") {
+      if (this.benchmark == "qap") {
         writeln("QAP instance: ", this.filename);
         writeln("Number of localities: ", this.N);
       }
-      else if (bench == "qubitAlloc") {
-        writeln("Circuit: ", this.filenameInter);
-        writeln("Device: ", this.filenameDist);
+      else if (this.benchmark == "qubitAlloc") {
+        var getFilenames = this.filename.split(",");
+        writeln("Circuit: ", getFilenames[0]);
+        writeln("Device: ", getFilenames[1]);
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
@@ -886,8 +888,7 @@ module Problem_QubitAlloc
     override proc help_message(): void
     {
       writeln("\n  Qubit Allocation Problem Parameters:\n");
-      writeln("   --inter   str       file containing the coupling distance matrix");
-      writeln("   --dist    str       file containing the interaction frequency matrix");
+      writeln("   --inst    str       file containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
