@@ -23,10 +23,5 @@ module Instance
     {
       halt("Error - get_sites() not implemented");
     }
-
-    proc get_best_ub(): int
-    {
-      halt("Error - get_best_ub() not implemented");
-    }
   }
 }

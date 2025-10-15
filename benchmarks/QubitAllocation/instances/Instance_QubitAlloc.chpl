@@ -54,9 +54,4 @@ class Instance_QubitAlloc : Instance
   {
     S = this.D;
   }
-
-  override proc get_best_ub(): int
-  {
-    return 0;
-  }
 }

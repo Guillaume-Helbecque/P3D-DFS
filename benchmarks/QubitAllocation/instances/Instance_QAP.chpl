@@ -44,9 +44,4 @@ class Instance_QAP : Instance
   {
     S = this.locations;
   }
-
-  override proc get_best_ub(): int
-  {
-    return 0;
-  }
 }
