@@ -14,6 +14,18 @@ $n$ logical qubits to $N$ physical qubits.
 
 ### Configuration options
 
+At compilation, it is possible to choose the bounding function used using:
+
+```
+make main_qubitAlloc.out QUBIT_ALLOC_BOUND={...}
+```
+
+where the available options are:
+  - `glb`: classical Gilmore-Lawler bound for the quadratic assignment problem [1] (default)
+  - `hhb`: Hightower–Hahn bound [2]
+
+Then, the executable supports other options, as detailed below.
+
 ```
 ./main_qubitAlloc.out {...}
 ```
@@ -41,3 +53,8 @@ where the available options are:
 - **`--ub`**: initial upper bound (UB)
   - `heuristic`: initialize the UB using a greedy heuristic (default)
   - `{NUM}`: initialize the UB to the given number
+
+### References
+
+1. Y. Li, P. M. Pardalos, K. G. Ramakrishnan, and M. G. C. Resende. (1994) Lower bounds for the quadratic assignment problem. *Annals of Operations Research*, 50:387-410. DOI: [10.1007/BF02085649](https://doi.org/10.1007/BF02085649).
+2. P. Hahn and T. Grant. (1998) Lower Bounds for the Quadratic Assignment Problem Based upon a Dual Formulation. *Operations Research*, 46(6):912-922. DOI: [10.1287/opre.46.6.912](https://doi.org/10.1287/opre.46.6.912).

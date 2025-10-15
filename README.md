@@ -8,7 +8,7 @@ The parallelization relies on the parallel tree exploration model, in which seve
 
 ### Prerequisites
 
-[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.5.0)
+[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.6.0)
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
