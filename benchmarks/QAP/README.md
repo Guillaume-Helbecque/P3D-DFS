@@ -1,4 +1,4 @@
-# The Qubit Allocation problem
+# The Quadratic Assignment problem
 
 ### Formulation
 
@@ -17,37 +17,44 @@ $n$ logical qubits to $N$ physical qubits.
 At compilation, it is possible to choose the bounding function used using:
 
 ```
-make main_qubitAlloc.out QUBIT_ALLOC_BOUND={...}
+make main_qap.out QAP_BOUND={...}
 ```
 
 where the available options are:
-  - `glb`: classical Gilmore-Lawler bound for the quadratic assignment problem [1] (default)
-  - `hhb`: Hightower–Hahn bound [2]
+  - `glb`: Gilmore-Lawler bound [1] (default)
+  - `hhb`: Hightower-Hahn bound [2]
 
 Then, the executable supports other options, as detailed below.
 
 ```
-./main_qubitAlloc.out {...}
+./main_qap.out {...}
 ```
 
 where the available options are:
-- **`--inter`**: file containing the interaction frequency matrix
-  - must be placed in the `./instances/inter` folder and formatted as follows:
+- **`--inst`**: file(s) containing the instance data
+  - `filename`: QAP instance where `filename` contains the flow and distance
+  matrices formatted as follows:
   ```
-  n
+  size
+
+  flow matrix (delimited with spaces)
+
+  distance matrix (delimited with spaces)
+  ```
+  File must be placed in `./instances/data_QAP` folder.
+
+  - `filename1,filename2`: Qubit allocation instance where `filename1` and `filename2`
+  contain the interaction frequency matrix and the coupling distance matrix,
+  respectively, both formatted as follows:
+  ```
+  size
 
   matrix (delimited with spaces)
   ```
+  Files must be placed in `./instances/data_QubitAlloc/inter` and
+  `./instances/data_QubitAlloc/dist` folders, respectively.
 
-- **`--dist`**: file containing the coupling distance matrix
-  - must be placed in the `./instances/dist` folder and formatted as follows:
-  ```
-  N
-
-  matrix (delimited with spaces)
-  ```
-
-- **`--itmax`**: maximum number of bounding iterations
+- **`--itmax`**: maximum number of bounding iterations (only for `hhb` bound)
   - any positive integer (`10` by default)
 
 - **`--ub`**: initial upper bound (UB)

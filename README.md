@@ -44,7 +44,7 @@ Other problem-specific options are supported; see next section.
 The B&B skeletons have already been tested on the following benchmark problems:
 - [The Permutation Flowshop Scheduling problem](./benchmarks/PFSP) (PFSP)
 - [The 0/1-Knapsack problem](./benchmarks/Knapsack)
-- [The Qubit Allocation problem](./benchmarks/QubitAllocation)
+- [The Quadratic Assignment problem](./benchmarks/QAP) (QAP)
 - [The Unbalanced Tree Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
 

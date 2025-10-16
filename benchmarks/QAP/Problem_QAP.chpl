@@ -882,13 +882,13 @@ module Problem_QAP
 
     override proc output_filepath(): string
     {
-      return "./chpl_qubitAlloc.txt";
+      return "./chpl_qap.txt";
     }
 
     override proc help_message(): void
     {
-      writeln("\n  Qubit Allocation Problem Parameters:\n");
-      writeln("   --inst    str       file containing the instance data");
+      writeln("\n  Quadratic Assignment Problem Parameters:\n");
+      writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
