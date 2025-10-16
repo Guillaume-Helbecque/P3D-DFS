@@ -13,7 +13,7 @@ class Instance_QAP : Instance
 
     init this;
 
-    var f = open("./benchmarks/QubitAllocation/instances/data_QAP/" + filename + ".csv", ioMode.r);
+    var f = open("./benchmarks/QubitAlloc/instances/data_QAP/" + filename + ".csv", ioMode.r);
     var channel = f.reader(locking=false);
 
     channel.read(this.n);
