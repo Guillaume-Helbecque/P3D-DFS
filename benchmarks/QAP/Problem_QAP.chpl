@@ -1,4 +1,4 @@
-module Problem_QubitAlloc
+module Problem_QAP
 {
   use List;
   use CTypes;
@@ -7,7 +7,7 @@ module Problem_QubitAlloc
   use Problem;
   use Instances;
 
-  import main_qubitAlloc._lb as paramLB;
+  import main_qap._lb as paramLB;
 
   config param sizeMax: int(32) = 27;
 
@@ -15,7 +15,7 @@ module Problem_QubitAlloc
   param allowedLowerBound1 = "hhb",
         allowedLowerBound2 = "glb";
 
-  class Problem_QubitAlloc : Problem
+  class Problem_QAP : Problem
   {
     var filename: string;
     var benchmark: string;
@@ -97,10 +97,10 @@ module Problem_QubitAlloc
 
     override proc copy()
     {
-      /* return new Problem_QubitAlloc(this.filename, this.benchmark,
+      /* return new Problem_QAP(this.filename, this.benchmark,
         this.N, this.D, this.n, this.F, this.priority,
         this.it_max, this.ub_init, this.initUB); */
-      return new Problem_QubitAlloc(this.filename, this.it_max, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.ub_init);
     }
 
     proc Prioritization(const ref F, n: int(32), N: int(32))
