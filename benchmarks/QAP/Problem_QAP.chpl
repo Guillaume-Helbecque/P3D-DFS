@@ -191,12 +191,12 @@ module Problem_QAP
         if (mapping[i] == -1) then
           continue;
 
-         for j in i..<n {
-           if (mapping[j] == -1) then
-             continue;
+        for j in i..<n {
+          if (mapping[j] == -1) then
+            continue;
 
-            route_cost += F[i, j] * D[mapping[i], mapping[j]];
-         }
+          route_cost += F[i, j] * D[mapping[i], mapping[j]];
+        }
       }
 
       return 2*route_cost;
