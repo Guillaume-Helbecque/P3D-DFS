@@ -47,13 +47,13 @@ module Problem_QAP
       }
       else halt("Error - Unknown instance");
 
-      this.n = inst.get_nb_entities();
-      this.N = inst.get_nb_sites();
+      this.n = inst.get_nb_facilities();
+      this.N = inst.get_nb_locations();
 
       init this;
 
-      inst.get_entities(this.F);
-      inst.get_sites(this.D);
+      inst.get_flow(this.F);
+      inst.get_distance(this.D);
 
       Prioritization(this.F, this.n, this.N);
       this.it_max = itmax;
@@ -828,7 +828,7 @@ module Problem_QAP
       writeln("\n=================================================");
       if (this.benchmark == "qap") {
         writeln("QAP instance: ", this.filename);
-        writeln("Number of localities: ", this.N);
+        writeln("Number of locations: ", this.N);
       }
       else if (this.benchmark == "qubitAlloc") {
         var getFilenames = this.filename.split(",");

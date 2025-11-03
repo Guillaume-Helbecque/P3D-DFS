@@ -5,8 +5,8 @@ class Instance_QAP : Instance
 {
   var n: int(32);
   var dom: domain(2, idxType = int(32));
-  var facilities: [dom] int(32);
-  var locations: [dom] int(32);
+  var flow: [dom] int(32);
+  var distance: [dom] int(32);
 
   proc init(filename) {
     this.name = filename;
@@ -18,30 +18,30 @@ class Instance_QAP : Instance
 
     channel.read(this.n);
     this.dom = {0..<this.n, 0..<this.n};
-    channel.read(this.facilities);
-    channel.read(this.locations);
+    channel.read(this.flow);
+    channel.read(this.distance);
 
     channel.close();
     f.close();
   }
 
-  override proc get_nb_entities(): int(32)
+  override proc get_nb_facilities(): int(32)
   {
     return this.n;
   }
 
-  override proc get_nb_sites(): int(32)
+  override proc get_nb_locations(): int(32)
   {
     return this.n;
   }
 
-  override proc get_entities(ref E)
+  override proc get_flow(ref F)
   {
-    E = this.facilities;
+    F = this.flow;
   }
 
-  override proc get_sites(ref S)
+  override proc get_distance(ref D)
   {
-    S = this.locations;
+    D = this.distance;
   }
 }

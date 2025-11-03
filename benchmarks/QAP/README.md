@@ -2,15 +2,14 @@
 
 ### Formulation
 
-Given a quantum circuit involving $n$ logical qubits, characterized by an
-interaction frequency matrix $F=(f_{ij})$, and a quantum device with $N \ge n$ physical
-qubits, described by a coupling distance matrix $\mathbb{D}=(d_{ij})$, the objective is to
-find a partial permutation $\pi \in S^N_n$ that minimizes the route cost function:
+Given a set of $n$ facilities, characterized by a flow matrix $F=(f_{ij})$, and
+$n$ locations, described by a distance matrix $\mathbb{D}=(d_{ij})$, the objective
+is to find a permutation $\pi \in S_n$ that minimizes the total cost function:
 
-$$\min_{\pi}\quad 2 \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1}f_{ij}d_{\pi(i)\pi(j)},$$
+$$\min_{\pi}\quad \sum_{i=0}^{n-1}\sum_{j=0}^{n-1}f_{ij}d_{\pi(i)\pi(j)},$$
 
-where $S^N_n$ denotes the set of all injective mappings (partial permutations) from
-$n$ logical qubits to $N$ physical qubits.
+where $S_n$ denotes the set of all bijective mappings from $n$ facilities to $n$
+locations.
 
 ### Configuration options
 
