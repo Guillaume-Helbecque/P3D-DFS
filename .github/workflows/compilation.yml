@@ -34,4 +34,4 @@ jobs:
         source laptop_multicore.sh
         make all
         make clean
-        make main_qubitAlloc.out QUBIT_ALLOC_BOUND=hhb # glb by default
+        make main_qap.out QAP_BOUND=hhb # glb by default

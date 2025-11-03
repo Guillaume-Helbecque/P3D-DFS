@@ -1,10 +1,10 @@
-module Node_QubitAlloc
+module Node_QAP
 {
   use Util;
 
   config param sizeMax: int(32) = 27;
 
-  record Node_QubitAlloc_HHB
+  record Node_QAP_HHB
   {
     var mapping: sizeMax*int(32);
     var lower_bound: int(32);
@@ -35,7 +35,7 @@ module Node_QubitAlloc
     }
 
     // copy-initializer
-    proc init(other: Node_QubitAlloc_HHB)
+    proc init(other: Node_QAP_HHB)
     {
       this.mapping = other.mapping;
       this.lower_bound = other.lower_bound;
@@ -67,7 +67,7 @@ module Node_QubitAlloc
     }
   }
 
-  record Node_QubitAlloc_GLB
+  record Node_QAP_GLB
   {
     var mapping: sizeMax*int(32);
     var depth: uint(8);
@@ -86,7 +86,7 @@ module Node_QubitAlloc
     }
 
     // copy-initializer
-    proc init(other: Node_QubitAlloc_GLB)
+    proc init(other: Node_QAP_GLB)
     {
       this.mapping = other.mapping;
       this.depth = other.depth;

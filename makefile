@@ -37,16 +37,16 @@ main_pfsp.out: main_pfsp.chpl
 	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) $< -o $@
 
 # ==================
-# Qubit allocation
+# QAP
 # ==================
 
-CHPL_QUBIT_ALLOC_MODULES_DIR = ./benchmarks/QubitAllocation
-CHPL_QUBIT_ALLOC_OPTS = -M $(CHPL_QUBIT_ALLOC_MODULES_DIR) -M $(CHPL_QUBIT_ALLOC_MODULES_DIR)/instances
+CHPL_QAP_MODULES_DIR = ./benchmarks/QAP
+CHPL_QAP_OPTS = -M $(CHPL_QAP_MODULES_DIR) -M $(CHPL_QAP_MODULES_DIR)/instances
 
-QUBIT_ALLOC_BOUND ?= glb
+QAP_BOUND ?= glb
 
-main_qubitAlloc.out: main_qubitAlloc.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QUBIT_ALLOC_OPTS) -s_lb='"$(QUBIT_ALLOC_BOUND)"' -snewRangeLiteralType $< -o $@
+main_qap.out: main_qap.chpl
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QAP_OPTS) -s_lb='"$(QAP_BOUND)"' -snewRangeLiteralType $< -o $@
 
 # ==================
 # UTS

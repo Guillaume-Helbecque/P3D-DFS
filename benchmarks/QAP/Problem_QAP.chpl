@@ -1,4 +1,4 @@
-module Problem_QubitAlloc
+module Problem_QAP
 {
   use List;
   use CTypes;
@@ -7,7 +7,7 @@ module Problem_QubitAlloc
   use Problem;
   use Instances;
 
-  import main_qubitAlloc._lb as paramLB;
+  import main_qap._lb as paramLB;
 
   config param sizeMax: int(32) = 27;
 
@@ -15,7 +15,7 @@ module Problem_QubitAlloc
   param allowedLowerBound1 = "hhb",
         allowedLowerBound2 = "glb";
 
-  class Problem_QubitAlloc : Problem
+  class Problem_QAP : Problem
   {
     var filename: string;
     var benchmark: string;
@@ -47,13 +47,13 @@ module Problem_QubitAlloc
       }
       else halt("Error - Unknown instance");
 
-      this.n = inst.get_nb_entities();
-      this.N = inst.get_nb_sites();
+      this.n = inst.get_nb_facilities();
+      this.N = inst.get_nb_locations();
 
       init this;
 
-      inst.get_entities(this.F);
-      inst.get_sites(this.D);
+      inst.get_flow(this.F);
+      inst.get_distance(this.D);
 
       Prioritization(this.F, this.n, this.N);
       this.it_max = itmax;
@@ -97,10 +97,10 @@ module Problem_QubitAlloc
 
     override proc copy()
     {
-      /* return new Problem_QubitAlloc(this.filename, this.benchmark,
+      /* return new Problem_QAP(this.filename, this.benchmark,
         this.N, this.D, this.n, this.F, this.priority,
         this.it_max, this.ub_init, this.initUB); */
-      return new Problem_QubitAlloc(this.filename, this.it_max, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.ub_init);
     }
 
     proc Prioritization(const ref F, n: int(32), N: int(32))
@@ -191,12 +191,12 @@ module Problem_QubitAlloc
         if (mapping[i] == -1) then
           continue;
 
-         for j in i..<n {
-           if (mapping[j] == -1) then
-             continue;
+        for j in i..<n {
+          if (mapping[j] == -1) then
+            continue;
 
-            route_cost += F[i, j] * D[mapping[i], mapping[j]];
-         }
+          route_cost += F[i, j] * D[mapping[i], mapping[j]];
+        }
       }
 
       return 2*route_cost;
@@ -828,7 +828,7 @@ module Problem_QubitAlloc
       writeln("\n=================================================");
       if (this.benchmark == "qap") {
         writeln("QAP instance: ", this.filename);
-        writeln("Number of localities: ", this.N);
+        writeln("Number of locations: ", this.N);
       }
       else if (this.benchmark == "qubitAlloc") {
         var getFilenames = this.filename.split(",");
@@ -882,13 +882,13 @@ module Problem_QubitAlloc
 
     override proc output_filepath(): string
     {
-      return "./chpl_qubitAlloc.txt";
+      return "./chpl_qap.txt";
     }
 
     override proc help_message(): void
     {
-      writeln("\n  Qubit Allocation Problem Parameters:\n");
-      writeln("   --inst    str       file containing the instance data");
+      writeln("\n  Quadratic Assignment Problem Parameters:\n");
+      writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
