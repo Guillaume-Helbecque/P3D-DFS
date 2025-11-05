@@ -504,38 +504,40 @@ module Problem_QAP
         num_sol += 1;
       }
       else {
-        var i = this.priority[depth];
+        local {
+          var i = this.priority[depth];
 
-        // local index of q_i in the cost matrix
-        var k = localLogicalQubitIndex(parent.mapping, i);
+          // local index of q_i in the cost matrix
+          var k = localLogicalQubitIndex(parent.mapping, i);
 
-        for j in 0..<this.N by -1 {
-          if !parent.available[j] then continue; // skip if not available
+          for j in 0..<this.N by -1 {
+            if !parent.available[j] then continue; // skip if not available
 
-          // next available physical qubit
-          var l = localPhysicalQubitIndex(parent.available, j);
+            // next available physical qubit
+            var l = localPhysicalQubitIndex(parent.available, j);
 
-          // increment lower bound
-          var incre = parent.leader[k*(this.N - depth) + l];
-          var lb_new = parent.lower_bound + incre;
+            // increment lower bound
+            var incre = parent.leader[k*(this.N - depth) + l];
+            var lb_new = parent.lower_bound + incre;
 
-          // prune
-          if (lb_new > best) {
-            continue;
-          }
+            // prune
+            if (lb_new > best_task) {
+              continue;
+            }
 
-          var child = reduceNode(Node, parent, i, j, k, l, lb_new);
+            var child = reduceNode(Node, parent, i, j, k, l, lb_new);
 
-          if (child.depth < this.n) {
-            var lb = bound_HHB(child, best_task);
-            if (lb <= best_task) {
+            if (child.depth < this.n) {
+              var lb = bound_HHB(child, best_task);
+              if (lb <= best_task) {
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
               children.pushBack(child);
               tree_loc += 1;
             }
-          }
-          else {
-            children.pushBack(child);
-            tree_loc += 1;
           }
         }
       }
