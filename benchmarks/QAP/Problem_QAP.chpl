@@ -636,7 +636,7 @@ module Problem_QAP
       return total_cost;
     }
 
-    proc Assemble_LAP(const dp, const partial_mapping, const ref av)
+    proc Assemble_LAP(ref L, const dp, const partial_mapping, const ref av)
     {
       var assigned_fac = allocate(int(32), dp);
       var unassigned_fac = allocate(int(32), this.n-dp);
@@ -666,8 +666,6 @@ module Problem_QAP
 
       var u = this.n - dp;
       var r = this.N - dp;
-
-      var L: [0..<(u*r)] int(32) = 0;
 
       record MinPair {
         var min1, min2, idx1: int(32);
@@ -738,8 +736,6 @@ module Problem_QAP
       deallocate(unassigned_fac);
       deallocate(assigned_loc);
       deallocate(unassigned_loc);
-
-      return L;
     }
 
     proc bound_GLB(const ref node)
@@ -751,11 +747,15 @@ module Problem_QAP
       var fixed_cost, remaining_lb: int;
 
       local {
-        ref L = Assemble_LAP(dp, partial_mapping, av);
+        var L = allocate(int(32), (this.n - dp)*(this.N - dp), clear=true);
+
+        Assemble_LAP(L, dp, partial_mapping, av);
 
         fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
 
         remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
+
+        deallocate(L);
       }
 
       return fixed_cost + remaining_lb;
