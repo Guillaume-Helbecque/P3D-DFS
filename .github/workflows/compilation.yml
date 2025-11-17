@@ -35,3 +35,5 @@ jobs:
         make all
         make clean
         make main_qap.out QAP_BOUND=hhb # glb by default
+        make clean
+        make main_qap.out QAP_BOUND=iglb # glb by default
