@@ -21,6 +21,7 @@ make main_qap.out QAP_BOUND={...}
 
 where the available options are:
   - `glb`: Gilmore-Lawler bound [1] (default)
+  - `iglb`: improved version of `glb`
   - `hhb`: Hightower-Hahn bound [2]
 
 Then, the executable supports other options, as detailed below.
@@ -55,6 +56,9 @@ where the available options are:
 
 - **`--itmax`**: maximum number of bounding iterations (only for `hhb` bound)
   - any positive integer (`10` by default)
+
+- **`--alpha`**: bounding shift weight (only for `iglb` bound)
+  - any real between `0.0` and `1.0` (`1.0` by default)
 
 - **`--ub`**: initial upper bound (UB)
   - `heuristic`: initialize the UB using a greedy heuristic (default)

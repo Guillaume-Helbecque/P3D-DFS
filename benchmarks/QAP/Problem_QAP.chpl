@@ -13,7 +13,8 @@ module Problem_QAP
 
   // NOTE: param array or tuple is currently not supported. Related to #23431.
   param allowedLowerBound1 = "hhb",
-        allowedLowerBound2 = "glb";
+        allowedLowerBound2 = "glb",
+        allowedLowerBound3 = "iglb";
 
   class Problem_QAP : Problem
   {
@@ -27,11 +28,12 @@ module Problem_QAP
     var priority: [0..<sizeMax] int(32);
 
     var it_max: int(32);
+    var alpha: real(32);
 
     var ub_init: string;
     var initUB: int(32);
 
-    proc init(filename, itmax, ub): void
+    proc init(filename, itmax, alpha, ub): void
     {
       this.filename = filename;
       var getFilenames = filename.split(",");
@@ -57,9 +59,14 @@ module Problem_QAP
 
       Prioritization(this.F, this.n, this.N);
       this.it_max = itmax;
+      assert(
+        0.0 <= alpha && alpha <= 1.0,
+        "alpha must be between 0.0 and 1.0"
+      );
+      this.alpha = alpha;
 
       compilerAssert(
-        paramLB == allowedLowerBound1 || paramLB == allowedLowerBound2,
+        paramLB == allowedLowerBound1 || paramLB == allowedLowerBound2 || paramLB == allowedLowerBound3,
         "unsupported lower bound"
       );
 
@@ -81,7 +88,7 @@ module Problem_QAP
     }
 
     proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority, const it_max, const ub_init, const initUB): void
+      const F, const priority, const it_max, const alpha, const ub_init, const initUB): void
     {
       this.filename = filename;
       this.benchmark = benchmark;
@@ -91,6 +98,7 @@ module Problem_QAP
       this.D = D;
       this.priority = priority;
       this.it_max = it_max;
+      this.alpha = alpha;
       this.ub_init = ub_init;
       this.initUB = initUB;
     }
@@ -99,8 +107,8 @@ module Problem_QAP
     {
       /* return new Problem_QAP(this.filename, this.benchmark,
         this.N, this.D, this.n, this.F, this.priority,
-        this.it_max, this.ub_init, this.initUB); */
-      return new Problem_QAP(this.filename, this.it_max, this.ub_init);
+        this.it_max, this.alpha, this.ub_init, this.initUB); */
+      return new Problem_QAP(this.filename, this.it_max, this.alpha, this.ub_init);
     }
 
     proc Prioritization(const ref F, n: int(32), N: int(32))
@@ -802,6 +810,180 @@ module Problem_QAP
           else {
             children.pushBack(child);
             tree_loc += 1;
+    /*******************************************************
+                     IMPROVED GILMORE-LAWLER
+    *******************************************************/
+
+    proc Hungarian_IGLB(const ref C, n, m, ref rowDual, ref colDual)
+    {
+      var w, j_cur, j_next: int(32);
+
+      // job[j] = worker assigned to job j, or -1 if unassigned
+      var job = allocate(int(32), m+1);
+      for i in 0..m do job[i] = -1;
+
+      // yw[w] is the potential for worker w
+      // yj[j] is the potential for job j
+      var yw = allocate(int(32), n);
+      for i in 0..<n do yw[i] = 0;
+      var yj = allocate(int(32), m+1);
+      for i in 0..m do yj[i] = 0;
+
+      // main Hungarian algorithm
+      for w_cur in 0..<n {
+        j_cur = m;                       // dummy job index
+        job[j_cur] = w_cur;
+
+        var min_to = allocate(int(32), m+1);
+        for i in 0..m do min_to[i] = INFD2;
+        var prv = allocate(int(32), m+1);
+        for i in 0..m do prv[i] = -1;
+        var in_Z = allocate(bool, m+1);
+        for i in 0..m do in_Z[i] = false;
+
+        while (job[j_cur] != -1) {
+          in_Z[j_cur] = true;
+          w = job[j_cur];
+          var delta = INFD2;
+          j_next = 0;
+
+          for j in 0..<m {
+            if !in_Z[j] {
+              // reduced cost = C[w][j] - yw[w] - yj[j]
+              var cur_cost = C[w*m + j] - yw[w] - yj[j];
+
+              if ckmin(min_to[j], cur_cost) then
+                prv[j] = j_cur;
+              if ckmin(delta, min_to[j]) then
+                j_next = j;
+            }
+          }
+
+          // update potentials
+          for j in 0..m {
+            if in_Z[j] {
+              yw[job[j]] += delta;
+              yj[j] -= delta;
+            }
+            else {
+              min_to[j] -= delta;
+            }
+          }
+
+          j_cur = j_next;
+        }
+
+        // update worker assignment along the found augmenting path
+        while (j_cur != m) {
+          var j = prv[j_cur];
+          job[j_cur] = job[j];
+          j_cur = j;
+        }
+
+        deallocate(min_to);
+        deallocate(prv);
+        deallocate(in_Z);
+      }
+
+      // compute total cost
+      var total_cost: int(32) = 0;
+
+      // for j in [0..m-1], job[j] is the worker assigned to job j
+      for j in 0..<m {
+        if (job[j] != -1) then
+          total_cost += C[job[j]*m + j];
+      }
+
+      for i in 0..<n do
+        rowDual[i] = yw[i];
+
+      for i in 0..<m do
+        colDual[i] = yj[i];
+
+      deallocate(job);
+      deallocate(yw);
+      deallocate(yj);
+
+      return total_cost;
+    }
+
+    proc bound_IGLB(const ref node)
+    {
+      const partial_mapping = node.mapping;
+      const ref av = node.available;
+      const dp = node.depth;
+
+      const u = this.n - dp;
+      const r = this.N - dp;
+
+      var L = allocate(int(32), u*r, clear=true);
+      var rowDual = allocate(int(32), u);
+      var colDual = allocate(int(32), r);
+
+      Assemble_LAP(L, dp, partial_mapping, av);
+
+      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
+
+      var remaining_lb = Hungarian_IGLB(L, u, r, rowDual, colDual);
+
+      for i in 0..<u {
+        for k in 0..<r {
+          var idx = i * r + k;
+          var shift = - alpha * (rowDual[i]:real(32) + colDual[k]:real(32));
+          L[idx] = round(L[idx] - shift):int(32);
+        }
+      }
+
+      var remaining_lb_shifted = Hungarian_GLB(L, u, r);
+
+      deallocate(L);
+
+      return fixed_cost + max(remaining_lb, remaining_lb_shifted);
+    }
+
+    proc decompose_IGLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var depth = parent.depth;
+
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if eval < best then best = eval;
+          else best_task = best;
+          lock.writeEF(true);
+        }
+
+        num_sol += 1;
+      }
+      else {
+        local {
+          var i = this.priority[depth];
+
+          for j in 0..<this.N by -1 {
+            if !parent.available[j] then continue; // skip if not available
+
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = false;
+
+            if (child.depth < this.n) {
+              var lb = bound_IGLB(child);
+              if (lb <= best_task) {
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
+              children.pushBack(child);
+              tree_loc += 1;
+            }
           }
         }
       }
@@ -818,6 +1000,9 @@ module Problem_QAP
         }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "iglb" {
+          return decompose_IGLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -841,6 +1026,8 @@ module Problem_QAP
       }
       if (paramLB == allowedLowerBound1) then
         writeln("Max bounding iterations: ", this.it_max);
+      if (paramLB == allowedLowerBound3) then
+        writeln("Bounding shift weight: ", this.alpha);
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
       writeln("Lower bound function: ", paramLB);
@@ -892,6 +1079,7 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
+      writeln("   --alpha   real      bounding shift weight (between 0 and 1)");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 
