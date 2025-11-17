@@ -507,9 +507,11 @@ module Problem_QAP
           if eval < best then best = eval;
           else best_task = best;
           lock.writeEF(true);
+          num_sol = 1;
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         local {
@@ -785,9 +787,11 @@ module Problem_QAP
           if eval < best then best = eval;
           else best_task = best;
           lock.writeEF(true);
+          num_sol = 1;
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         var i = this.priority[depth];
@@ -957,9 +961,11 @@ module Problem_QAP
           if eval < best then best = eval;
           else best_task = best;
           lock.writeEF(true);
+          num_sol = 1;
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         local {
@@ -1055,7 +1061,7 @@ module Problem_QAP
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
-      writeln("Number of explored solutions: ", nbSol);
+      writeln("Number of optimal solutions: ", nbSol);
       /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
