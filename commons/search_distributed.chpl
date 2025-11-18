@@ -190,6 +190,8 @@ module search_distributed
 
           best_task = best_locale; */
         }
+
+        if best_task > best then num_sol = 0;
       } // end coforall tasks
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);

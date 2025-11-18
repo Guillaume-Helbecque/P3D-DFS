@@ -504,10 +504,15 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
-          num_sol = 1;
         }
         else if (eval == best_task) {
           num_sol += 1;
@@ -784,10 +789,15 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
-          num_sol = 1;
         }
         else if (eval == best_task) {
           num_sol += 1;
@@ -965,10 +975,15 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
-          num_sol = 1;
         }
         else if (eval == best_task) {
           num_sol += 1;
