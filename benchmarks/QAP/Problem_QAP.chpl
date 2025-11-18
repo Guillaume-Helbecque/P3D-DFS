@@ -1079,12 +1079,10 @@ module Problem_QAP
 
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
       writeln("Number of optimal solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimal allocation: ", best, is_better);

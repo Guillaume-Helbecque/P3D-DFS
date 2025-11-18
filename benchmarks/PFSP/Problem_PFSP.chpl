@@ -170,12 +170,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         for i in parent.limit1+1..parent.limit2-1 {
@@ -210,12 +217,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         var lb_begin = allocate(c_int, this.jobs);
@@ -273,12 +287,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         for i in parent.limit1+1..parent.limit2-1 {
@@ -354,12 +375,10 @@ module Problem_PFSP
 
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
-      writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      writeln("Number of optimal solutions: ", nbSol);
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimal makespan: ", best, is_better);
