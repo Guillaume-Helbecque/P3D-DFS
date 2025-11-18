@@ -57,7 +57,7 @@ module Problem_QAP
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
-      Prioritization(this.F, this.n, this.N);
+      Prioritization(this.F, this.n);
       this.it_max = itmax;
       assert(
         0.0 <= alpha && alpha <= 1.0,
@@ -111,31 +111,31 @@ module Problem_QAP
       return new Problem_QAP(this.filename, this.it_max, this.alpha, this.ub_init);
     }
 
-    proc Prioritization(const ref F, n: int(32), N: int(32))
+    proc Prioritization(const ref F, n: int(32))
     {
-      var sF: [0..<N] int(32);
+      var sF: [0..<n] int(32);
 
-      for i in 0..<N do
+      for i in 0..<n do
         sF[i] = (+ reduce F[i, 0..<n]);
 
       var min_inter, min_inter_index: int(32);
 
-      for i in 0..<N {
+      for i in 0..<n {
         min_inter = sF[0];
         min_inter_index = 0;
 
-        for j in 1..<N {
+        for j in 1..<n {
           if (sF[j] < min_inter) {
             min_inter = sF[j];
             min_inter_index = j;
           }
         }
 
-        this.priority[N-1-i] = min_inter_index;
+        this.priority[n-1-i] = min_inter_index;
 
         sF[min_inter_index] = INF;
 
-        for j in 0..<N {
+        for j in 0..<n {
           if (sF[j] != INF) then
             sF[j] -= F[j, min_inter_index];
         }
