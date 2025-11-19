@@ -142,7 +142,7 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+            if (best_task <= bound_dantzig(Node, child)) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -216,7 +216,7 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_martello(Node, child)) { // bounding and pruning
+            if (best_task <= bound_martello(Node, child)) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }

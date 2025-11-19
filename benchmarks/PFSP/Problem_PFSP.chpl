@@ -191,9 +191,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          const lb = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
-          if (lowerbound < best_task) {
+          if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -249,7 +249,7 @@ module Problem_PFSP
           const job = parent.prmu[i];
           const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
 
-          if (lb < best_task) {
+          if (lb <= best_task) {
             var child = new Node(parent);
             child.depth += 1;
 
@@ -308,9 +308,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          const lb = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
-          if (lowerbound < best_task) {
+          if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
