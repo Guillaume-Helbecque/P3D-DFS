@@ -504,12 +504,19 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         local {
@@ -782,12 +789,19 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         var i = this.priority[depth];
@@ -810,6 +824,13 @@ module Problem_QAP
           else {
             children.pushBack(child);
             tree_loc += 1;
+          }
+        }
+      }
+
+      return children;
+    }
+
     /*******************************************************
                      IMPROVED GILMORE-LAWLER
     *******************************************************/
@@ -954,12 +975,19 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         local {
@@ -1051,12 +1079,10 @@ module Problem_QAP
 
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
-      writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      writeln("Number of optimal solutions: ", nbSol);
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimal allocation: ", best, is_better);

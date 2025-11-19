@@ -158,8 +158,9 @@ module search_multicore
           counter += 1;
           if (counter % 10000 == 0) then best_task = best.read();
         } */
-
       }
+
+      if best_task != best then num_sol = 0;
     }
 
     globalTimer.stop();

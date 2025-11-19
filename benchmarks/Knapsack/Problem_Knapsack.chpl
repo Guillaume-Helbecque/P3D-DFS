@@ -124,14 +124,21 @@ module Problem_Knapsack
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
-            num_sol += 1;
-
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if (best < child.profit) then best = child.profit;
-              else best_task = best;
+              if best <= child.profit {
+                best = child.profit;
+                num_sol = 1;
+              }
+              else {
+                best_task = best;
+                num_sol = 0;
+              }
               lock.writeEF(true);
+            }
+            else if (best_task == child.profit) {
+              num_sol += 1;
             }
           }
           else {
@@ -191,14 +198,21 @@ module Problem_Knapsack
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
-            num_sol += 1;
-
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if (best < child.profit) then best = child.profit;
-              else best_task = best;
+              if best <= child.profit {
+                best = child.profit;
+                num_sol = 1;
+              }
+              else {
+                best_task = best;
+                num_sol = 0;
+              }
               lock.writeEF(true);
+            }
+            else if (best_task == child.profit) {
+              num_sol += 1;
             }
           }
           else {
@@ -271,12 +285,10 @@ module Problem_Knapsack
                                                 else " (not improved)";
       writeln("Optimum found: ", best, is_better);
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
-      writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      writeln("Number of optimal solutions: ", nbSol);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }
