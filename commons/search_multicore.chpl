@@ -160,7 +160,7 @@ module search_multicore
         } */
       }
 
-      if best_task > best then num_sol = 0;
+      if best_task != best then num_sol = 0;
     }
 
     globalTimer.stop();
