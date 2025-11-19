@@ -199,7 +199,7 @@ module Problem_QAP
         if (mapping[i] == -1) then
           continue;
 
-        for j in i..<n {
+        for j in 0..<n {
           if (mapping[j] == -1) then
             continue;
 
@@ -207,7 +207,7 @@ module Problem_QAP
         }
       }
 
-      return 2*route_cost;
+      return route_cost;
     }
 
     /*******************************************************
