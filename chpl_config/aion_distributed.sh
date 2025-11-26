@@ -1,10 +1,10 @@
 #!/bin/bash -l
 
 # Configuration of Chapel for distributed experiments on the Aion cluster of the
-# Université du Luxembourg (https://hpc-docs.uni.lu/systems/aion/). Computer nodes
+# Université du Luxembourg (https://hpc-docs.uni.lu/systems/aion/). Compute nodes
 # are interconnected through a Fast InfiniBand (IB) HDR100 network.
 
-# Load the foss toolchain to get access to gcc, mpi, etc...
+# Load modules
 module load toolchain/foss/2023b
 module load devel/CMake
 

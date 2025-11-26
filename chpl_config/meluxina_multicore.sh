@@ -3,6 +3,7 @@
 # Configuration of Chapel for multicore experiments on the Luxembourg national
 # MeluXina cluster (https://docs.lxp.lu/).
 
+# Load modules
 module load GCC/11.3.0
 module load CMake/3.23.1-GCCcore-11.3.0
 

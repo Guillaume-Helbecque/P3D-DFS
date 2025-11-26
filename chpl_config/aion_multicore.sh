@@ -3,7 +3,7 @@
 # Configuration of Chapel for multi-core experiments on the Aion cluster of the
 # Université du Luxembourg (https://hpc-docs.uni.lu/systems/aion/).
 
-# Load the foss toolchain to get access to gcc, mpi, etc...
+# Load modules
 module load toolchain/foss/2023b
 module load devel/CMake
 
