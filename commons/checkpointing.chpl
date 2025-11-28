@@ -1,3 +1,49 @@
+use Math;
+
+/*
+  Computes the exact number of bits required to represent n! in base 2.
+*/
+proc log2FactorialSum(n: int): int {
+  var s: real;
+  for i in 1..n do
+    s += log2(i: real);
+
+  return (floor(s)+1):int;
+}
+
+/*
+  Computes the minimal number of 64-bit integer slots required to store an n-bit
+  unsigned integer.
+*/
+proc num64(n: int): int {
+  return (n + 63) / 64;
+}
+
+/*
+  A fixed-size container describing the 64-bit storage required to hold a
+  unsigned integer whose bit-width is derived from a factorial.
+*/
+record bigInt: serializable {
+  var n: int;
+  var bits: [0..#n] uint;
+
+  /* Default initializer */
+  proc init(perm_size) {
+    this.n = num64(log2FactorialSum(perm_size));
+  }
+
+  /* Copy initializer */
+  proc init=(other: bigInt) {
+    this.n = other.n;
+    this.bits = other.bits;
+  }
+
+  /* Writes a bigInt to a file writer */
+  proc serialize(writer, ref serializer) throws {
+    writer.write(this.bits);
+  }
+}
+
 /*
   Encodes a permutation of n elements into a Lehmer code represented as a 64-bit
   unsigned integer. The Lehmer code uniquely identifies the permutation in a
