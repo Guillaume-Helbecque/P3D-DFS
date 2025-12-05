@@ -7,6 +7,8 @@ module search_multicore
   use util;
   use Problem;
 
+  config param activeSetSize: int = 1;
+
   proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
   {
     const numTasks = here.maxTaskPar;
@@ -23,7 +25,10 @@ module search_multicore
     var eachMaxDepth: [0..#numTasks] int;
     var globalTimer: stopwatch;
 
+    writeln("Multi-core execution mode with ", numTasks, " tasks");
     problem.print_settings();
+
+    globalTimer.start();
 
     // ===============
     // INITIALIZATION
@@ -35,35 +40,53 @@ module search_multicore
     if activeSet {
       /*
         An initial set is sequentially computed and distributed across tasks.
-        We require at least 2 elements per task.
+        We require at least `activeSetSize` elements per task.
       */
-      var initSize: int = 2 * numTasks;
+      var initSize: int = activeSetSize * numTasks;
       var initList: list(Node);
       initList.pushBack(root);
+      var lockList: sync bool = false;
 
-      var best_task: int = best;
       ref tree_loc = eachExploredTree[0];
       ref num_sol = eachExploredSol[0];
       ref max_depth = eachMaxDepth[0];
 
-      // Computation of the initial set
-      while (initList.size < initSize) {
-        var parent = initList.popBack();
+      coforall taskId in 0..<numTasks with (ref tree_loc,
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
-        {
-          var children = problem.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+        var best_task: int = best;
+        var tree = tree_loc;
+        var num = num_sol;
+        var max = max_depth;
 
-          for elt in children do initList.insert(0, elt);
+        var parent: Node;
+        while (initList.size < initSize) {
+          if !popBackSafe(initList, lockList, parent) then continue;
+
+          var children = problem.decompose(Node, parent, tree, num,
+            max, best, lockBest, best_task);
+
+          for elt in children do pushFrontSafe(initList, lockList, elt);
         }
+
+        tree_loc += tree;
+        num_sol += num;
+        max_depth += max;
       }
 
       // Static distribution of the set
-      var seg: int;
-      for elt in initList {
-        bag.add(elt, seg);
-        seg += 1;
-        if (seg == numTasks) then seg = 0;
+      var a = initList.toArray();
+      const size = a.size;
+      const r_size = size - (size % numTasks);
+
+      coforall taskId in 0..<numTasks {
+        for i in taskId..<r_size by numTasks do
+          bag.add(a[i], taskId);
+
+        if (taskId == 0) {
+          for i in r_size..<size do
+            bag.add(a[i], taskId);
+        }
       }
     }
     else {
@@ -72,8 +95,6 @@ module search_multicore
       */
       bag.add(root, 0);
     }
-
-    globalTimer.start();
 
     // =====================
     // PARALLEL EXPLORATION
@@ -137,8 +158,9 @@ module search_multicore
           counter += 1;
           if (counter % 10000 == 0) then best_task = best.read();
         } */
-
       }
+
+      if best_task != best then num_sol = 0;
     }
 
     globalTimer.stop();

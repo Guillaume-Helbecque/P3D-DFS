@@ -27,7 +27,7 @@ export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 export CHPL_LLVM=none
 
 NUM_T_LOCALE=$(cat /proc/cpuinfo | grep processor | wc -l)
-export CHPL_RT_NUM_THREADS_PER_LOCALE=16
+export CHPL_RT_NUM_THREADS_PER_LOCALE=$NUM_T_LOCALE
 
 export GASNET_PHYSMEM_MAX='64 GB'
 

@@ -170,12 +170,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         for i in parent.limit1+1..parent.limit2-1 {
@@ -184,9 +191,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lowerbound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          const lb = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
-          if (lowerbound < best_task) {
+          if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -210,12 +217,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         var lb_begin = allocate(c_int, this.jobs);
@@ -235,7 +249,7 @@ module Problem_PFSP
           const job = parent.prmu[i];
           const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
 
-          if (lb < best_task) {
+          if (lb <= best_task) {
             var child = new Node(parent);
             child.depth += 1;
 
@@ -273,12 +287,19 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval < best then best = eval;
-          else best_task = best;
+          if eval <= best {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
           lock.writeEF(true);
         }
-
-        num_sol += 1;
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
       }
       else {
         for i in parent.limit1+1..parent.limit2-1 {
@@ -287,9 +308,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lowerbound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          const lb = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
-          if (lowerbound < best_task) {
+          if (lb <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -354,12 +375,10 @@ module Problem_PFSP
 
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
-      writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      writeln("Number of optimal solutions: ", nbSol);
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimal makespan: ", best, is_better);
@@ -376,10 +395,10 @@ module Problem_PFSP
     override proc help_message(): void
     {
       writeln("\n  PFSP Benchmark Parameters:\n");
-      writeln("   --inst  str   instance's name");
-      writeln("   --lb    str   lower bound function (lb1, lb1_d, lb2)");
-      writeln("   --br    str   branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
-      writeln("   --ub    str   upper bound initialization (opt, inf)\n");
+      writeln("   --inst   str       instance's name");
+      writeln("   --lb     str       lower bound function (lb1, lb1_d, lb2)");
+      writeln("   --br     str       branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
+      writeln("   --ub     str/int   upper bound initialization ('opt', 'inf', or any integer)\n");
     }
 
   } // end class

@@ -195,15 +195,15 @@ module Problem_UTS
     override proc help_message(): void
     {
       writeln("\n  UTS Benchmark Parameters:\n");
-      writeln("   --t   int       tree type (0: BIN, 1: GEO, 2: HYBRID, 3: BALANCED)");
-      writeln("   --b   int       root branching factor");
-      writeln("   --r   int       root seed 0 <= r < 2^31");
-      writeln("   --a   int       GEO: tree shape function");
-      writeln("   --d   int       GEO, BALANCED: tree depth");
-      writeln("   --q   double    BIN: probability of non-leaf node");
-      writeln("   --m   int       BIN: number of children for non-leaf node");
-      writeln("   --f   double    HYBRID: fraction of depth for GEO -> BIN transition");
-      writeln("   --g   int       granularity: number of rng_spawns per node");
+      writeln("   --t   int      tree type (0: BIN, 1: GEO, 2: HYBRID, 3: BALANCED)");
+      writeln("   --b   int      root branching factor");
+      writeln("   --r   int      root seed 0 <= r < 2^31");
+      writeln("   --a   int      GEO: tree shape function");
+      writeln("   --d   int      GEO, BALANCED: tree depth");
+      writeln("   --q   double   BIN: probability of non-leaf node");
+      writeln("   --m   int      BIN: number of children for non-leaf node");
+      writeln("   --f   double   HYBRID: fraction of depth for GEO -> BIN transition");
+      writeln("   --g   int      granularity: number of rng_spawns per node");
     }
 
   } // end class

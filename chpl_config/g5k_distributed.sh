@@ -33,8 +33,8 @@ export CHPL_COMM_SUBSTRATE='udp' # for Ethernet network
 # export CHPL_COMM_SUBSTRATE='ibv' # for InfiniBand network
 # export CHPL_COMM_SUBSTRATE='ofi' # for Omni-Path network
 export CHPL_TARGET_CPU='native'
-# NUM_T_LOCALE=$(cat /proc/cpuinfo | grep processor | wc -l)
-export CHPL_RT_NUM_THREADS_PER_LOCALE=16
+NUM_T_LOCALE=$(cat /proc/cpuinfo | grep processor | wc -l)
+export CHPL_RT_NUM_THREADS_PER_LOCALE=$NUM_T_LOCALE
 
 export GASNET_QUIET=1
 export GASNET_IBV_SPAWNER='ssh'

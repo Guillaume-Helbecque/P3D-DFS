@@ -1,9 +1,10 @@
 #!/bin/bash -l
 
 # Configuration of Chapel for distributed experiments on the Luxembourg national
-# MeluXina cluster (https://docs.lxp.lu/). Computer nodes are interconnected
+# MeluXina cluster (https://docs.lxp.lu/). Compute nodes are interconnected
 # through an InfiniBand (IB) HDR high-speed fabric.
 
+# Load modules
 module load GCC/11.3.0
 module load CMake/3.23.1-GCCcore-11.3.0
 module load OpenMPI/4.1.4-GCC-11.3.0

@@ -8,13 +8,13 @@ The parallelization relies on the parallel tree exploration model, in which seve
 
 ### Prerequisites
 
-[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.4.0)
+[Chapel](https://chapel-lang.org/) >= 2.0 (tested with 2.6.0)
 
 The [chpl_config](./chpl_config) directory contains predefined shell scripts for downloading, configuring, and building the Chapel compiler from source.
 
 ### Compilation and configuration options
 
-- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the machine on which your code is expected to run, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the target system, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 
 - **Step 2:** Compile with `make` and execute with:
 
@@ -28,18 +28,23 @@ where the available options are:
   - `multicore`: single-node multi-core execution
   - `distributed`: multi-node multi-core execution
 
+- **`--activeSet`**: compute and distribute an initial set of elements
+
+- **`--saveTime`**: save execution time in a file
+
 - **`-nl`**: number of Chapel's locales
   - any positive integer, typically the number of compute nodes
 
 - **`--help`** or **`-h`**: help message
 
-Other problem-specific options are supported; see below.
+Other problem-specific options are supported; see next section.
 
 ### Supported problems
 
 The B&B skeletons have already been tested on the following benchmark problems:
 - [The Permutation Flowshop Scheduling problem](./benchmarks/PFSP) (PFSP)
 - [The 0/1-Knapsack problem](./benchmarks/Knapsack)
+- [The Quadratic Assignment problem](./benchmarks/QAP) (QAP)
 - [The Unbalanced Tree Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
 
@@ -49,7 +54,6 @@ To come...
 
 ### Related publications
 
-1. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024 (ICCS)*. vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
-2. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree-search using Chapel. *Concurrency Computation Practice Experience*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
-3. G. Helbecque, J. Gmys, T. Carneiro, N. Melab, P. Bouvry. Towards a scalable load balancing for productivity-aware tree-search. *The 10th Annual Chapel Implementers and Users Workshop (CHIUW)*, June 2023, online.
-4. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Productivity-aware Parallel Distributed Tree-Search for Exact Optimization. *International Conference on Optimization and Learning (OLA)*, May 2023, Malaga, Spain.
+1. G. Helbecque. *PGAS-based Parallel Branch-and-Bound for Ultra-Scale GPU-powered Supercomputers*. Ph.D. thesis. Université de Lille, Université du Luxembourg. 2025. URL: https://theses.fr/2025ULILB003.
+2. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024 (ICCS)*. vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
+3. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree search using Chapel. *Concurrency Computation Practice Experience*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).

@@ -6,7 +6,7 @@ module main_pfsp
   use search_multicore;
   use search_distributed;
 
-  // PFSP-specific modules
+  // Problem-specific modules
   use Node_PFSP;
   use Problem_PFSP;
 
@@ -15,7 +15,7 @@ module main_pfsp
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
-  // PFSP-specific options
+  // Problem-specific options
   config const inst: string = "ta14"; // instance's name
   config const lb: string   = "lb1";  // lb1, lb1_d, lb2
   config const br: string   = "fwd";  // fwd, bwd, alt, maxSum, minMin, minBranch
@@ -29,7 +29,7 @@ module main_pfsp
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         pfsp.help_message();
 
         return 1;
@@ -39,7 +39,7 @@ module main_pfsp
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        if activeSet then warning("`activeSet` is ignored in sequential mode");
         search_sequential(Node_PFSP, pfsp, saveTime);
       }
       when "multicore" {
@@ -49,7 +49,7 @@ module main_pfsp
         search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown execution mode");
+        halt("unknown execution mode");
       }
     }
 

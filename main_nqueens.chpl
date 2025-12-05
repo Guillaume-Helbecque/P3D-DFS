@@ -6,7 +6,7 @@ module main_queens
   use search_multicore;
   use search_distributed;
 
-  // NQueens-specific modules
+  // Problem-specific modules
   use Node_NQueens;
   use Problem_NQueens;
 
@@ -15,7 +15,7 @@ module main_queens
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 
-  // NQueens-specific option
+  // Problem-specific option
   config const N: int = 13;
 
   proc main(args: [] string): int
@@ -26,7 +26,7 @@ module main_queens
     // Helper
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
-        common_help_message();
+        common_help_message(args[0]);
         nqueens.help_message();
 
         return 1;
@@ -36,7 +36,7 @@ module main_queens
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("Cannot use `activeSet` in sequential mode.");
+        if activeSet then warning("`activeSet` is ignored in sequential mode");
         search_sequential(Node_NQueens, nqueens, saveTime);
       }
       when "multicore" {
@@ -46,7 +46,7 @@ module main_queens
         search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
       }
       otherwise {
-        halt("ERROR - Unknown execution mode");
+        halt("unknown execution mode");
       }
     }
 

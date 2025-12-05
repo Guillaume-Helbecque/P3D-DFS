@@ -4,7 +4,7 @@ SHELL := /bin/bash
 # Compiler & common options
 # ==========================
 
-COMPILER = chpl
+CHPL_COMPILER = chpl
 CHPL_COMMONS_DIR = ./commons
 CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
 
@@ -14,21 +14,43 @@ CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
 # Build Chapel codes
 # ==========================
 
-all: main_pfsp.out main_uts.out main_nqueens.out main_knapsack.out
+MAIN_FILES = $(wildcard main_*.chpl)
+EXECUTABLES = $(MAIN_FILES:.chpl=.out)
 
-# ==========
+all: $(EXECUTABLES)
+
+# ==================
+# Generic
+# ==================
+
+main_%.out: main_%.chpl
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $< -o $@
+
+# ==================
 # PFSP
-# ==========
+# ==================
 
 CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
 CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instances
 
 main_pfsp.out: main_pfsp.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) main_pfsp.chpl -o main_pfsp.out
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) $< -o $@
 
-# ==========
+# ==================
+# QAP
+# ==================
+
+CHPL_QAP_MODULES_DIR = ./benchmarks/QAP
+CHPL_QAP_OPTS = -M $(CHPL_QAP_MODULES_DIR) -M $(CHPL_QAP_MODULES_DIR)/instances
+
+QAP_BOUND ?= glb
+
+main_qap.out: main_qap.chpl
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QAP_OPTS) -s_lb='"$(QAP_BOUND)"' -snewRangeLiteralType $< -o $@
+
+# ==================
 # UTS
-# ==========
+# ==================
 
 CHPL_UTS_MODULES_DIR = ./benchmarks/UTS
 
@@ -57,27 +79,27 @@ C_OPTS = --ccflags $(RNG_DEF)
 CHPL_UTS_OPTS = -M $(CHPL_UTS_MODULES_DIR) $(C_OPTS) $(C_FILES)
 
 main_uts.out: main_uts.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) main_uts.chpl -o main_uts.out
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) $< -o $@
 
-# ==========
+# ==================
 # NQueens
-# ==========
+# ==================
 
 CHPL_NQUEENS_MODULES_DIR = ./benchmarks/NQueens
 CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
 
 main_nqueens.out: main_nqueens.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) main_nqueens.chpl -o main_nqueens.out
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) $< -o $@
 
-# ==========
+# ==================
 # Knapsack
-# ==========
+# ==================
 
 CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
 CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR) -M $(CHPL_KNAPSACK_MODULES_DIR)/instances
 
 main_knapsack.out: main_knapsack.chpl
-	$(COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) main_knapsack.chpl -o main_knapsack.out
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) $< -o $@
 
 # ==========================
 # Utilities
@@ -86,5 +108,5 @@ main_knapsack.out: main_knapsack.chpl
 .PHONY: clean
 
 clean:
-	rm -f main_*.out
-	rm -f main_*.out_real
+	rm -f $(EXECUTABLES)
+	rm -f $(EXECUTABLES:=_real)
