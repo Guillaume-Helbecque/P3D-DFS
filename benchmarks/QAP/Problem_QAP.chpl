@@ -25,7 +25,8 @@ module Problem_QAP
     var F: [0..<N, 0..<N] int(32);
     var D: [0..<N, 0..<N] int(32);
 
-    var priority: [0..<sizeMax] int(32);
+    var priority_fac: [0..<sizeMax] int(32);
+    var priority_loc: [0..<sizeMax] int(32);
 
     var it_max: int(32);
     var alpha: real(32);
@@ -57,7 +58,9 @@ module Problem_QAP
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
-      Prioritization(this.F, this.n, this.N);
+      Prioritization(this.F, this.n);
+      Prioritization_loc_connec(this.D, this.N);
+
       this.it_max = itmax;
       assert(
         0.0 <= alpha && alpha <= 1.0,
@@ -71,7 +74,7 @@ module Problem_QAP
       );
 
       this.ub_init = ub;
-      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
+      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N);
       else {
         try! this.initUB = ub:int(32);
 
@@ -88,7 +91,8 @@ module Problem_QAP
     }
 
     proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority, const it_max, const alpha, const ub_init, const initUB): void
+      const F, const priority_fac, const priority_loc, const it_max, const alpha,
+      const ub_init, const initUB): void
     {
       this.filename = filename;
       this.benchmark = benchmark;
@@ -96,7 +100,8 @@ module Problem_QAP
       this.N = N;
       this.F = F;
       this.D = D;
-      this.priority = priority;
+      this.priority_fac = priority_fac;
+      this.priority_loc = priority_loc;
       this.it_max = it_max;
       this.alpha = alpha;
       this.ub_init = ub_init;
@@ -106,39 +111,77 @@ module Problem_QAP
     override proc copy()
     {
       /* return new Problem_QAP(this.filename, this.benchmark,
-        this.N, this.D, this.n, this.F, this.priority,
+        this.N, this.D, this.n, this.F, this.priority_fac, this.priority_loc,
         this.it_max, this.alpha, this.ub_init, this.initUB); */
       return new Problem_QAP(this.filename, this.it_max, this.alpha, this.ub_init);
     }
 
-    proc Prioritization(const ref F, n: int(32), N: int(32))
+    proc RowwiseNumZeros(const ref D, const N)
     {
-      var sF: [0..<N] int(32);
+      var nzD: [0..#N] int(32);
 
-      for i in 0..<N do
+      for i in 0..<N {
+        for j in 0..<N {
+          if !D[i, j] then
+            nzD[i] += 1;
+        }
+      }
+
+      return nzD;
+    }
+
+    proc Prioritization(const ref F, n: int(32))
+    {
+      var sF: [0..<n] int(32);
+
+      for i in 0..<n do
         sF[i] = (+ reduce F[i, 0..<n]);
 
       var min_inter, min_inter_index: int(32);
 
-      for i in 0..<N {
+      for i in 0..<n {
         min_inter = sF[0];
         min_inter_index = 0;
 
-        for j in 1..<N {
+        for j in 1..<n {
           if (sF[j] < min_inter) {
             min_inter = sF[j];
             min_inter_index = j;
           }
         }
 
-        this.priority[N-1-i] = min_inter_index;
+        this.priority_fac[n-1-i] = min_inter_index;
 
         sF[min_inter_index] = INF;
 
-        for j in 0..<N {
+        for j in 0..<n {
           if (sF[j] != INF) then
             sF[j] -= F[j, min_inter_index];
         }
+      }
+    }
+
+    /* rank physical qubits (locations) based on their connectivity degree */
+    proc Prioritization_loc_connec(const ref D, const N)
+    {
+      var nzD = RowwiseNumZeros(this.D, this.N);
+
+      var min_connec, min_connec_index: int(32);
+
+      for i in 0..<this.N {
+        min_connec = nzD[0];
+        min_connec_index = 0;
+
+        for j in 1..<this.N {
+          if (nzD[j] < min_connec) {
+            min_connec = nzD[j];
+            min_connec_index = j;
+          }
+        }
+
+        this.priority_loc[i] = min_connec_index;
+
+        nzD[min_connec_index] = INF;
       }
     }
 
@@ -520,12 +563,12 @@ module Problem_QAP
       }
       else {
         local {
-          var i = this.priority[depth];
+          var i = this.priority_fac[depth];
 
           // local index of q_i in the cost matrix
           var k = localLogicalQubitIndex(parent.mapping, i);
 
-          for j in 0..<this.N by -1 {
+          for j in this.priority_loc {
             if !parent.available[j] then continue; // skip if not available
 
             // next available physical qubit
@@ -804,9 +847,9 @@ module Problem_QAP
         }
       }
       else {
-        var i = this.priority[depth];
+        var i = this.priority_fac[depth];
 
-        for j in 0..<this.N by -1 {
+        for j in this.priority_loc {
           if !parent.available[j] then continue; // skip if not available
 
           var child = new Node(parent);
@@ -991,9 +1034,9 @@ module Problem_QAP
       }
       else {
         local {
-          var i = this.priority[depth];
+          var i = this.priority_fac[depth];
 
-          for j in 0..<this.N by -1 {
+          for j in this.priority_loc {
             if !parent.available[j] then continue; // skip if not available
 
             var child = new Node(parent);
