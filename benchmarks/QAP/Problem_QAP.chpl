@@ -111,9 +111,6 @@ module Problem_QAP
 
     override proc copy()
     {
-      /* return new Problem_QAP(this.filename, this.benchmark,
-        this.N, this.D, this.n, this.F, this.priority_fac, this.priority_loc,
-        this.it_max, this.alpha, this.ub_init, this.initUB); */
       return new Problem_QAP(this.filename, this.it_max, this.alpha, this.ub_init);
     }
 
@@ -564,6 +561,9 @@ module Problem_QAP
         else if (eval == best_task) {
           num_sol += 1;
         }
+        else {
+          tree_loc -= 1;
+        }
       }
       else {
         local {
@@ -851,6 +851,9 @@ module Problem_QAP
         else if (eval == best_task) {
           num_sol += 1;
         }
+        else {
+          tree_loc -= 1;
+        }
       }
       else {
         var i = this.priority_fac[depth];
@@ -1038,6 +1041,9 @@ module Problem_QAP
         }
         else if (eval == best_task) {
           num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
         }
       }
       else {

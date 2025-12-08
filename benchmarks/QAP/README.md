@@ -21,7 +21,7 @@ make main_qap.out QAP_BOUND={...}
 
 where the available options are:
   - `glb`: Gilmore-Lawler bound [1] (default)
-  - `iglb`: improved version of `glb`
+  - `iglb`: improved version of `glb` (unstable)
   - `hhb`: Hightower-Hahn bound [2]
 
 Then, the executable supports other options, as detailed below.
