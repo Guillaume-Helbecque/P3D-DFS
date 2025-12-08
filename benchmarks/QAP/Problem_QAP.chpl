@@ -9,8 +9,6 @@ module Problem_QAP
 
   import main_qap._lb as paramLB;
 
-  config param sizeMax: int(32) = 27;
-
   // NOTE: param array or tuple is currently not supported. Related to #23431.
   param allowedLowerBound1 = "hhb",
         allowedLowerBound2 = "glb",
@@ -25,8 +23,8 @@ module Problem_QAP
     var F: [0..<N, 0..<N] int(32);
     var D: [0..<N, 0..<N] int(32);
 
-    var priority_fac: [0..<sizeMax] int(32);
-    var priority_loc: [0..<sizeMax] int(32);
+    var priority_fac: [0..<n] int(32);
+    var priority_loc: [0..<N] int(32);
 
     var it_max: int(32);
     var alpha: real(32);
@@ -58,8 +56,11 @@ module Problem_QAP
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
-      Prioritization(this.F, this.n);
-      Prioritization_loc_connec(this.D, this.N);
+      Prioritization(this.priority_fac, this.F, this.n, ascend = false);
+      if this.benchmark == "qubitAlloc" then
+        Prioritization_loc_connec(this.D, this.N);
+      else
+        Prioritization(this.priority_loc, this.D, this.N);
 
       this.it_max = itmax;
       assert(
@@ -130,7 +131,7 @@ module Problem_QAP
       return nzD;
     }
 
-    proc Prioritization(const ref F, n: int(32))
+    proc Prioritization(ref priority, const ref F, n: int(32), ascend = true)
     {
       var sF: [0..<n] int(32);
 
@@ -150,7 +151,10 @@ module Problem_QAP
           }
         }
 
-        this.priority_fac[n-1-i] = min_inter_index;
+        if ascend then
+          priority[i] = min_inter_index;
+        else
+          priority[n-1-i] = min_inter_index;
 
         sF[min_inter_index] = INF;
 
@@ -193,7 +197,7 @@ module Problem_QAP
       var route_cost_temp, cost_incre, min_cost_incre: int(32);
 
       for j in 0..<N {
-        var alloc_temp: [0..<sizeMax] int(32) = -1;
+        var alloc_temp: [0..<n] int(32) = -1;
         var available: [0..<N] bool = true;
 
         alloc_temp[priority[0]] = j;
@@ -568,7 +572,9 @@ module Problem_QAP
           // local index of q_i in the cost matrix
           var k = localLogicalQubitIndex(parent.mapping, i);
 
-          for j in this.priority_loc {
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
             if !parent.available[j] then continue; // skip if not available
 
             // next available physical qubit
@@ -849,7 +855,9 @@ module Problem_QAP
       else {
         var i = this.priority_fac[depth];
 
-        for j in this.priority_loc {
+        for j0 in 0..<this.N by -1 {
+          const j = this.priority_loc[j0];
+
           if !parent.available[j] then continue; // skip if not available
 
           var child = new Node(parent);
@@ -1036,7 +1044,9 @@ module Problem_QAP
         local {
           var i = this.priority_fac[depth];
 
-          for j in this.priority_loc {
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
             if !parent.available[j] then continue; // skip if not available
 
             var child = new Node(parent);
