@@ -18,14 +18,13 @@ module main_qap
   // Problem-specific option
   config const inst            = "10_sqn,16_melbourne";
   config const itmax: int(32)  = 10;
-  config const alpha: real(32) = 1.0;
   config const ub: string      = "heuristic"; // heuristic
   config param _lb: string     = "glb"; // glb, iglb, hhb
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qap = new Problem_QAP(inst, itmax, alpha, ub);
+    var qap = new Problem_QAP(inst, itmax, ub);
 
     // Helper
     for a in args[1..] {
