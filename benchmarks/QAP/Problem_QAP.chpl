@@ -1,6 +1,7 @@
 module Problem_QAP
 {
   use List;
+  use Sort;
   use CTypes;
 
   use Util;
@@ -720,71 +721,80 @@ module Problem_QAP
       var u = this.n - dp;
       var r = this.N - dp;
 
-      record MinPair {
-        var min1, min2, idx1: int(32);
-      }
-
-      var best = allocate(MinPair, r);
+      // Precompute sorted distances from each location k to other free locations
+      var sortedDidx: [0..<r] [0..<(r-1)] int(32);
 
       for k_idx in 0..<r {
         var k = unassigned_loc[k_idx];
-        var min1 = INF;
-        var idx1: int(32) = -1;
-        var min2 = INF;
+
+        // create temporary vector of {dist, l_idx} pairs
+        var tmp: [0..<(r-1)] (int(32), int(32));
+        var c5: int(32) = 0;
 
         for l_idx in 0..<r {
           if (k_idx == l_idx) then
             continue;
 
           var l = unassigned_loc[l_idx];
-          var dist = this.D[k, l];
-
-          if (dist < min1) {
-            min2 = min1;
-            min1 = dist;
-            idx1 = l_idx;
-          }
-          else if (dist < min2) {
-            min2 = dist;
-          }
+          tmp[c5] = (this.D[k, l], l_idx);
+          c5 += 1;
         }
-        best[k_idx] = new MinPair(min1, min2, idx1);
+
+        // sort by distance (ascending)
+        record AscendingComparator : keyComparator { }
+        proc AscendingComparator.key(elt) { return elt(0); }
+        var ascendingComparator: AscendingComparator;
+        sort(tmp, comparator=ascendingComparator);
+
+        for t in 0..<(r-1) do
+          sortedDidx[k_idx][t] = tmp[t](0);
       }
 
-      // Build reduced L-matrix
+      // Loop over unassigned facilities
       for i_idx in 0..<u {
         var i = unassigned_fac[i_idx];
 
+        // extract flows from i to other unassigned facilities
+        var flows: [0..<(u-1)] int(32);
+        var c6: int(32) = 0;
+
+        for j_idx in 0..<u {
+          var j = unassigned_fac[j_idx];
+
+          if (i == j) then
+            continue;
+
+          flows[c6] = this.F[i, j];
+          c6 += 1;
+        }
+
+        // sort extracted flows (descending)
+        sort(flows, comparator = new reverseComparator());
+
+        // compute L[i_idx, k_idx] for each location k
         for k_idx in 0..<r {
           var k = unassigned_loc[k_idx];
-          var cost: int(32) = 0;
+          var cost: int = 0;
 
-          // Interaction with other unassigned facilities
-          for j_idx in 0..<u {
-            var j = unassigned_fac[j_idx];
-
-            if (i == j) then
-              continue;
-
-            // Pick best or second-best distance if best is disallowed
-            var d = if (best[k_idx].idx1 == k_idx) then best[k_idx].min2 else best[k_idx].min1;
-
-            cost += this.F[i, j] * d;
+          // unassigned–unassigned part: GLB pairing
+          var pairs = min(u-1, r-1);
+          for t in 0..<pairs {
+            cost += flows[t]:int * sortedDidx[k_idx][t]:int;
           }
 
-          // Interaction with assigned facilities
+          // assigned–unassigned part (both directions)
           for a_idx in 0..<dp {
             var j = assigned_fac[a_idx];
             var l = partial_mapping[j];
 
-            cost += this.F[i, j] * this.D[k, l];
+            cost += this.F[i, j]:int * this.D[k, l]:int;
+            cost += this.F[j, i]:int * this.D[l, k]:int;
           }
 
-          L[i_idx * r + k_idx] = cost;
+          L[i_idx*r + k_idx] = cost:int(32);
         }
       }
 
-      deallocate(best);
       deallocate(assigned_fac);
       deallocate(unassigned_fac);
       deallocate(assigned_loc);
