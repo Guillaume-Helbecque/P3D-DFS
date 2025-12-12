@@ -7,14 +7,14 @@ module Node_QAP
   record Node_QAP
   {
     var mapping: sizeMax*int(32);
-    var lower_bound: int(32);
+    var lower_bound: int;
     var depth: uint(8);
     var available: [0..<sizeMax] bool;
 
     var domCost: domain(1, idxType = int(32));
-    var costs: [domCost] int(32);
+    var costs: [domCost] int;
     var domLeader: domain(1, idxType = int(32));
-    var leader: [domLeader] int(32);
+    var leader: [domLeader] int;
     var size: int(32);
 
     // default-initializer

@@ -27,7 +27,7 @@ module Problem_QAP
     var lb_name: string;
 
     var ub_init: string;
-    var initUB: int(32);
+    var initUB: int;
 
     proc init(filename, itmax, lb, ub): void
     {
@@ -143,10 +143,10 @@ module Problem_QAP
         else
           priority[n-1-i] = min_inter_index;
 
-        sF[min_inter_index] = INF;
+        sF[min_inter_index] = INF32;
 
         for j in 0..<n {
-          if (sF[j] != INF) then
+          if (sF[j] != INF32) then
             sF[j] -= F[j, min_inter_index];
         }
       }
@@ -172,7 +172,7 @@ module Problem_QAP
 
         this.priority_loc[i] = min_connec_index;
 
-        nzD[min_connec_index] = INF;
+        nzD[min_connec_index] = INF32;
       }
     }
 
@@ -181,7 +181,7 @@ module Problem_QAP
       var route_cost = INF;
 
       var l_min, k, i: int(32);
-      var route_cost_temp, cost_incre, min_cost_incre: int(32);
+      var route_cost_temp, cost_incre, min_cost_incre: int;
 
       for j in 0..<N {
         var alloc_temp: [0..<n] int(32) = -1;
@@ -227,7 +227,7 @@ module Problem_QAP
 
     proc ObjectiveFunction(const mapping, const ref D, const ref F, n)
     {
-      var route_cost: int(32);
+      var route_cost: int;
 
       for i in 0..<n {
         if (mapping[i] == -1) then
@@ -258,9 +258,9 @@ module Problem_QAP
 
      // yw[w] is the potential for worker w
      // yj[j] is the potential for job j
-     var yw = allocate(int(32), n);
+     var yw = allocate(int, n);
      for i in 0..<n do yw[i] = 0;
-     var yj = allocate(int(32), n+1);
+     var yj = allocate(int, n+1);
      for i in 0..n do yj[i] = 0;
 
      // main Hungarian algorithm
@@ -268,7 +268,7 @@ module Problem_QAP
        j_cur = n;
        job[j_cur] = w_cur;
 
-       var min_to = allocate(int(32), n+1);
+       var min_to = allocate(int, n+1);
        for i in 0..n do min_to[i] = INFD2;
        var prv = allocate(int(32), n+1);
        for i in 0..n do prv[i] = -1;
@@ -320,7 +320,7 @@ module Problem_QAP
      }
 
      // compute total cost
-     var total_cost: int(32);
+     var total_cost: int;
 
      // for j in [0..n-1], job[j] is the worker assigned to job j
      for j in 0..<n {
@@ -348,7 +348,7 @@ module Problem_QAP
 
     proc distributeLeader(ref C, ref L, n)
     {
-      var leader_cost, leader_cost_div, leader_cost_rem, val: int(32);
+      var leader_cost, leader_cost_div, leader_cost_rem, val: int;
 
       if (n == 1) {
         C[0] = 0;
@@ -388,7 +388,7 @@ module Problem_QAP
 
     proc halveComplementary(ref C, n)
     {
-      var cost_sum: int(32);
+      var cost_sum: int;
 
       for i in 0..<n {
         for j in 0..<n {
@@ -494,7 +494,7 @@ module Problem_QAP
       ref L = node.leader;
       const m = node.size;
 
-      var cost, incre: int(32);
+      var cost, incre: int;
 
       var it = 0;
 
@@ -613,17 +613,15 @@ module Problem_QAP
 
       // yw[w] is the potential for worker w
       // yj[j] is the potential for job j
-      var yw = allocate(int(32), n);
-      for i in 0..<n do yw[i] = 0;
-      var yj = allocate(int(32), m+1);
-      for i in 0..m do yj[i] = 0;
+      var yw = allocate(int, n, clear=true);
+      var yj = allocate(int, m+1, clear=true);
 
       // main Hungarian algorithm
       for w_cur in 0..<n {
         j_cur = m;                       // dummy job index
         job[j_cur] = w_cur;
 
-        var min_to = allocate(int(32), m+1);
+        var min_to = allocate(int, m+1);
         for i in 0..m do min_to[i] = INFD2;
         var prv = allocate(int(32), m+1);
         for i in 0..m do prv[i] = -1;
@@ -675,7 +673,7 @@ module Problem_QAP
       }
 
       // compute total cost
-      var total_cost: int(32) = 0;
+      var total_cost: int;
 
       // for j in [0..m-1], job[j] is the worker assigned to job j
       for j in 0..<m {
@@ -774,7 +772,7 @@ module Problem_QAP
         // compute L[i_idx, k_idx] for each location k
         for k_idx in 0..<r {
           var k = unassigned_loc[k_idx];
-          var cost: int = 0;
+          var cost: int;
 
           // unassigned–unassigned part: GLB pairing
           var pairs = min(u-1, r-1);
@@ -791,7 +789,7 @@ module Problem_QAP
             cost += this.F[j, i]:int * this.D[l, k]:int;
           }
 
-          L[i_idx*r + k_idx] = cost:int(32);
+          L[i_idx*r + k_idx] = cost;
         }
       }
 
@@ -810,7 +808,7 @@ module Problem_QAP
       var fixed_cost, remaining_lb: int;
 
       local {
-        var L = allocate(int(32), (this.n - dp)*(this.N - dp), clear=true);
+        var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
 
         Assemble_LAP(L, dp, partial_mapping, av);
 
