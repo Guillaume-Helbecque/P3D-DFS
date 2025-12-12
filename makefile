@@ -43,10 +43,8 @@ main_pfsp.out: main_pfsp.chpl
 CHPL_QAP_MODULES_DIR = ./benchmarks/QAP
 CHPL_QAP_OPTS = -M $(CHPL_QAP_MODULES_DIR) -M $(CHPL_QAP_MODULES_DIR)/instances
 
-QAP_BOUND ?= glb
-
 main_qap.out: main_qap.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QAP_OPTS) -s_lb='"$(QAP_BOUND)"' -snewRangeLiteralType $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QAP_OPTS) -snewRangeLiteralType $< -o $@
 
 # ==================
 # UTS

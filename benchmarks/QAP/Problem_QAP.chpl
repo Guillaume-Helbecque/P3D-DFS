@@ -7,11 +7,7 @@ module Problem_QAP
   use Problem;
   use Instances;
 
-  import main_qap._lb as paramLB;
-
-  // NOTE: param array or tuple is currently not supported. Related to #23431.
-  param allowedLowerBound1 = "hhb",
-        allowedLowerBound2 = "glb";
+  const allowedLowerBounds = ["glb", "hhb"];
 
   class Problem_QAP : Problem
   {
@@ -27,10 +23,12 @@ module Problem_QAP
 
     var it_max: int(32);
 
+    var lb_name: string;
+
     var ub_init: string;
     var initUB: int(32);
 
-    proc init(filename, itmax, ub): void
+    proc init(filename, itmax, lb, ub): void
     {
       this.filename = filename;
       var getFilenames = filename.split(",");
@@ -62,10 +60,8 @@ module Problem_QAP
 
       this.it_max = itmax;
 
-      compilerAssert(
-        paramLB == allowedLowerBound1 || paramLB == allowedLowerBound2,
-        "unsupported lower bound"
-      );
+      if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
+      else halt("Error - Unsupported lower bound");
 
       this.ub_init = ub;
       if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N);
@@ -85,8 +81,8 @@ module Problem_QAP
     }
 
     proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority_fac, const priority_loc, const it_max, const ub_init,
-      const initUB): void
+      const F, const priority_fac, const priority_loc, const it_max, const lb_name,
+      const ub_init, const initUB): void
     {
       this.filename = filename;
       this.benchmark = benchmark;
@@ -97,13 +93,14 @@ module Problem_QAP
       this.priority_fac = priority_fac;
       this.priority_loc = priority_loc;
       this.it_max = it_max;
+      this.lb_name = lb_name;
       this.ub_init = ub_init;
       this.initUB = initUB;
     }
 
     override proc copy()
     {
-      return new Problem_QAP(this.filename, this.it_max, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.lb_name, this.ub_init);
     }
 
     proc RowwiseNumZeros(const ref D, const N)
@@ -880,7 +877,7 @@ module Problem_QAP
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
-      select paramLB {
+      select this.lb_name {
         when "hhb" {
           return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
@@ -907,11 +904,11 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (paramLB == allowedLowerBound1) then
+      if (this.lb_name == "hhb") then
         writeln("Max bounding iterations: ", this.it_max);
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
-      writeln("Lower bound function: ", paramLB);
+      writeln("Lower bound function: ", this.lb_name);
       writeln("=================================================");
     }
 
@@ -958,6 +955,7 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
+      writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

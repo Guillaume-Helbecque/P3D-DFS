@@ -13,18 +13,6 @@ locations.
 
 ### Configuration options
 
-At compilation, it is possible to choose the bounding function used using:
-
-```
-make main_qap.out QAP_BOUND={...}
-```
-
-where the available options are:
-  - `glb`: Gilmore-Lawler bound [1] (default)
-  - `hhb`: Hightower-Hahn bound [2]
-
-Then, the executable supports other options, as detailed below.
-
 ```
 ./main_qap.out {...}
 ```
@@ -55,6 +43,10 @@ where the available options are:
 
 - **`--itmax`**: maximum number of bounding iterations (only for `hhb` bound)
   - any positive integer (`10` by default)
+
+- **`--lb`**: lower bound function
+  - `glb`: Gilmore-Lawler bound [1] (default)
+  - `hhb`: Hightower-Hahn bound [2]
 
 - **`--ub`**: initial upper bound (UB)
   - `heuristic`: initialize the UB using a greedy heuristic (default)

@@ -16,15 +16,15 @@ module main_qap
   config const saveTime: bool  = false;
 
   // Problem-specific option
-  config const inst            = "10_sqn,16_melbourne";
-  config const itmax: int(32)  = 10;
-  config const ub: string      = "heuristic"; // heuristic
-  config param _lb: string     = "glb"; // glb, iglb, hhb
+  config const inst           = "10_sqn,16_melbourne";
+  config const itmax: int(32) = 10;
+  config const ub: string     = "heuristic"; // heuristic
+  config const lb: string     = "glb"; // glb, hhb
 
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var qap = new Problem_QAP(inst, itmax, ub);
+    var qap = new Problem_QAP(inst, itmax, lb, ub);
 
     // Helper
     for a in args[1..] {
@@ -35,8 +35,6 @@ module main_qap
         return 1;
       }
     }
-
-    type Node_QAP = if (_lb == "glb" || _lb == "iglb") then Node_QAP_GLB else Node_QAP_HHB;
 
     // Search
     select mode {

@@ -4,7 +4,7 @@ module Node_QAP
 
   config param sizeMax: int(32) = 27;
 
-  record Node_QAP_HHB
+  record Node_QAP
   {
     var mapping: sizeMax*int(32);
     var lower_bound: int(32);
@@ -28,14 +28,16 @@ module Node_QAP
       for i in 0..<problem.n do this.mapping[i] = -1;
       this.available = true;
 
-      this.domCost = {0..<(problem.N**4)};
-      this.domLeader = {0..<(problem.N**2)};
-      this.size = problem.N;
-      Assemble(problem.D, problem.F, problem.N);
+      if (problem.lb_name == "hhb") {
+        this.domCost = {0..<(problem.N**4)};
+        this.domLeader = {0..<(problem.N**2)};
+        this.size = problem.N;
+        Assemble(problem.D, problem.F, problem.N);
+      }
     }
 
     // copy-initializer
-    proc init(other: Node_QAP_HHB)
+    proc init(other: Node_QAP)
     {
       this.mapping = other.mapping;
       this.lower_bound = other.lower_bound;
@@ -64,33 +66,6 @@ module Node_QAP
           this.leader[i*N + j] = this.costs[idx4D(i, j, i, j, N)];
         }
       }
-    }
-  }
-
-  record Node_QAP_GLB
-  {
-    var mapping: sizeMax*int(32);
-    var depth: uint(8);
-    var available: [0..<sizeMax] bool;
-
-    // default-initializer
-    proc init()
-    {}
-
-    // root-initializer
-    proc init(problem)
-    {
-      init this;
-      for i in 0..<problem.n do this.mapping[i] = -1;
-      this.available = true;
-    }
-
-    // copy-initializer
-    proc init(other: Node_QAP_GLB)
-    {
-      this.mapping = other.mapping;
-      this.depth = other.depth;
-      this.available = other.available;
     }
   }
 }
