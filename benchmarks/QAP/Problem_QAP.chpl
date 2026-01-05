@@ -1,20 +1,14 @@
 module Problem_QAP
 {
   use List;
+  use Sort;
   use CTypes;
 
   use Util;
   use Problem;
   use Instances;
 
-  import main_qap._lb as paramLB;
-
-  config param sizeMax: int(32) = 27;
-
-  // NOTE: param array or tuple is currently not supported. Related to #23431.
-  param allowedLowerBound1 = "hhb",
-        allowedLowerBound2 = "glb",
-        allowedLowerBound3 = "iglb";
+  const allowedLowerBounds = ["glb", "hhb"];
 
   class Problem_QAP : Problem
   {
@@ -25,15 +19,17 @@ module Problem_QAP
     var F: [0..<N, 0..<N] int(32);
     var D: [0..<N, 0..<N] int(32);
 
-    var priority: [0..<sizeMax] int(32);
+    var priority_fac: [0..<n] int(32);
+    var priority_loc: [0..<N] int(32);
 
     var it_max: int(32);
-    var alpha: real(32);
+
+    var lb_name: string;
 
     var ub_init: string;
-    var initUB: int(32);
+    var initUB: int;
 
-    proc init(filename, itmax, alpha, ub): void
+    proc init(filename, itmax, lb, ub): void
     {
       this.filename = filename;
       var getFilenames = filename.split(",");
@@ -57,21 +53,19 @@ module Problem_QAP
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
-      Prioritization(this.F, this.n, this.N);
-      this.it_max = itmax;
-      assert(
-        0.0 <= alpha && alpha <= 1.0,
-        "alpha must be between 0.0 and 1.0"
-      );
-      this.alpha = alpha;
+      Prioritization(this.priority_fac, this.F, this.n, ascend = false);
+      if this.benchmark == "qubitAlloc" then
+        Prioritization_loc_connec(this.D, this.N);
+      else
+        Prioritization(this.priority_loc, this.D, this.N);
 
-      compilerAssert(
-        paramLB == allowedLowerBound1 || paramLB == allowedLowerBound2 || paramLB == allowedLowerBound3,
-        "unsupported lower bound"
-      );
+      this.it_max = itmax;
+
+      if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
+      else halt("Error - Unsupported lower bound");
 
       this.ub_init = ub;
-      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority, this.n, this.N);
+      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N);
       else {
         try! this.initUB = ub:int(32);
 
@@ -88,7 +82,8 @@ module Problem_QAP
     }
 
     proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority, const it_max, const alpha, const ub_init, const initUB): void
+      const F, const priority_fac, const priority_loc, const it_max, const lb_name,
+      const ub_init, const initUB): void
     {
       this.filename = filename;
       this.benchmark = benchmark;
@@ -96,49 +91,88 @@ module Problem_QAP
       this.N = N;
       this.F = F;
       this.D = D;
-      this.priority = priority;
+      this.priority_fac = priority_fac;
+      this.priority_loc = priority_loc;
       this.it_max = it_max;
-      this.alpha = alpha;
+      this.lb_name = lb_name;
       this.ub_init = ub_init;
       this.initUB = initUB;
     }
 
     override proc copy()
     {
-      /* return new Problem_QAP(this.filename, this.benchmark,
-        this.N, this.D, this.n, this.F, this.priority,
-        this.it_max, this.alpha, this.ub_init, this.initUB); */
-      return new Problem_QAP(this.filename, this.it_max, this.alpha, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.lb_name, this.ub_init);
     }
 
-    proc Prioritization(const ref F, n: int(32), N: int(32))
+    proc RowwiseNumZeros(const ref D, const N)
     {
-      var sF: [0..<N] int(32);
+      var nzD: [0..#N] int(32);
 
-      for i in 0..<N do
+      for i in 0..<N {
+        for j in 0..<N {
+          if !D[i, j] then
+            nzD[i] += 1;
+        }
+      }
+
+      return nzD;
+    }
+
+    proc Prioritization(ref priority, const ref F, n: int(32), ascend = true)
+    {
+      var sF: [0..<n] int(32);
+
+      for i in 0..<n do
         sF[i] = (+ reduce F[i, 0..<n]);
 
       var min_inter, min_inter_index: int(32);
 
-      for i in 0..<N {
+      for i in 0..<n {
         min_inter = sF[0];
         min_inter_index = 0;
 
-        for j in 1..<N {
+        for j in 1..<n {
           if (sF[j] < min_inter) {
             min_inter = sF[j];
             min_inter_index = j;
           }
         }
 
-        this.priority[N-1-i] = min_inter_index;
+        if ascend then
+          priority[i] = min_inter_index;
+        else
+          priority[n-1-i] = min_inter_index;
 
-        sF[min_inter_index] = INF;
+        sF[min_inter_index] = INF32;
 
-        for j in 0..<N {
-          if (sF[j] != INF) then
+        for j in 0..<n {
+          if (sF[j] != INF32) then
             sF[j] -= F[j, min_inter_index];
         }
+      }
+    }
+
+    /* rank physical qubits (locations) based on their connectivity degree */
+    proc Prioritization_loc_connec(const ref D, const N)
+    {
+      var nzD = RowwiseNumZeros(this.D, this.N);
+
+      var min_connec, min_connec_index: int(32);
+
+      for i in 0..<this.N {
+        min_connec = nzD[0];
+        min_connec_index = 0;
+
+        for j in 1..<this.N {
+          if (nzD[j] < min_connec) {
+            min_connec = nzD[j];
+            min_connec_index = j;
+          }
+        }
+
+        this.priority_loc[i] = min_connec_index;
+
+        nzD[min_connec_index] = INF32;
       }
     }
 
@@ -147,10 +181,10 @@ module Problem_QAP
       var route_cost = INF;
 
       var l_min, k, i: int(32);
-      var route_cost_temp, cost_incre, min_cost_incre: int(32);
+      var route_cost_temp, cost_incre, min_cost_incre: int;
 
       for j in 0..<N {
-        var alloc_temp: [0..<sizeMax] int(32) = -1;
+        var alloc_temp: [0..<n] int(32) = -1;
         var available: [0..<N] bool = true;
 
         alloc_temp[priority[0]] = j;
@@ -193,7 +227,7 @@ module Problem_QAP
 
     proc ObjectiveFunction(const mapping, const ref D, const ref F, n)
     {
-      var route_cost: int(32);
+      var route_cost: int;
 
       for i in 0..<n {
         if (mapping[i] == -1) then
@@ -224,9 +258,9 @@ module Problem_QAP
 
      // yw[w] is the potential for worker w
      // yj[j] is the potential for job j
-     var yw = allocate(int(32), n);
+     var yw = allocate(int, n);
      for i in 0..<n do yw[i] = 0;
-     var yj = allocate(int(32), n+1);
+     var yj = allocate(int, n+1);
      for i in 0..n do yj[i] = 0;
 
      // main Hungarian algorithm
@@ -234,7 +268,7 @@ module Problem_QAP
        j_cur = n;
        job[j_cur] = w_cur;
 
-       var min_to = allocate(int(32), n+1);
+       var min_to = allocate(int, n+1);
        for i in 0..n do min_to[i] = INFD2;
        var prv = allocate(int(32), n+1);
        for i in 0..n do prv[i] = -1;
@@ -286,7 +320,7 @@ module Problem_QAP
      }
 
      // compute total cost
-     var total_cost: int(32);
+     var total_cost: int;
 
      // for j in [0..n-1], job[j] is the worker assigned to job j
      for j in 0..<n {
@@ -314,7 +348,7 @@ module Problem_QAP
 
     proc distributeLeader(ref C, ref L, n)
     {
-      var leader_cost, leader_cost_div, leader_cost_rem, val: int(32);
+      var leader_cost, leader_cost_div, leader_cost_rem, val: int;
 
       if (n == 1) {
         C[0] = 0;
@@ -354,7 +388,7 @@ module Problem_QAP
 
     proc halveComplementary(ref C, n)
     {
-      var cost_sum: int(32);
+      var cost_sum: int;
 
       for i in 0..<n {
         for j in 0..<n {
@@ -460,7 +494,7 @@ module Problem_QAP
       ref L = node.leader;
       const m = node.size;
 
-      var cost, incre: int(32);
+      var cost, incre: int;
 
       var it = 0;
 
@@ -517,15 +551,20 @@ module Problem_QAP
         else if (eval == best_task) {
           num_sol += 1;
         }
+        else {
+          tree_loc -= 1;
+        }
       }
       else {
         local {
-          var i = this.priority[depth];
+          var i = this.priority_fac[depth];
 
           // local index of q_i in the cost matrix
           var k = localLogicalQubitIndex(parent.mapping, i);
 
-          for j in 0..<this.N by -1 {
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
             if !parent.available[j] then continue; // skip if not available
 
             // next available physical qubit
@@ -574,17 +613,15 @@ module Problem_QAP
 
       // yw[w] is the potential for worker w
       // yj[j] is the potential for job j
-      var yw = allocate(int(32), n);
-      for i in 0..<n do yw[i] = 0;
-      var yj = allocate(int(32), m+1);
-      for i in 0..m do yj[i] = 0;
+      var yw = allocate(int, n, clear=true);
+      var yj = allocate(int, m+1, clear=true);
 
       // main Hungarian algorithm
       for w_cur in 0..<n {
         j_cur = m;                       // dummy job index
         job[j_cur] = w_cur;
 
-        var min_to = allocate(int(32), m+1);
+        var min_to = allocate(int, m+1);
         for i in 0..m do min_to[i] = INFD2;
         var prv = allocate(int(32), m+1);
         for i in 0..m do prv[i] = -1;
@@ -636,7 +673,7 @@ module Problem_QAP
       }
 
       // compute total cost
-      var total_cost: int(32) = 0;
+      var total_cost: int;
 
       // for j in [0..m-1], job[j] is the worker assigned to job j
       for j in 0..<m {
@@ -682,71 +719,80 @@ module Problem_QAP
       var u = this.n - dp;
       var r = this.N - dp;
 
-      record MinPair {
-        var min1, min2, idx1: int(32);
-      }
-
-      var best = allocate(MinPair, r);
+      // Precompute sorted distances from each location k to other free locations
+      var sortedDidx: [0..<r] [0..<(r-1)] int(32);
 
       for k_idx in 0..<r {
         var k = unassigned_loc[k_idx];
-        var min1 = INF;
-        var idx1: int(32) = -1;
-        var min2 = INF;
+
+        // create temporary vector of {dist, l_idx} pairs
+        var tmp: [0..<(r-1)] (int(32), int(32));
+        var c5: int(32) = 0;
 
         for l_idx in 0..<r {
           if (k_idx == l_idx) then
             continue;
 
           var l = unassigned_loc[l_idx];
-          var dist = this.D[k, l];
-
-          if (dist < min1) {
-            min2 = min1;
-            min1 = dist;
-            idx1 = l_idx;
-          }
-          else if (dist < min2) {
-            min2 = dist;
-          }
+          tmp[c5] = (this.D[k, l], l_idx);
+          c5 += 1;
         }
-        best[k_idx] = new MinPair(min1, min2, idx1);
+
+        // sort by distance (ascending)
+        record AscendingComparator : keyComparator { }
+        proc AscendingComparator.key(elt) { return elt(0); }
+        var ascendingComparator: AscendingComparator;
+        sort(tmp, comparator=ascendingComparator);
+
+        for t in 0..<(r-1) do
+          sortedDidx[k_idx][t] = tmp[t](0);
       }
 
-      // Build reduced L-matrix
+      // Loop over unassigned facilities
       for i_idx in 0..<u {
         var i = unassigned_fac[i_idx];
 
+        // extract flows from i to other unassigned facilities
+        var flows: [0..<(u-1)] int(32);
+        var c6: int(32) = 0;
+
+        for j_idx in 0..<u {
+          var j = unassigned_fac[j_idx];
+
+          if (i == j) then
+            continue;
+
+          flows[c6] = this.F[i, j];
+          c6 += 1;
+        }
+
+        // sort extracted flows (descending)
+        sort(flows, comparator = new reverseComparator());
+
+        // compute L[i_idx, k_idx] for each location k
         for k_idx in 0..<r {
           var k = unassigned_loc[k_idx];
-          var cost: int(32) = 0;
+          var cost: int;
 
-          // Interaction with other unassigned facilities
-          for j_idx in 0..<u {
-            var j = unassigned_fac[j_idx];
-
-            if (i == j) then
-              continue;
-
-            // Pick best or second-best distance if best is disallowed
-            var d = if (best[k_idx].idx1 == k_idx) then best[k_idx].min2 else best[k_idx].min1;
-
-            cost += this.F[i, j] * d;
+          // unassigned–unassigned part: GLB pairing
+          var pairs = min(u-1, r-1);
+          for t in 0..<pairs {
+            cost += flows[t]:int * sortedDidx[k_idx][t]:int;
           }
 
-          // Interaction with assigned facilities
+          // assigned–unassigned part (both directions)
           for a_idx in 0..<dp {
             var j = assigned_fac[a_idx];
             var l = partial_mapping[j];
 
-            cost += this.F[i, j] * this.D[k, l];
+            cost += this.F[i, j]:int * this.D[k, l]:int;
+            cost += this.F[j, i]:int * this.D[l, k]:int;
           }
 
-          L[i_idx * r + k_idx] = cost;
+          L[i_idx*r + k_idx] = cost;
         }
       }
 
-      deallocate(best);
       deallocate(assigned_fac);
       deallocate(unassigned_fac);
       deallocate(assigned_loc);
@@ -762,7 +808,7 @@ module Problem_QAP
       var fixed_cost, remaining_lb: int;
 
       local {
-        var L = allocate(int(32), (this.n - dp)*(this.N - dp), clear=true);
+        var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
 
         Assemble_LAP(L, dp, partial_mapping, av);
 
@@ -802,11 +848,16 @@ module Problem_QAP
         else if (eval == best_task) {
           num_sol += 1;
         }
+        else {
+          tree_loc -= 1;
+        }
       }
       else {
-        var i = this.priority[depth];
+        var i = this.priority_fac[depth];
 
-        for j in 0..<this.N by -1 {
+        for j0 in 0..<this.N by -1 {
+          const j = this.priority_loc[j0];
+
           if !parent.available[j] then continue; // skip if not available
 
           var child = new Node(parent);
@@ -831,206 +882,15 @@ module Problem_QAP
       return children;
     }
 
-    /*******************************************************
-                     IMPROVED GILMORE-LAWLER
-    *******************************************************/
-
-    proc Hungarian_IGLB(const ref C, n, m, ref rowDual, ref colDual)
-    {
-      var w, j_cur, j_next: int(32);
-
-      // job[j] = worker assigned to job j, or -1 if unassigned
-      var job = allocate(int(32), m+1);
-      for i in 0..m do job[i] = -1;
-
-      // yw[w] is the potential for worker w
-      // yj[j] is the potential for job j
-      var yw = allocate(int(32), n);
-      for i in 0..<n do yw[i] = 0;
-      var yj = allocate(int(32), m+1);
-      for i in 0..m do yj[i] = 0;
-
-      // main Hungarian algorithm
-      for w_cur in 0..<n {
-        j_cur = m;                       // dummy job index
-        job[j_cur] = w_cur;
-
-        var min_to = allocate(int(32), m+1);
-        for i in 0..m do min_to[i] = INFD2;
-        var prv = allocate(int(32), m+1);
-        for i in 0..m do prv[i] = -1;
-        var in_Z = allocate(bool, m+1);
-        for i in 0..m do in_Z[i] = false;
-
-        while (job[j_cur] != -1) {
-          in_Z[j_cur] = true;
-          w = job[j_cur];
-          var delta = INFD2;
-          j_next = 0;
-
-          for j in 0..<m {
-            if !in_Z[j] {
-              // reduced cost = C[w][j] - yw[w] - yj[j]
-              var cur_cost = C[w*m + j] - yw[w] - yj[j];
-
-              if ckmin(min_to[j], cur_cost) then
-                prv[j] = j_cur;
-              if ckmin(delta, min_to[j]) then
-                j_next = j;
-            }
-          }
-
-          // update potentials
-          for j in 0..m {
-            if in_Z[j] {
-              yw[job[j]] += delta;
-              yj[j] -= delta;
-            }
-            else {
-              min_to[j] -= delta;
-            }
-          }
-
-          j_cur = j_next;
-        }
-
-        // update worker assignment along the found augmenting path
-        while (j_cur != m) {
-          var j = prv[j_cur];
-          job[j_cur] = job[j];
-          j_cur = j;
-        }
-
-        deallocate(min_to);
-        deallocate(prv);
-        deallocate(in_Z);
-      }
-
-      // compute total cost
-      var total_cost: int(32) = 0;
-
-      // for j in [0..m-1], job[j] is the worker assigned to job j
-      for j in 0..<m {
-        if (job[j] != -1) then
-          total_cost += C[job[j]*m + j];
-      }
-
-      for i in 0..<n do
-        rowDual[i] = yw[i];
-
-      for i in 0..<m do
-        colDual[i] = yj[i];
-
-      deallocate(job);
-      deallocate(yw);
-      deallocate(yj);
-
-      return total_cost;
-    }
-
-    proc bound_IGLB(const ref node)
-    {
-      const partial_mapping = node.mapping;
-      const ref av = node.available;
-      const dp = node.depth;
-
-      const u = this.n - dp;
-      const r = this.N - dp;
-
-      var L = allocate(int(32), u*r, clear=true);
-      var rowDual = allocate(int(32), u);
-      var colDual = allocate(int(32), r);
-
-      Assemble_LAP(L, dp, partial_mapping, av);
-
-      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
-
-      var remaining_lb = Hungarian_IGLB(L, u, r, rowDual, colDual);
-
-      for i in 0..<u {
-        for k in 0..<r {
-          var idx = i * r + k;
-          var shift = - alpha * (rowDual[i]:real(32) + colDual[k]:real(32));
-          L[idx] = round(L[idx] - shift):int(32);
-        }
-      }
-
-      var remaining_lb_shifted = Hungarian_GLB(L, u, r);
-
-      deallocate(L);
-
-      return fixed_cost + max(remaining_lb, remaining_lb_shifted);
-    }
-
-    proc decompose_IGLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
-    {
-      var children: list(Node);
-
-      var depth = parent.depth;
-
-      if (parent.depth == this.n) {
-        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
-
-        if (eval < best_task) {
-          best_task = eval;
-          lock.readFE();
-          if eval <= best {
-            best = eval;
-            num_sol = 1;
-          }
-          else {
-            best_task = best;
-            num_sol = 0;
-          }
-          lock.writeEF(true);
-        }
-        else if (eval == best_task) {
-          num_sol += 1;
-        }
-      }
-      else {
-        local {
-          var i = this.priority[depth];
-
-          for j in 0..<this.N by -1 {
-            if !parent.available[j] then continue; // skip if not available
-
-            var child = new Node(parent);
-            child.depth += 1;
-            child.mapping[i] = j;
-            child.available[j] = false;
-
-            if (child.depth < this.n) {
-              var lb = bound_IGLB(child);
-              if (lb <= best_task) {
-                children.pushBack(child);
-                tree_loc += 1;
-              }
-            }
-            else {
-              children.pushBack(child);
-              tree_loc += 1;
-            }
-          }
-        }
-      }
-
-      return children;
-    }
-
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
-      select paramLB {
+      select this.lb_name {
         when "hhb" {
           return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
-        }
-        when "iglb" {
-          return decompose_IGLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -1052,13 +912,11 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (paramLB == allowedLowerBound1) then
+      if (this.lb_name == "hhb") then
         writeln("Max bounding iterations: ", this.it_max);
-      if (paramLB == allowedLowerBound3) then
-        writeln("Bounding shift weight: ", this.alpha);
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
-      writeln("Lower bound function: ", paramLB);
+      writeln("Lower bound function: ", this.lb_name);
       writeln("=================================================");
     }
 
@@ -1105,7 +963,7 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
-      writeln("   --alpha   real      bounding shift weight (between 0 and 1)");
+      writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

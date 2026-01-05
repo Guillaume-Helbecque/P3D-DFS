@@ -1,7 +1,8 @@
 module Util
 {
-  param INF: int(32) = max(int(32));
-  param INFD2: int(32) = max(int(32)) / 2;
+  param INF: int = max(int);
+  param INF32: int(32) = max(int(32));
+  param INFD2: int = max(int) / 2;
 
   proc idx4D(i, j, k, l, n)
   {
