@@ -55,7 +55,7 @@ module Problem_Knapsack
       else {
         try! this.initLB = lb:int;
 
-        // NOTE: If `lb` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // NOTE: If `lb` cannot be cast into `int`, an error is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
@@ -172,8 +172,8 @@ module Problem_Knapsack
           const bit = ((i >> j) & 1):uint(32);
 
           child.items[parent.depth+j] = bit;
-          child.weight += bit*this.weights[parent.depth];
-          child.profit += bit*this.profits[parent.depth];
+          child.weight += bit*this.weights[parent.depth+j];
+          child.profit += bit*this.profits[parent.depth+j];
         }
 
         if (child.weight <= this.W) {
