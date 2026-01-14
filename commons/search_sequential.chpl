@@ -1,10 +1,17 @@
 module search_sequential
 {
+  use IO;
   use List;
   use Time;
 
   use util;
   use Problem;
+
+  import main_knapsack.t as tt;
+  import main_knapsack.id as id;
+  import Problem_Knapsack.MB as MB;
+
+  config const filepath = "";
 
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
@@ -57,10 +64,19 @@ module search_sequential
 
     writeln("\nExploration terminated.");
 
-    if saveTime {
+    try! {
+      var f: file = open(filepath, ioMode.a);
+      var channel = f.writer(locking=false);
+      channel.writeln("knapPI_", tt, "_", problem.N, "_1000_", id, "\t", MB, "\t", best, "\t", exploredSol,
+        "\t", globalTimer.elapsed(), "\t", exploredTree, "\t", maxDepth);
+      channel.close();
+      f.close();
+    }
+
+    /* if saveTime {
       const path = problem.output_filepath();
       save_time(1, globalTimer.elapsed(), path);
-    }
+    } */
 
     problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
