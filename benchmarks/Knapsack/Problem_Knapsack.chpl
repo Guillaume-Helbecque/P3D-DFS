@@ -162,11 +162,12 @@ module Problem_Knapsack
       var children: list(Node);
 
       const M = min(MB, this.N - parent.depth);
-      const max = 1 << M; // 2^M
+      const numChild = 1 << M; // 2^M
 
-      for i in 0..<max {
+      for i in 0..<numChild {
         var child = new Node(parent);
         child.depth += M;
+        child.depthRel += 1;
 
         for j in 0..<M by -1 {
           const bit = ((i >> j) & 1):uint(32);
@@ -177,6 +178,7 @@ module Problem_Knapsack
         }
 
         if (child.weight <= this.W) {
+          max_depth = max(max_depth, child.depthRel);
           if (child.depth == this.N) { // leaf
             num_sol += 1;
 

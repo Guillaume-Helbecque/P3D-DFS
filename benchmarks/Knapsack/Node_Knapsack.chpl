@@ -5,6 +5,7 @@ module Node_Knapsack
   record Node_Knapsack
   {
     var depth: int;
+    var depthRel: int;
     var items: maxItems*uint(32);
     var weight: int;
     var profit: int;
@@ -23,6 +24,7 @@ module Node_Knapsack
     proc init(other: Node_Knapsack)
     {
       this.depth = other.depth;
+      this.depthRel = other.depthRel;
       this.items = other.items;
       this.weight = other.weight;
       this.profit = other.profit;
