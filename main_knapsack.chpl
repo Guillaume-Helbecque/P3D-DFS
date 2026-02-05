@@ -21,6 +21,7 @@ module main_knapsack
   config const inst: string = "";
   config const ub: string   = "dantzig"; // dantzig, martello
   config const lb: string   = "opt"; // opt, inf
+  config const ind: string  = "add(getDepth, sub(getLowerbound, getNVars))";
 
   config const n: c_int  = 100;
   config const r: c_int  = 10000;
@@ -31,7 +32,7 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
+    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb, ind);
 
     // Helper
     for a in args[1..] {

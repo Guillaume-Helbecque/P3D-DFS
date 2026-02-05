@@ -31,6 +31,8 @@ where the available options are:
   - `inf`: initialize the LB to 0, leading to a search from scratch
   - `{NUM}`: initialize the LB to the given number
 
+- **`--ind`**: GP individual to choose value of `N` (experimental)
+
 Specifically for targeting hard Pisinger's instances [3], the following parameters can be used (and `--inst` omitted):
 - **`--n`**: number of items
   - any positive integer (`100` by default)

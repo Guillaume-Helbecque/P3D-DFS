@@ -25,9 +25,11 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
+    var ind: string;
+
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
-      const ub: string, const lb: string): void
+      const ub: string, const lb: string, const ind: string): void
     {
       // TODO: Is id > s allowed?
 
@@ -64,6 +66,8 @@ module Problem_Knapsack
         } */
       }
 
+      this.ind = ind;
+
       /*
         NOTE: The bounding operator assumes that the items are sorted in decreasing
         order according to the ratio profit / weight.
@@ -73,7 +77,7 @@ module Problem_Knapsack
 
     // copy-initialisation
     proc init(const file_name: string, const n, const w, const pr: c_ptr(c_int),
-      const we: c_ptr(c_int), const lb: string, const init_lb: int): void
+      const we: c_ptr(c_int), const lb: string, const init_lb: int, const ind: string): void
     {
       this.name    = file_name;
       this.N       = n;
@@ -82,12 +86,13 @@ module Problem_Knapsack
       this.weights = we;
       this.lb_init = lb;
       this.initLB  = init_lb;
+      this.ind     = ind;
     }
 
     override proc copy()
     {
       return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
-        this.lb_init, this.initLB);
+        this.lb_init, this.initLB, this.ind);
     }
 
     // Bound from Dantzig (1957)
@@ -262,6 +267,7 @@ module Problem_Knapsack
       writeln("  items's weight: ", this.weights); */
       writeln("  Initial lower bound: ", this.initLB);
       writeln("  Upper bound function: ", this.ub_name);
+      writeln("  GP individual: ", this.ind);
       writeln("=================================================");
     }
 
@@ -303,6 +309,7 @@ module Problem_Knapsack
       writeln("\n  Knapsack Benchmark Parameters:\n");
       writeln("   --ub      str       upper bound function (dantzig, martello)");
       writeln("   --lb      str/int   lower bound initialization ('opt', 'inf', or any integer)\n");
+      writeln("   --ind     str       genetic programming individual to choose N");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str       file containing the data\n");
       writeln("   For Pisinger's instances:\n");
