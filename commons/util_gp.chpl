@@ -1,6 +1,10 @@
 module util_gp
 {
   use Map;
+  use List;
+  use Regex;
+
+  // === Primitive set =========================================================
 
   // Define function signatures
   type BinaryRealOp = proc(a: real, b: real): real;
@@ -45,4 +49,80 @@ module util_gp
   /* primitives.add("ne", (__ne, 2)); */
   /* primitives.add("ge", (__ge, 2)); */
   /* primitives.add("gt", (__gt, 2)); */
+
+  // === GP tree compilation procedures ========================================
+
+  // Map from string to (function, arity)
+  var operations = new map(string, BinaryRealOp);
+  operations.add("add", __add);
+  operations.add("sub", __sub);
+  operations.add("mul", __mul);
+  operations.add("protecteddiv", __protecteddiv);
+
+  proc exprToProc(expr, getDepth, getLowerbound, getNVars): int
+  {
+    var context = new map(string, int);
+    context.add("getDepth", getDepth);
+    context.add("getLowerbound", getLowerbound);
+    context.add("getNVars", getNVars);
+    context.add("10000000", 10000000);
+
+    return evaluateExpr(expr, context):int;
+  }
+
+  proc evaluateExpr(expr, context): real
+  {
+    try! {
+      // Regex to match outermost function calls
+      const re = new regex("^(\\w+)\\((.*)\\)$");
+      var name, args_str: string;
+
+      if re.match(expr, name, args_str).matched {
+        if checkName(name) {
+          var args = parseArgs(args_str, context);
+          /* NOTE: the following works because we supposed binary operations. */
+          return operations.get(name, __add)(args[0], args[1]);
+        }
+        else halt("Unsupported operation name");
+      }
+      else {
+        try! {
+          return expr:real;
+        }
+        catch e: IllegalArgumentError {
+          return context[expr];
+        }
+      }
+    }
+  }
+
+  proc parseArgs(args, context): list(real)
+  {
+    var args_list: list(string);
+    var nested, last_split = 0;
+
+    for (char, i) in zip(args.items(), 0..) {
+      if char == '(' then nested += 1;
+      else if char == ')' then nested -= 1;
+      else if char == ',' && nested == 0 {
+        args_list.pushBack(args[last_split..(i-1)].strip());
+        last_split = i + 1;
+      }
+    }
+    args_list.pushBack(args[last_split..].strip());
+
+    var l: list(real);
+    for arg in args_list do
+      l.pushBack(evaluateExpr(arg, context));
+
+    return l;
+  }
+
+  proc checkName(name): bool
+  {
+    for n in operations.keys() {
+      if name == n then return true;
+    }
+    return false;
+  }
 }
