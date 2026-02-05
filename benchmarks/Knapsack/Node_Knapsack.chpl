@@ -8,6 +8,7 @@ module Node_Knapsack
     var items: maxItems*uint(32);
     var weight: int;
     var profit: int;
+    var bound: real;
 
     // default-initializer
     proc init()
@@ -26,6 +27,7 @@ module Node_Knapsack
       this.items = other.items;
       this.weight = other.weight;
       this.profit = other.profit;
+      this.bound = other.bound;
     }
 
     proc deinit()

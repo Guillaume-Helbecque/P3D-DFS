@@ -61,11 +61,11 @@ module util_gp
 
   proc exprToProc(expr, getDepth, getLowerbound, getNVars): int
   {
-    var context = new map(string, int);
-    context.add("getDepth", getDepth);
+    var context = new map(string, real);
+    context.add("getDepth", getDepth:real);
     context.add("getLowerbound", getLowerbound);
-    context.add("getNVars", getNVars);
-    context.add("10000000", 10000000);
+    context.add("getNVars", getNVars:real);
+    context.add("10000000", 10000000.0);
 
     return evaluateExpr(expr, context):int;
   }

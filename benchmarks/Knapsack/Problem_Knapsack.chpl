@@ -4,6 +4,7 @@ module Problem_Knapsack
   use List;
   use Path;
 
+  use util_gp;
   use Problem;
   use Instances;
 
@@ -166,7 +167,11 @@ module Problem_Knapsack
     {
       var children: list(Node);
 
-      const M = min(mvar, this.N - parent.depth);
+      var M: int;
+      if (this.ind == "") then M = mvar;
+      else M = exprToProc(this.ind, parent.depth, parent.bound, this.N - parent.depth);
+      M = min(max(M, 1), this.N - parent.depth);
+
       const numChild = 1 << M; // 2^M
 
       for i in 0..<numChild {
@@ -194,7 +199,9 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+            const bound = bound_dantzig(Node, child);
+            if (best_task < bound) { // bounding and pruning
+              child.bound = bound;
               children.pushBack(child);
               tree_loc += 1;
             }
