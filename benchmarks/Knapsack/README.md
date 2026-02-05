@@ -24,6 +24,7 @@ where the available options are:
 
 - **`--ub`**: upper bound function
   - `dantzig`: implementation of Dantzig's bound [1] (default)
+  - `dantzig_mvar`: `dantzig` with support for multi-variable branching (experimental)
   - `martello`: implementation of Martello and Toth's bound [2]
 
 - **`--lb`**: initial lower bound (LB)
@@ -31,7 +32,10 @@ where the available options are:
   - `inf`: initialize the LB to 0, leading to a search from scratch
   - `{NUM}`: initialize the LB to the given number
 
-- **`--ind`**: GP individual to choose value of `N` (experimental)
+- **`--mvar`**: static multi-variable branching factor (experimental; only with `--ub dantzig_mvar`)
+  - any positive integer (`1` by default)
+
+- **`--ind`**: GP individual to choose dynamically the value of `mvar` (experimental; only with `--ub dantzig_mvar`)
 
 Specifically for targeting hard Pisinger's instances [3], the following parameters can be used (and `--inst` omitted):
 - **`--n`**: number of items

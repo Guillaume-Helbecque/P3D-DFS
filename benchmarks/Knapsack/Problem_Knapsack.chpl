@@ -10,7 +10,9 @@ module Problem_Knapsack
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
-  const allowedUpperBounds = ["dantzig", "martello"];
+  const allowedUpperBounds = ["dantzig", "dantzig_mvar", "martello"];
+
+  config const mvar = 1; // multi-variable branching factor
 
   class Problem_Knapsack : Problem
   {
@@ -55,7 +57,7 @@ module Problem_Knapsack
       else {
         try! this.initLB = lb:int;
 
-        // NOTE: If `lb` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // NOTE: If `lb` cannot be cast into `int`, an error is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
@@ -158,6 +160,51 @@ module Problem_Knapsack
       return children;
     }
 
+    proc decompose_dantzig_mvar(type Node, const parent: Node, ref tree_loc: int,
+      ref num_sol: int, ref max_depth: int, ref best: int, lock: sync bool,
+      ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      const M = min(mvar, this.N - parent.depth);
+      const numChild = 1 << M; // 2^M
+
+      for i in 0..<numChild {
+        var child = new Node(parent);
+        child.depth += M;
+
+        for j in 0..<M by -1 {
+          const bit = ((i >> j) & 1):uint(32);
+
+          child.items[parent.depth+j] = bit;
+          child.weight += bit*this.weights[parent.depth+j];
+          child.profit += bit*this.profits[parent.depth+j];
+        }
+
+        if (child.weight <= this.W) {
+          if (child.depth == this.N) { // leaf
+            num_sol += 1;
+
+            if (best_task < child.profit) {
+              best_task = child.profit;
+              lock.readFE();
+              if (best < child.profit) then best = child.profit;
+              else best_task = best;
+              lock.writeEF(true);
+            }
+          }
+          else {
+            if (best_task < bound_dantzig(Node, child)) { // bounding and pruning
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+      }
+
+      return children;
+    }
+
     // Bound from Martello and Toth (1977)
     proc bound_martello(type Node, const n: Node)
     {
@@ -239,6 +286,9 @@ module Problem_Knapsack
         when "dantzig" {
           return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
+        when "dantzig_mvar" {
+          return decompose_dantzig_mvar(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
         when "martello" {
           return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
@@ -266,8 +316,16 @@ module Problem_Knapsack
       /* writeln("  items's profit: ", this.profits);
       writeln("  items's weight: ", this.weights); */
       writeln("  Initial lower bound: ", this.initLB);
-      writeln("  Upper bound function: ", this.ub_name);
-      writeln("  GP individual: ", this.ind);
+      if (this.ub_name == "dantzig_mvar") {
+        if this.ind == "" then
+          writeln("  Upper bound function: ", this.ub_name, " (", mvar, ")");
+        else {
+          writeln("  Upper bound function: ", this.ub_name, " (GP)");
+          writeln("  GP individual: ", this.ind);
+        }
+      }
+      else
+        writeln("  Upper bound function: ", this.ub_name);
       writeln("=================================================");
     }
 
@@ -307,9 +365,10 @@ module Problem_Knapsack
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
-      writeln("   --ub      str       upper bound function (dantzig, martello)");
-      writeln("   --lb      str/int   lower bound initialization ('opt', 'inf', or any integer)\n");
-      writeln("   --ind     str       genetic programming individual to choose N");
+      writeln("   --ub      str       upper bound function (dantzig, dantzig_mvar, martello)");
+      writeln("   --lb      str/int   lower bound initialization ('opt', 'inf', or any integer)");
+      writeln("   --mvar    str       static multi-variable branching factor");
+      writeln("   --ind     str       genetic programming individual to choose `mvar`\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str       file containing the data\n");
       writeln("   For Pisinger's instances:\n");

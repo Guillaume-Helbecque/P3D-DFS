@@ -19,9 +19,9 @@ module main_knapsack
 
   // Problem-specific option
   config const inst: string = "";
-  config const ub: string   = "dantzig"; // dantzig, martello
+  config const ub: string   = "dantzig"; // dantzig, dantzig_mvar, martello
   config const lb: string   = "opt"; // opt, inf
-  config const ind: string  = "add(getDepth, sub(getLowerbound, getNVars))";
+  config const ind: string  = "";
 
   config const n: c_int  = 100;
   config const r: c_int  = 10000;
