@@ -1,7 +1,6 @@
 module Problem_QAP
 {
   use List;
-  use Sort;
   use CTypes;
 
   use Util;
@@ -688,20 +687,46 @@ module Problem_QAP
       return total_cost;
     }
 
+    proc insertion_sort_device(ref arr, const n, const ascend)
+    {
+      // ascend=true  -> increasing
+      // ascend=false -> decreasing
+
+      if (n <= 1) then
+        return;
+
+      for i in 1..<n {
+        const x = arr[i];
+        var j = i - 1;
+
+        if ascend {
+          while (j >= 0 && arr[j] > x) {
+            arr[j + 1] = arr[j];
+            j -= 1;
+          }
+        }
+        else {
+          while (j >= 0 && arr[j] < x) {
+            arr[j + 1] = arr[j];
+            j -= 1;
+          }
+        }
+
+        arr[j + 1] = x;
+      }
+    }
+
     proc Assemble_LAP(ref L, const dp, const partial_mapping, const ref av)
     {
       var assigned_fac = allocate(int(32), dp);
       var unassigned_fac = allocate(int(32), this.n-dp);
-      var assigned_loc = allocate(int(32), dp);
       var unassigned_loc = allocate(int(32), this.N-dp);
-      var c1, c2, c3, c4: int(32) = 0;
+      var c1, c2, c4: int(32) = 0;
 
       for i in 0..<this.n {
         if (partial_mapping[i] != -1) {
           assigned_fac[c1] = i;
           c1 += 1;
-          assigned_loc[c3] = partial_mapping[i];
-          c3 += 1;
         }
         else {
           unassigned_fac[c2] = i;
@@ -720,13 +745,13 @@ module Problem_QAP
       var r = this.N - dp;
 
       // Precompute sorted distances from each location k to other free locations
-      var sortedDidx: [0..<r] [0..<(r-1)] int(32);
+      var sortedDidx = allocate(int(32), r*(r-1));
 
       for k_idx in 0..<r {
         var k = unassigned_loc[k_idx];
 
         // create temporary vector of {dist, l_idx} pairs
-        var tmp: [0..<(r-1)] (int(32), int(32));
+        var tmp = allocate(int(32), r-1);
         var c5: int(32) = 0;
 
         for l_idx in 0..<r {
@@ -734,18 +759,17 @@ module Problem_QAP
             continue;
 
           var l = unassigned_loc[l_idx];
-          tmp[c5] = (this.D[k, l], l_idx);
+          tmp[c5] = this.D[k, l];
           c5 += 1;
         }
 
         // sort by distance (ascending)
-        record AscendingComparator : keyComparator { }
-        proc AscendingComparator.key(elt) { return elt(0); }
-        var ascendingComparator: AscendingComparator;
-        sort(tmp, comparator=ascendingComparator);
+        insertion_sort_device(tmp, r-1, true);
 
         for t in 0..<(r-1) do
-          sortedDidx[k_idx][t] = tmp[t](0);
+          sortedDidx[k_idx*(r-1)+t] = tmp[t];
+
+        deallocate(tmp);
       }
 
       // Loop over unassigned facilities
@@ -753,7 +777,7 @@ module Problem_QAP
         var i = unassigned_fac[i_idx];
 
         // extract flows from i to other unassigned facilities
-        var flows: [0..<(u-1)] int(32);
+        var flows = allocate(int(32), u-1);
         var c6: int(32) = 0;
 
         for j_idx in 0..<u {
@@ -767,7 +791,7 @@ module Problem_QAP
         }
 
         // sort extracted flows (descending)
-        sort(flows, comparator = new reverseComparator());
+        insertion_sort_device(flows, u-1, false);
 
         // compute L[i_idx, k_idx] for each location k
         for k_idx in 0..<r {
@@ -777,7 +801,7 @@ module Problem_QAP
           // unassigned–unassigned part: GLB pairing
           var pairs = min(u-1, r-1);
           for t in 0..<pairs {
-            cost += flows[t]:int * sortedDidx[k_idx][t]:int;
+            cost += flows[t]:int * sortedDidx[k_idx*(r-1)+t]:int;
           }
 
           // assigned–unassigned part (both directions)
@@ -791,11 +815,13 @@ module Problem_QAP
 
           L[i_idx*r + k_idx] = cost;
         }
+
+        deallocate(flows);
       }
 
+      deallocate(sortedDidx);
       deallocate(assigned_fac);
       deallocate(unassigned_fac);
-      deallocate(assigned_loc);
       deallocate(unassigned_loc);
     }
 
@@ -805,19 +831,15 @@ module Problem_QAP
       const ref av = node.available;
       const dp = node.depth;
 
-      var fixed_cost, remaining_lb: int;
+      var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
 
-      local {
-        var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
+      Assemble_LAP(L, dp, partial_mapping, av);
 
-        Assemble_LAP(L, dp, partial_mapping, av);
+      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
 
-        fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
+      var remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
 
-        remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
-
-        deallocate(L);
-      }
+      deallocate(L);
 
       return fixed_cost + remaining_lb;
     }
@@ -853,28 +875,30 @@ module Problem_QAP
         }
       }
       else {
-        var i = this.priority_fac[depth];
+        local {
+          var i = this.priority_fac[depth];
 
-        for j0 in 0..<this.N by -1 {
-          const j = this.priority_loc[j0];
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
 
-          if !parent.available[j] then continue; // skip if not available
+            if !parent.available[j] then continue; // skip if not available
 
-          var child = new Node(parent);
-          child.depth += 1;
-          child.mapping[i] = j;
-          child.available[j] = false;
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = false;
 
-          if (child.depth < this.n) {
-            var lb = bound_GLB(child);
-            if (lb <= best_task) {
+            if (child.depth < this.n) {
+              var lb = bound_GLB(child);
+              if (lb <= best_task) {
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
               children.pushBack(child);
               tree_loc += 1;
             }
-          }
-          else {
-            children.pushBack(child);
-            tree_loc += 1;
           }
         }
       }
