@@ -262,16 +262,17 @@ module Problem_QAP
      var yj = allocate(int, n+1);
      for i in 0..n do yj[i] = 0;
 
+     var min_to = allocate(int, n+1);
+     var prv = allocate(int(32), n+1);
+     var in_Z = allocate(bool, n+1);
+
      // main Hungarian algorithm
      for w_cur in 0..<n {
        j_cur = n;
        job[j_cur] = w_cur;
 
-       var min_to = allocate(int, n+1);
        for i in 0..n do min_to[i] = INFD2;
-       var prv = allocate(int(32), n+1);
        for i in 0..n do prv[i] = -1;
-       var in_Z = allocate(bool, n+1);
        for i in 0..n do in_Z[i] = false;
 
        while (job[j_cur] != -1) {
@@ -312,11 +313,11 @@ module Problem_QAP
          job[j_cur] = job[j];
          j_cur = j;
        }
-
-       deallocate(min_to);
-       deallocate(prv);
-       deallocate(in_Z);
      }
+
+     deallocate(min_to);
+     deallocate(prv);
+     deallocate(in_Z);
 
      // compute total cost
      var total_cost: int;
@@ -615,16 +616,17 @@ module Problem_QAP
       var yw = allocate(int, n, clear=true);
       var yj = allocate(int, m+1, clear=true);
 
+      var min_to = allocate(int, m+1);
+      var prv = allocate(int(32), m+1);
+      var in_Z = allocate(bool, m+1);
+
       // main Hungarian algorithm
       for w_cur in 0..<n {
-        j_cur = m;                       // dummy job index
+        j_cur = m; // dummy job index
         job[j_cur] = w_cur;
 
-        var min_to = allocate(int, m+1);
         for i in 0..m do min_to[i] = INFD2;
-        var prv = allocate(int(32), m+1);
         for i in 0..m do prv[i] = -1;
-        var in_Z = allocate(bool, m+1);
         for i in 0..m do in_Z[i] = false;
 
         while (job[j_cur] != -1) {
@@ -665,11 +667,11 @@ module Problem_QAP
           job[j_cur] = job[j];
           j_cur = j;
         }
-
-        deallocate(min_to);
-        deallocate(prv);
-        deallocate(in_Z);
       }
+
+      deallocate(min_to);
+      deallocate(prv);
+      deallocate(in_Z);
 
       // compute total cost
       var total_cost: int;
@@ -747,11 +749,12 @@ module Problem_QAP
       // Precompute sorted distances from each location k to other free locations
       var sortedDidx = allocate(int(32), r*(r-1));
 
+      var tmp = allocate(int(32), r-1);
+
       for k_idx in 0..<r {
         var k = unassigned_loc[k_idx];
 
         // create temporary vector of {dist, l_idx} pairs
-        var tmp = allocate(int(32), r-1);
         var c5: int(32) = 0;
 
         for l_idx in 0..<r {
@@ -768,16 +771,17 @@ module Problem_QAP
 
         for t in 0..<(r-1) do
           sortedDidx[k_idx*(r-1)+t] = tmp[t];
-
-        deallocate(tmp);
       }
+
+      deallocate(tmp);
+
+      var flows = allocate(int(32), u-1);
 
       // Loop over unassigned facilities
       for i_idx in 0..<u {
         var i = unassigned_fac[i_idx];
 
         // extract flows from i to other unassigned facilities
-        var flows = allocate(int(32), u-1);
         var c6: int(32) = 0;
 
         for j_idx in 0..<u {
@@ -815,9 +819,9 @@ module Problem_QAP
 
           L[i_idx*r + k_idx] = cost;
         }
-
-        deallocate(flows);
       }
+
+      deallocate(flows);
 
       deallocate(sortedDidx);
       deallocate(assigned_fac);
