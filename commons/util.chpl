@@ -6,6 +6,8 @@ module util
   param BUSY: bool = false;
   param IDLE: bool = true;
 
+  enum solverStatus { optimal, timelimit, infeasible }
+
   // Take a boolean array and return false if it contains at least one "true", "true" if not
   inline proc all_idle(const arr: [] atomic bool): bool
   {

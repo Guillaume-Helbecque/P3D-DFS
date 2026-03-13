@@ -7,6 +7,8 @@ module Problem_QAP
   use Problem;
   use Instances;
 
+  import util.solverStatus as solverStatus;
+
   const allowedLowerBounds = ["glb", "hhb"];
 
   class Problem_QAP : Problem
@@ -948,8 +950,8 @@ module Problem_QAP
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const status: solverStatus, const subNodeExplored,
+      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -964,6 +966,7 @@ module Problem_QAP
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
+      writeln("Solution status: ", status);
       writeln("Size of the explored tree: ", treeSize);
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);

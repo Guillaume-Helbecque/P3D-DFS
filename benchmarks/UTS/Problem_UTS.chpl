@@ -5,6 +5,8 @@ module Problem_UTS
   use Problem;
   use Header_chpl_c_UTS;
 
+  import util.solverStatus as solverStatus;
+
   param BIN: c_int      = 0;
   param GEO: c_int      = 1;
   param HYBRID: c_int   = 2;
@@ -145,8 +147,8 @@ module Problem_UTS
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const status: solverStatus, const subNodeExplored,
+      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
     {
       var treeSize, nbLeaf, maxDepth: int;
 
@@ -163,6 +165,7 @@ module Problem_UTS
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================");
+      writeln("Solution status: ", status);
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {

@@ -27,7 +27,7 @@ module Problem
       compilerWarning("Problem.print_settings() not implemented");
     }
 
-    proc print_results(const subNodeExplored, const subSolExplored,
+    proc print_results(const status, const subNodeExplored, const subSolExplored,
       const subDepthReached, const best: int, const elapsedTime: real): void
     {
       compilerWarning("Problem.print_results() not implemented");

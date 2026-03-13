@@ -15,6 +15,7 @@ module search_distributed
     const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
+    var status: solverStatus = solverStatus.infeasible;
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
@@ -213,8 +214,8 @@ module search_distributed
       save_time(numLocales, globalTimer.elapsed(), path);
     }
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
-      globalTimer.elapsed());
+    problem.print_results(status, eachExploredTree, eachExploredSol, eachMaxDepth,
+      best, globalTimer.elapsed());
   }
 
 }

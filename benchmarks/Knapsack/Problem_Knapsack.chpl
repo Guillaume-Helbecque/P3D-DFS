@@ -7,6 +7,8 @@ module Problem_Knapsack
   use Problem;
   use Instances;
 
+  import util.solverStatus as solverStatus;
+
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
@@ -265,8 +267,8 @@ module Problem_Knapsack
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const status: solverStatus, const subNodeExplored,
+      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -281,6 +283,7 @@ module Problem_Knapsack
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
+      writeln("Solution status: ", status);
       const is_better = if (best > this.initLB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimum found: ", best, is_better);

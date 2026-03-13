@@ -8,6 +8,8 @@ module Problem_PFSP
   use Instances;
   use Header_chpl_c_PFSP;
 
+  import util.solverStatus as solverStatus;
+
   require "../../commons/c_sources/util.c", "../../commons/c_headers/util.h";
   extern proc swap(ref a: c_int, ref b: c_int): void;
 
@@ -358,8 +360,8 @@ module Problem_PFSP
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const status: solverStatus, const subNodeExplored,
+      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -374,6 +376,7 @@ module Problem_PFSP
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
+      writeln("Solution status: ", status);
       writeln("Size of the explored tree: ", treeSize);
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);

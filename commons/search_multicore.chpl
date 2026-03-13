@@ -15,6 +15,7 @@ module search_multicore
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
+    var status: solverStatus = solverStatus.infeasible;
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
@@ -177,7 +178,7 @@ module search_multicore
       save_time(numTasks, globalTimer.elapsed(), path);
     }
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
-      globalTimer.elapsed());
+    problem.print_results(status, eachExploredTree, eachExploredSol, eachMaxDepth,
+      best, globalTimer.elapsed());
   }
 }

@@ -4,6 +4,8 @@ module Problem_NQueens
 
   use Problem;
 
+  import util.solverStatus as solverStatus;
+
   class Problem_NQueens : Problem
   {
     var N: int; // number of queens
@@ -75,8 +77,8 @@ module Problem_NQueens
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const status: solverStatus, const subNodeExplored,
+      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -91,6 +93,7 @@ module Problem_NQueens
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
+      writeln("Solution status: ", status);
       writeln("Size of the explored tree: ", treeSize);
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
