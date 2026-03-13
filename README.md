@@ -28,6 +28,9 @@ where the available options are:
   - `multicore`: single-node multi-core execution
   - `distributed`: multi-node multi-core execution
 
+- **`--timelimit`**: time limit for B&B solver (in seconds)
+  - any positive real number (`1.79769e+308` by default)
+
 - **`--activeSet`**: compute and distribute an initial set of elements
 
 - **`--saveTime`**: save execution time in a file

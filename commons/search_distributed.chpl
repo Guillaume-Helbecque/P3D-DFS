@@ -11,7 +11,8 @@ module search_distributed
 
   config param activeSetSize: int = 1;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const timelimit: real, const saveTime: bool,
+    const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
