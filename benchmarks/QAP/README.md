@@ -54,5 +54,5 @@ where the available options are:
 
 ### References
 
-1. Y. Li, P. M. Pardalos, K. G. Ramakrishnan, and M. G. C. Resende. (1994) Lower bounds for the quadratic assignment problem. *Annals of Operations Research*, 50:387-410. DOI: [10.1007/BF02085649](https://doi.org/10.1007/BF02085649).
+1. P. Gilmore. (1962) Optimal and Suboptimal Algorithms for the Quadratic Assignment Problem. *Journal of the Society for Industrial and Applied Mathematics*, 10(2):305-313. DOI: [10.1137/0110022](https://doi.org/10.1137/0110022).
 2. P. Hahn and T. Grant. (1998) Lower Bounds for the Quadratic Assignment Problem Based upon a Dual Formulation. *Operations Research*, 46(6):912-922. DOI: [10.1287/opre.46.6.912](https://doi.org/10.1287/opre.46.6.912).
