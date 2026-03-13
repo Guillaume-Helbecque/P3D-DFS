@@ -165,14 +165,11 @@ module Problem_UTS
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================");
-      writeln("Solution status: ", status);
       writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
       }
       writeln("Number of leaves explored: ", nbLeaf, " (", 100 * nbLeaf:real / treeSize:real, "%)");
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Tree depth: ", maxDepth);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================\n");

@@ -94,13 +94,13 @@ module Problem_NQueens
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);
-      writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      if status != solverStatus.infeasible {
+        writeln("Number of solutions found: ", nbSol);
+        writeln("Size of the explored tree: ", treeSize);
+        if isArray(subNodeExplored) {
+          writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+        }
       }
-      writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }

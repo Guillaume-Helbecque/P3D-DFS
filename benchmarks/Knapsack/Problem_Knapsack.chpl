@@ -284,14 +284,16 @@ module Problem_Knapsack
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);
-      const is_better = if (best > this.initLB) then " (improved)"
-                                                else " (not improved)";
-      writeln("Optimum found: ", best, is_better);
-      writeln("Size of the explored tree: ", treeSize);
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+      if status != solverStatus.infeasible {
+        const is_better = if (best > this.initLB) then " (improved)"
+                                                  else " (not improved)";
+        writeln("Best objective value: ", best, is_better);
+        writeln("Number of solutions found: ", nbSol);
+        writeln("Size of the explored tree: ", treeSize);
+        if isArray(subNodeExplored) {
+          writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
+        }
       }
-      writeln("Number of optimal solutions: ", nbSol);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }
