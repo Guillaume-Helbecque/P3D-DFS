@@ -8,16 +8,14 @@ module search_sequential
 
   proc search_sequential(type Node, problem, const timelimit: real, const saveTime: bool): void
   {
-    var status: solverStatus = solverStatus.infeasible;
+    var status: solverStatus = solverStatus.optimal;
     var best: int = problem.getInitBound();
     var bestBound: real;
     /* Not needed in sequential mode, but we use it only to match the generic template. */
     var lockBest: sync bool = true;
 
     // Statistics
-    var exploredTree: int;
-    var exploredSol: int;
-    var maxDepth: int;
+    var exploredTree, exploredSol, maxDepth: int;
     var globalTimer: stopwatch;
 
     writeln("Sequential execution mode");
@@ -52,6 +50,10 @@ module search_sequential
     }
 
     globalTimer.stop();
+
+    if !exploredSol && status != solverStatus.timelimit {
+      status = solverStatus.infeasible;
+    }
 
     // ========
     // OUTPUTS

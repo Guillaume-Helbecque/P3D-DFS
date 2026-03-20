@@ -948,22 +948,10 @@ module Problem_QAP
       writeln("=================================================");
     }
 
-    override proc print_results(const status: solverStatus, const subNodeExplored,
-      const subSolExplored, const subDepthReached, const best: int, const bestBound,
+    override proc print_results(const status: solverStatus, const treeSize: int,
+      const nbSol: int, const maxDepth: int, const best: int, const bestBound,
       const elapsedTime: real): void
     {
-      var treeSize, nbSol: int;
-
-      if (isArray(subNodeExplored) && isArray(subSolExplored)) {
-        treeSize = (+ reduce subNodeExplored);
-        nbSol = (+ reduce subSolExplored);
-      } else { // if not array, then int
-        treeSize = subNodeExplored;
-        nbSol = subSolExplored;
-      }
-
-      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
-
       writeln("\n=================================================");
       writeln("Solution status: ", status);
       if status != solverStatus.infeasible {
@@ -972,9 +960,6 @@ module Problem_QAP
         writeln("Best objective value: ", best, is_better);
         writeln("Number of solutions found: ", nbSol);
         writeln("Size of the explored tree: ", treeSize);
-        if isArray(subNodeExplored) {
-          writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
-        }
       }
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
