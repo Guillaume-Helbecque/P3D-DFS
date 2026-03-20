@@ -7,7 +7,7 @@ module Node_QAP
   record Node_QAP
   {
     var mapping: sizeMax*int(32);
-    var lower_bound: int;
+    var bound: int;
     var depth: uint(8);
     var available: [0..<sizeMax] bool;
 
@@ -40,7 +40,7 @@ module Node_QAP
     proc init(other: Node_QAP)
     {
       this.mapping = other.mapping;
-      this.lower_bound = other.lower_bound;
+      this.bound = other.bound;
       this.depth = other.depth;
       this.available = other.available;
 

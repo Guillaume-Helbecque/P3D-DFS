@@ -10,6 +10,7 @@ module search_sequential
   {
     var status: solverStatus = solverStatus.infeasible;
     var best: int = problem.getInitBound();
+    var bestBound: real;
     /* Not needed in sequential mode, but we use it only to match the generic template. */
     var lockBest: sync bool = true;
 
@@ -64,6 +65,6 @@ module search_sequential
     }
 
     problem.print_results(status, exploredTree, exploredSol, maxDepth, best,
-      globalTimer.elapsed());
+      bestBound, globalTimer.elapsed());
   }
 }

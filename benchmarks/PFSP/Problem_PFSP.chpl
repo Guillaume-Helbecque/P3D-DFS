@@ -193,9 +193,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lb = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          child.bound = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
 
-          if (lb <= best_task) {
+          if (child.bound <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -254,6 +254,7 @@ module Problem_PFSP
           if (lb <= best_task) {
             var child = new Node(parent);
             child.depth += 1;
+            child.bound = lb;
 
             if (beginEnd == BEGIN) {
               child.limit1 += 1;
@@ -310,9 +311,9 @@ module Problem_PFSP
           child.depth  += 1;
           child.limit1 += 1;
 
-          const lb = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          child.bound = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
 
-          if (lb <= best_task) {
+          if (child.bound <= best_task) {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -361,7 +362,8 @@ module Problem_PFSP
     }
 
     override proc print_results(const status: solverStatus, const subNodeExplored,
-      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
+      const subSolExplored, const subDepthReached, const best: int, const bestBound,
+      const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -381,6 +383,7 @@ module Problem_PFSP
         const is_better = if (best < this.initUB) then " (improved)"
                                                   else " (not improved)";
         writeln("Best objective value: ", best, is_better);
+        writeln("Best bound: ", bestBound);
         writeln("Number of solutions found: ", nbSol);
         writeln("Size of the explored tree: ", treeSize);
         if isArray(subNodeExplored) {

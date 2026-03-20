@@ -18,6 +18,7 @@ module search_distributed
     var status: solverStatus = solverStatus.infeasible;
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
+    var bestBound: real;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
@@ -215,7 +216,7 @@ module search_distributed
     }
 
     problem.print_results(status, eachExploredTree, eachExploredSol, eachMaxDepth,
-      best, globalTimer.elapsed());
+      best, bestBound, globalTimer.elapsed());
   }
 
 }

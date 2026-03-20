@@ -28,7 +28,7 @@ module Problem
     }
 
     proc print_results(const status, const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+      const subDepthReached, const best: int, const bestBound, const elapsedTime: real): void
     {
       compilerWarning("Problem.print_results() not implemented");
     }

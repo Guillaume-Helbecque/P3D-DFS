@@ -148,7 +148,8 @@ module Problem_UTS
     }
 
     override proc print_results(const status: solverStatus, const subNodeExplored,
-      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
+      const subSolExplored, const subDepthReached, const best: int, const bestBound,
+      const elapsedTime: real): void
     {
       var treeSize, nbLeaf, maxDepth: int;
 

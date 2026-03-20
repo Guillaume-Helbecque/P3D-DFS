@@ -144,7 +144,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_dantzig(Node, child)) { // bounding and pruning
+            child.bound = bound_dantzig(Node, child);
+            if (best_task <= child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -218,7 +219,8 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_martello(Node, child)) { // bounding and pruning
+            child.bound = bound_martello(Node, child);
+            if (best_task <= child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -268,7 +270,8 @@ module Problem_Knapsack
     }
 
     override proc print_results(const status: solverStatus, const subNodeExplored,
-      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
+      const subSolExplored, const subDepthReached, const best: int, const bestBound,
+      const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
@@ -288,6 +291,7 @@ module Problem_Knapsack
         const is_better = if (best > this.initLB) then " (improved)"
                                                   else " (not improved)";
         writeln("Best objective value: ", best, is_better);
+        writeln("Best bound: ", bestBound);
         writeln("Number of solutions found: ", nbSol);
         writeln("Size of the explored tree: ", treeSize);
         if isArray(subNodeExplored) {

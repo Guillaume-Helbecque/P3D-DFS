@@ -18,6 +18,7 @@ module search_multicore
     var status: solverStatus = solverStatus.infeasible;
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
+    var bestBound: real;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
@@ -179,6 +180,6 @@ module search_multicore
     }
 
     problem.print_results(status, eachExploredTree, eachExploredSol, eachMaxDepth,
-      best, globalTimer.elapsed());
+      best, bestBound, globalTimer.elapsed());
   }
 }

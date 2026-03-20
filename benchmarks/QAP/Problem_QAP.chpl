@@ -483,15 +483,14 @@ module Problem_QAP
       }
 
       child.available[j] = false;
-
-      child.lower_bound = lb_new;
+      child.bound = lb_new;
 
       return child;
     }
 
     proc bound_HHB(ref node, best)
     {
-      ref lb = node.lower_bound;
+      ref lb = node.bound;
       ref C = node.costs;
       ref L = node.leader;
       const m = node.size;
@@ -574,7 +573,7 @@ module Problem_QAP
 
             // increment lower bound
             var incre = parent.leader[k*(this.N - depth) + l];
-            var lb_new = parent.lower_bound + incre;
+            var lb_new = parent.bound + incre;
 
             // prune
             if (lb_new > best_task) {
@@ -951,7 +950,8 @@ module Problem_QAP
     }
 
     override proc print_results(const status: solverStatus, const subNodeExplored,
-      const subSolExplored, const subDepthReached, const best: int, const elapsedTime: real): void
+      const subSolExplored, const subDepthReached, const best: int, const bestBound,
+      const elapsedTime: real): void
     {
       var treeSize, nbSol: int;
 
