@@ -28,9 +28,6 @@ module Node_NQueens
       this.board = other.board;
       this.depth = other.depth;
     }
-
-    proc deinit()
-    {}
   }
 
 }

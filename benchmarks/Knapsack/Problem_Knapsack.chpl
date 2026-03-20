@@ -93,13 +93,13 @@ module Problem_Knapsack
     }
 
     // Bound from Dantzig (1957)
-    proc bound_dantzig(type Node, const n: Node)
+    proc bound_dantzig(const cumulWeight, const cumulProfit, const depth)
     {
-      var remainingWeight = this.W - n.weight;
-      var bound = n.profit:real;
+      var remainingWeight = this.W - cumulWeight;
+      var bound = cumulProfit:real;
 
       // iterate until the critical item is reached
-      for i in n.depth..this.N-1 {
+      for i in depth..<this.N {
         if (remainingWeight >= this.weights[i]) {
           bound += this.profits[i];
           remainingWeight -= this.weights[i];
@@ -144,7 +144,7 @@ module Problem_Knapsack
             }
           }
           else {
-            child.bound = bound_dantzig(Node, child);
+            child.bound = bound_dantzig(child.weight, child.profit, child.depth);
             if (best_task <= child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
@@ -157,14 +157,14 @@ module Problem_Knapsack
     }
 
     // Bound from Martello and Toth (1977)
-    proc bound_martello(type Node, const n: Node)
+    proc bound_martello(const cumulWeight, const cumulProfit, const depth)
     {
-      var remainingWeight = this.W - n.weight;
-      var U0, U1 = n.profit:real;
+      var remainingWeight = this.W - cumulWeight;
+      var U0, U1 = cumulProfit:real;
       var s = 0;
 
       // iterate until the critical item is reached
-      for i in n.depth..this.N-1 {
+      for i in depth..<this.N {
         if (remainingWeight >= this.weights[i]) {
           U0 += this.profits[i];
           U1 += this.profits[i];
@@ -219,7 +219,7 @@ module Problem_Knapsack
             }
           }
           else {
-            child.bound = bound_martello(Node, child);
+            child.bound = bound_martello(child.weight, child.profit, child.depth);
             if (best_task <= child.bound) { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
@@ -283,7 +283,7 @@ module Problem_Knapsack
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);
@@ -334,8 +334,8 @@ module Problem_Knapsack
     for i in 0..#n do r[i] = p[i]:real / w[i]:real;
 
     for i in 0..#n {
-      var max = (max reduce r[i..]);
-      var max_id = r[i..].find(max);
+      const max = (max reduce r[i..]);
+      const max_id = r[i..].find(max);
       r[i] <=> r[max_id];
       swap(w[i], w[max_id]);
       swap(p[i], p[max_id]);

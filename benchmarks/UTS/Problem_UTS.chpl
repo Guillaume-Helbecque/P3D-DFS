@@ -86,7 +86,7 @@ module Problem_UTS
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): [] Node
     {
-      var numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
+      const numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
         this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
 
       var children: [0..#numChildren] Node;
@@ -128,17 +128,17 @@ module Problem_UTS
         writeln("  GEO parameters: gen_mx = ", this.gen_mx, ", shape function = ", this.shape_fn, " (", shape_fct, ")");
       }
       if (this.treeType == BIN || this.treeType == HYBRID) {
-        var q = this.nonLeafProb;
-        var m = this.nonLeafBF;
-        var es: c_double = (1.0 / (1.0 - q * m));
+        const q = this.nonLeafProb;
+        const m = this.nonLeafBF;
+        const es: c_double = (1.0 / (1.0 - q * m));
         writeln("  BIN parameters: q = ", q, ", m = ", m, ", E(n) = ", q * m, ", E(s) = ", es);
       }
       if (this.treeType == HYBRID) {
         writeln("  HYBRID:  GEO from root to depth ", ceil(this.shiftDepth * this.gen_mx):int, ", then BIN");
       }
       if (this.treeType == BALANCED) {
-        var exp_nodes: uint(64) = ((b_0**(this.gen_mx+1) - 1.0) / (b_0 - 1.0)):uint(64); /* geometric series */
-        var exp_leaves: uint(64) = (b_0**this.gen_mx):uint(64);
+        const exp_nodes: uint(64) = ((b_0**(this.gen_mx+1) - 1.0) / (b_0 - 1.0)):uint(64); /* geometric series */
+        const exp_leaves: uint(64) = (b_0**this.gen_mx):uint(64);
         writeln("  BALANCED parameters gen_mx = ", this.gen_mx);
         writeln("    Expected size: ", exp_nodes, ", ", exp_leaves);
       }
@@ -163,7 +163,7 @@ module Problem_UTS
         maxDepth = subDepthReached;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================");
       writeln("Size of the explored tree: ", treeSize);

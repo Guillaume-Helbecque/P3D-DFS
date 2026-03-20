@@ -91,7 +91,7 @@ module Problem_NQueens
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);

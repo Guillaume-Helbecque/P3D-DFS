@@ -189,7 +189,7 @@ module Problem_PFSP
       else {
         for i in parent.limit1+1..parent.limit2-1 {
           var child = new Node(parent);
-          swap(child.prmu[child.depth], child.prmu[i]);
+          swap(child.prmu[parent.depth], child.prmu[i]);
           child.depth  += 1;
           child.limit1 += 1;
 
@@ -307,7 +307,7 @@ module Problem_PFSP
       else {
         for i in parent.limit1+1..parent.limit2-1 {
           var child = new Node(parent);
-          swap(child.prmu[child.depth], child.prmu[i]);
+          swap(child.prmu[parent.depth], child.prmu[i]);
           child.depth  += 1;
           child.limit1 += 1;
 
@@ -375,7 +375,7 @@ module Problem_PFSP
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);

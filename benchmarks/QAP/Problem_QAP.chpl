@@ -531,15 +531,15 @@ module Problem_QAP
     {
       var children: list(Node);
 
-      var depth = parent.depth;
+      const depth = parent.depth;
 
-      if (parent.depth == this.n) {
+      if (depth == this.n) {
         const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -558,7 +558,7 @@ module Problem_QAP
       }
       else {
         local {
-          var i = this.priority_fac[depth];
+          const i = this.priority_fac[depth];
 
           // local index of q_i in the cost matrix
           var k = localLogicalQubitIndex(parent.mapping, i);
@@ -569,11 +569,11 @@ module Problem_QAP
             if !parent.available[j] then continue; // skip if not available
 
             // next available physical qubit
-            var l = localPhysicalQubitIndex(parent.available, j);
+            const l = localPhysicalQubitIndex(parent.available, j);
 
             // increment lower bound
-            var incre = parent.leader[k*(this.N - depth) + l];
-            var lb_new = parent.bound + incre;
+            const incre = parent.leader[k*(this.N - depth) + l];
+            const lb_new = parent.bound + incre;
 
             // prune
             if (lb_new > best_task) {
@@ -583,8 +583,8 @@ module Problem_QAP
             var child = reduceNode(Node, parent, i, j, k, l, lb_new);
 
             if (child.depth < this.n) {
-              var lb = bound_HHB(child, best_task);
-              if (lb <= best_task) {
+              child.bound = bound_HHB(child, best_task);
+              if (child.bound <= best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -744,8 +744,8 @@ module Problem_QAP
         }
       }
 
-      var u = this.n - dp;
-      var r = this.N - dp;
+      const u = this.n - dp;
+      const r = this.N - dp;
 
       // Precompute sorted distances from each location k to other free locations
       var sortedDidx = allocate(int(32), r*(r-1));
@@ -753,7 +753,7 @@ module Problem_QAP
       var tmp = allocate(int(32), r-1);
 
       for k_idx in 0..<r {
-        var k = unassigned_loc[k_idx];
+        const k = unassigned_loc[k_idx];
 
         // create temporary vector of {dist, l_idx} pairs
         var c5: int(32) = 0;
@@ -762,7 +762,7 @@ module Problem_QAP
           if (k_idx == l_idx) then
             continue;
 
-          var l = unassigned_loc[l_idx];
+          const l = unassigned_loc[l_idx];
           tmp[c5] = this.D[k, l];
           c5 += 1;
         }
@@ -780,13 +780,13 @@ module Problem_QAP
 
       // Loop over unassigned facilities
       for i_idx in 0..<u {
-        var i = unassigned_fac[i_idx];
+        const i = unassigned_fac[i_idx];
 
         // extract flows from i to other unassigned facilities
         var c6: int(32) = 0;
 
         for j_idx in 0..<u {
-          var j = unassigned_fac[j_idx];
+          const j = unassigned_fac[j_idx];
 
           if (i == j) then
             continue;
@@ -800,19 +800,19 @@ module Problem_QAP
 
         // compute L[i_idx, k_idx] for each location k
         for k_idx in 0..<r {
-          var k = unassigned_loc[k_idx];
+          const k = unassigned_loc[k_idx];
           var cost: int;
 
           // unassigned–unassigned part: GLB pairing
-          var pairs = min(u-1, r-1);
+          const pairs = min(u-1, r-1);
           for t in 0..<pairs {
             cost += flows[t]:int * sortedDidx[k_idx*(r-1)+t]:int;
           }
 
           // assigned–unassigned part (both directions)
           for a_idx in 0..<dp {
-            var j = assigned_fac[a_idx];
-            var l = partial_mapping[j];
+            const j = assigned_fac[a_idx];
+            const l = partial_mapping[j];
 
             cost += this.F[i, j]:int * this.D[k, l]:int;
             cost += this.F[j, i]:int * this.D[l, k]:int;
@@ -840,9 +840,8 @@ module Problem_QAP
 
       Assemble_LAP(L, dp, partial_mapping, av);
 
-      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
-
-      var remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
+      const fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
+      const remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
 
       deallocate(L);
 
@@ -854,9 +853,9 @@ module Problem_QAP
     {
       var children: list(Node);
 
-      var depth = parent.depth;
+      const depth = parent.depth;
 
-      if (parent.depth == this.n) {
+      if (depth == this.n) {
         const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
         if (eval < best_task) {
@@ -881,7 +880,7 @@ module Problem_QAP
       }
       else {
         local {
-          var i = this.priority_fac[depth];
+          const i = this.priority_fac[depth];
 
           for j0 in 0..<this.N by -1 {
             const j = this.priority_loc[j0];
@@ -894,8 +893,8 @@ module Problem_QAP
             child.available[j] = false;
 
             if (child.depth < this.n) {
-              var lb = bound_GLB(child);
-              if (lb <= best_task) {
+              child.bound = bound_GLB(child);
+              if (child.bound <= best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -935,7 +934,7 @@ module Problem_QAP
         writeln("Number of locations: ", this.N);
       }
       else if (this.benchmark == "qubitAlloc") {
-        var getFilenames = this.filename.split(",");
+        const getFilenames = this.filename.split(",");
         writeln("Circuit: ", getFilenames[0]);
         writeln("Device: ", getFilenames[1]);
         writeln("Number of logical qubits: ", this.n);
@@ -963,7 +962,7 @@ module Problem_QAP
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       writeln("Solution status: ", status);
