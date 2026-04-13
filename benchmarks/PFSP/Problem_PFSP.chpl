@@ -36,6 +36,8 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
+    const pbType: problemType = problemType.Min;
+
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
       this.name = fileName;

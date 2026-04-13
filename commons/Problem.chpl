@@ -1,5 +1,7 @@
 module Problem
 {
+  enum problemType { Max, Min, Enum }
+
   class Problem
   {
     proc copy()

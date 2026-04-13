@@ -27,6 +27,8 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
+    const pbType = problemType.Max;
+
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,
       const ub: string, const lb: string): void
@@ -129,7 +131,7 @@ module Problem_Knapsack
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if best <= child.profit {
+              if (best <= child.profit) {
                 best = child.profit;
                 num_sol = 1;
               }

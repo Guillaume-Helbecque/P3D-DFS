@@ -62,6 +62,8 @@ module Problem_UTS
     /* compute granularity - number of rng evaluations per tree node */
     var computeGranularity: c_int;
 
+    const pbType = problemType.Enum;
+
     proc init(const tree_type: c_int, const bf_0: c_double, const rootIdx: c_int, const nonLeafBFact: c_int,
       const nonLeafProba: c_double, const gen: c_int, const shape_fct: c_int, const shiftD: c_double,
       const gran: c_int): void
