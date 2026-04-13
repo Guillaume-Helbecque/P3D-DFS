@@ -88,7 +88,7 @@ module util
     }
   }
 
-  proc getBestBound(ref pool, const pbType, parmode = false): real
+  proc getBestBound(ref pool, param pbType, parmode = false): real
   {
     // Early exit if not an optimization problem
     if (pbType == problemType.Enum) then return 0.0;

@@ -27,7 +27,7 @@ module Problem_Knapsack
     var lb_init: string;
     var initLB: int;
 
-    const pbType = problemType.Max;
+    param pbType = problemType.Max;
 
     // initialisation
     proc init(const fileName: string, const n, const r, const t, const id, const s,

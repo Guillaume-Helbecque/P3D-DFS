@@ -30,7 +30,7 @@ module Problem_QAP
     var ub_init: string;
     var initUB: int;
 
-    const pbType = problemType.Min;
+    param pbType = problemType.Min;
 
     proc init(filename, itmax, lb, ub): void
     {

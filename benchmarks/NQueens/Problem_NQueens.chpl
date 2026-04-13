@@ -10,7 +10,7 @@ module Problem_NQueens
   {
     var N: int; // number of queens
 
-    const pbType = problemType.Enum;
+    param pbType = problemType.Enum;
 
     proc init(const n: int): void
     {

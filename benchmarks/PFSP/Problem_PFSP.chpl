@@ -36,7 +36,7 @@ module Problem_PFSP
     var ub_init: string;
     var initUB: int;
 
-    const pbType: problemType = problemType.Min;
+    param pbType = problemType.Min;
 
     proc init(const fileName: string, const lb: string, const rules: string, const ub: string): void
     {
@@ -64,13 +64,16 @@ module Problem_PFSP
         fill_johnson_schedules(lbound1, lbound2);
       }
 
-      if (allowedBranchingRules.find(rules) != -1) then this.branching = rules;
-      else halt("Error - Unsupported branching rule");
-
-      if ((lb != "lb1_d") && (rules != "fwd")) {
-        warning("Branching rules other than `fwd` are only supported by the `lb1_d` bounding function. `fwd` applies.");
-        this.branching = "fwd";
+      if (allowedBranchingRules.find(rules) != -1) {
+        if ((lb != "lb1_d") && (rules != "fwd")) {
+          warning("Branching rules other than `fwd` are only supported by the `lb1_d` bounding function. `fwd` applies.");
+          this.branching = "fwd";
+        }
+        else {
+          this.branching = rules;
+        }
       }
+      else halt("Error - Unsupported branching rule");
 
       if (rules == "fwd") then this.branchingSide = BEGIN;
       else if (rules == "bwd") then this.branchingSide = END;
