@@ -208,6 +208,9 @@ module search_distributed
     const exploredSol = (+ reduce eachExploredSol);
     const maxDepth = (max reduce eachMaxDepth);
 
+    if (status == solverStatus.timelimit) then
+      bestBound = getBestBound(bag, problem.pbType, parmode = true);
+
     if !exploredSol && status != solverStatus.timelimit {
       status = solverStatus.infeasible;
     }

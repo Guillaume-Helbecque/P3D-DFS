@@ -51,6 +51,9 @@ module search_sequential
 
     globalTimer.stop();
 
+    if (status == solverStatus.timelimit) then
+      bestBound = getBestBound(pool, problem.pbType);
+
     if !exploredSol && status != solverStatus.timelimit {
       status = solverStatus.infeasible;
     }

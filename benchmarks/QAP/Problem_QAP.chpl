@@ -960,6 +960,7 @@ module Problem_QAP
         const is_better = if (best < this.initUB) then " (improved)"
                                                   else " (not improved)";
         writeln("Best objective value: ", best, is_better);
+        writeln("Best bound: ", bestBound);
         writeln("Number of solutions found: ", nbSol);
         writeln("Size of the explored tree: ", treeSize);
       }
