@@ -7,6 +7,18 @@ module Problem_QAP
   use Problem;
   use Instances;
 
+  require "c_headers/bound_glb.h";
+
+  extern proc bound_GLB_wrapper(
+    mapping: c_ptr(c_int),
+    available: c_ptr(c_int),
+    depth: c_int,
+    F: c_ptr(c_int),
+    D: c_ptr(c_int),
+    n: c_int,
+    N: c_int
+  ): int(64);
+
   const allowedLowerBounds = ["glb", "hhb"];
 
   class Problem_QAP : Problem
@@ -603,251 +615,6 @@ module Problem_QAP
                        GILMORE-LAWLER
     *******************************************************/
 
-    proc Hungarian_GLB(const ref C, n, m)
-    {
-      var w, j_cur, j_next: int(32);
-
-      // job[j] = worker assigned to job j, or -1 if unassigned
-      var job = allocate(int(32), m+1);
-      for i in 0..m do job[i] = -1;
-
-      // yw[w] is the potential for worker w
-      // yj[j] is the potential for job j
-      var yw = allocate(int, n, clear=true);
-      var yj = allocate(int, m+1, clear=true);
-
-      var min_to = allocate(int, m+1);
-      var prv = allocate(int(32), m+1);
-      var in_Z = allocate(bool, m+1);
-
-      // main Hungarian algorithm
-      for w_cur in 0..<n {
-        j_cur = m; // dummy job index
-        job[j_cur] = w_cur;
-
-        for i in 0..m do min_to[i] = INFD2;
-        for i in 0..m do prv[i] = -1;
-        for i in 0..m do in_Z[i] = false;
-
-        while (job[j_cur] != -1) {
-          in_Z[j_cur] = true;
-          w = job[j_cur];
-          var delta = INFD2;
-          j_next = 0;
-
-          for j in 0..<m {
-            if !in_Z[j] {
-              // reduced cost = C[w][j] - yw[w] - yj[j]
-              var cur_cost = C[w*m + j] - yw[w] - yj[j];
-
-              if ckmin(min_to[j], cur_cost) then
-                prv[j] = j_cur;
-              if ckmin(delta, min_to[j]) then
-                j_next = j;
-            }
-          }
-
-          // update potentials
-          for j in 0..m {
-            if in_Z[j] {
-              yw[job[j]] += delta;
-              yj[j] -= delta;
-            }
-            else {
-              min_to[j] -= delta;
-            }
-          }
-
-          j_cur = j_next;
-        }
-
-        // update worker assignment along the found augmenting path
-        while (j_cur != m) {
-          var j = prv[j_cur];
-          job[j_cur] = job[j];
-          j_cur = j;
-        }
-      }
-
-      deallocate(min_to);
-      deallocate(prv);
-      deallocate(in_Z);
-
-      // compute total cost
-      var total_cost: int;
-
-      // for j in [0..m-1], job[j] is the worker assigned to job j
-      for j in 0..<m {
-        if (job[j] != -1) then
-          total_cost += C[job[j]*m + j];
-      }
-
-      deallocate(job);
-      deallocate(yw);
-      deallocate(yj);
-
-      return total_cost;
-    }
-
-    proc insertion_sort_device(ref arr, const n, const ascend)
-    {
-      // ascend=true  -> increasing
-      // ascend=false -> decreasing
-
-      if (n <= 1) then
-        return;
-
-      for i in 1..<n {
-        const x = arr[i];
-        var j = i - 1;
-
-        if ascend {
-          while (j >= 0 && arr[j] > x) {
-            arr[j + 1] = arr[j];
-            j -= 1;
-          }
-        }
-        else {
-          while (j >= 0 && arr[j] < x) {
-            arr[j + 1] = arr[j];
-            j -= 1;
-          }
-        }
-
-        arr[j + 1] = x;
-      }
-    }
-
-    proc Assemble_LAP(ref L, const dp, const partial_mapping, const ref av)
-    {
-      var assigned_fac = allocate(int(32), dp);
-      var unassigned_fac = allocate(int(32), this.n-dp);
-      var unassigned_loc = allocate(int(32), this.N-dp);
-      var c1, c2, c4: int(32) = 0;
-
-      for i in 0..<this.n {
-        if (partial_mapping[i] != -1) {
-          assigned_fac[c1] = i;
-          c1 += 1;
-        }
-        else {
-          unassigned_fac[c2] = i;
-          c2 += 1;
-        }
-      }
-
-      for i in 0..<this.N {
-        if av[i] {
-          unassigned_loc[c4] = i;
-          c4 += 1;
-        }
-      }
-
-      var u = this.n - dp;
-      var r = this.N - dp;
-
-      // Precompute sorted distances from each location k to other free locations
-      var sortedDidx = allocate(int(32), r*(r-1));
-
-      var tmp = allocate(int(32), r-1);
-
-      for k_idx in 0..<r {
-        var k = unassigned_loc[k_idx];
-
-        // create temporary vector of {dist, l_idx} pairs
-        var c5: int(32) = 0;
-
-        for l_idx in 0..<r {
-          if (k_idx == l_idx) then
-            continue;
-
-          var l = unassigned_loc[l_idx];
-          tmp[c5] = this.D[k, l];
-          c5 += 1;
-        }
-
-        // sort by distance (ascending)
-        insertion_sort_device(tmp, r-1, true);
-
-        for t in 0..<(r-1) do
-          sortedDidx[k_idx*(r-1)+t] = tmp[t];
-      }
-
-      deallocate(tmp);
-
-      var flows = allocate(int(32), u-1);
-
-      // Loop over unassigned facilities
-      for i_idx in 0..<u {
-        var i = unassigned_fac[i_idx];
-
-        // extract flows from i to other unassigned facilities
-        var c6: int(32) = 0;
-
-        for j_idx in 0..<u {
-          var j = unassigned_fac[j_idx];
-
-          if (i == j) then
-            continue;
-
-          flows[c6] = this.F[i, j];
-          c6 += 1;
-        }
-
-        // sort extracted flows (descending)
-        insertion_sort_device(flows, u-1, false);
-
-        // compute L[i_idx, k_idx] for each location k
-        for k_idx in 0..<r {
-          var k = unassigned_loc[k_idx];
-          var cost: int;
-
-          // unassigned–unassigned part: GLB pairing
-          var pairs = min(u-1, r-1);
-          for t in 0..<pairs {
-            cost += flows[t]:int * sortedDidx[k_idx*(r-1)+t]:int;
-          }
-
-          // assigned–unassigned part (both directions)
-          for a_idx in 0..<dp {
-            var j = assigned_fac[a_idx];
-            var l = partial_mapping[j];
-
-            cost += this.F[i, j]:int * this.D[k, l]:int;
-            cost += this.F[j, i]:int * this.D[l, k]:int;
-          }
-
-          L[i_idx*r + k_idx] = cost;
-        }
-      }
-
-      deallocate(flows);
-
-      deallocate(sortedDidx);
-      deallocate(assigned_fac);
-      deallocate(unassigned_fac);
-      deallocate(unassigned_loc);
-    }
-
-    proc bound_GLB(const ref node)
-    {
-      const partial_mapping = node.mapping;
-      const ref av = node.available;
-      const dp = node.depth;
-
-      var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
-
-      Assemble_LAP(L, dp, partial_mapping, av);
-
-      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
-
-      var remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
-
-      deallocate(L);
-
-      return fixed_cost + remaining_lb;
-    }
-
     proc decompose_GLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
@@ -893,7 +660,28 @@ module Problem_QAP
             child.available[j] = false;
 
             if (child.depth < this.n) {
-              var lb = bound_GLB(child);
+
+              var mapping_c = allocate(c_int, n);
+              for i in 0..<n do mapping_c[i] = child.mapping[i]:c_int;
+              var available_c = allocate(c_int, N);
+              for i in 0..<N do available_c[i] = child.available[i]:c_int;
+              var F_c = allocate(c_int, N**2);
+              for i in 0..<N do
+                for j in 0..<N do
+                  F_c[i*N+j] = this.F[i,j]:c_int;
+              var D_c = allocate(c_int, N**2);
+              for i in 0..<N do
+                for j in 0..<N do
+                  D_c[i*N+j] = this.D[i,j]:c_int;
+
+              var lb = bound_GLB_wrapper(mapping_c, available_c, depth:c_int,
+                F_c, D_c, n: c_int, N:c_int);
+
+              deallocate(mapping_c);
+              deallocate(available_c);
+              deallocate(F_c);
+              deallocate(D_c);
+
               if (lb <= best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
