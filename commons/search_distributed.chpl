@@ -59,23 +59,21 @@ module search_distributed
         ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
         var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        var tree, num, maxd = 0;
 
         var parent: Node;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+            maxd, best, lockBest, best_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
 
         tree_loc += tree;
         num_sol += num;
-        max_depth += max;
+        max_depth = max(max_depth, maxd);
       }
 
       // Static distribution of the set
@@ -126,7 +124,7 @@ module search_distributed
         // Task variables
         var best_task: int = best; //_locale;
         var taskState, locState: bool = BUSY;
-        var counter: int = 0;
+        /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
         ref max_depth = eachLocalMaxDepth[taskId];

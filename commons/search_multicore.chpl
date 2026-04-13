@@ -50,31 +50,23 @@ module search_multicore
       initList.pushBack(root);
       var lockList: sync bool = false;
 
-      ref tree_loc = eachExploredTree[0];
-      ref num_sol = eachExploredSol[0];
-      ref max_depth = eachMaxDepth[0];
-
-      coforall taskId in 0..<numTasks with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+      coforall taskId in 0..<numTasks with (ref eachExploredTree, ref eachExploredSol,
+        ref eachMaxDepth, ref initList, ref lockList, ref best) {
 
         var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        ref tree_loc = eachExploredTree[taskId];
+        ref num_sol = eachExploredSol[taskId];
+        ref max_depth = eachMaxDepth[taskId];
 
         var parent: Node;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
-          var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+          var children = problem.decompose(Node, parent, tree_loc, num_sol,
+            max_depth, best, lockBest, best_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
-
-        tree_loc += tree;
-        num_sol += num;
-        max_depth += max;
       }
 
       // Static distribution of the set
@@ -109,7 +101,7 @@ module search_multicore
       // Task variables
       var best_task: int = best;
       var taskState: bool = BUSY;
-      var counter: int = 0;
+      /* var counter: int = 0; */
       ref tree_loc = eachExploredTree[taskId];
       ref num_sol = eachExploredSol[taskId];
       ref max_depth = eachMaxDepth[taskId];
