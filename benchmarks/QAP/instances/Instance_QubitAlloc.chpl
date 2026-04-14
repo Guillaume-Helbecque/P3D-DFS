@@ -47,11 +47,15 @@ class Instance_QubitAlloc : Instance
 
   override proc get_flow(ref F)
   {
-    F = this.flow;
+    for i in 0..<this.n do
+      for j in 0..<this.n do
+        F[i * this.n + j] = this.flow[i, j];
   }
 
   override proc get_distance(ref D)
   {
-    D = this.distance;
+    for i in 0..<this.N do
+      for j in 0..<this.N do
+        D[i * this.N + j] = this.distance[i, j];
   }
 }

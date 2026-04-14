@@ -16,8 +16,8 @@ module Problem_QAP
     var benchmark: string;
     var n: int(32);
     var N: int(32);
-    var F: [0..<N, 0..<N] int(32);
-    var D: [0..<N, 0..<N] int(32);
+    var F: c_ptr(c_int);
+    var D: c_ptr(c_int);
 
     var priority_fac: [0..<n] int(32);
     var priority_loc: [0..<N] int(32);
@@ -50,6 +50,8 @@ module Problem_QAP
 
       init this;
 
+      this.F = allocate(c_int, N**2);
+      this.D = allocate(c_int, N**2);
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
@@ -81,22 +83,10 @@ module Problem_QAP
       }
     }
 
-    proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority_fac, const priority_loc, const it_max, const lb_name,
-      const ub_init, const initUB): void
+    proc deinit()
     {
-      this.filename = filename;
-      this.benchmark = benchmark;
-      this.n = n;
-      this.N = N;
-      this.F = F;
-      this.D = D;
-      this.priority_fac = priority_fac;
-      this.priority_loc = priority_loc;
-      this.it_max = it_max;
-      this.lb_name = lb_name;
-      this.ub_init = ub_init;
-      this.initUB = initUB;
+      deallocate(F);
+      deallocate(D);
     }
 
     override proc copy()
@@ -110,7 +100,7 @@ module Problem_QAP
 
       for i in 0..<N {
         for j in 0..<N {
-          if !D[i, j] then
+          if !D[i * N + j] then
             nzD[i] += 1;
         }
       }
@@ -123,7 +113,8 @@ module Problem_QAP
       var sF: [0..<n] int(32);
 
       for i in 0..<n do
-        sF[i] = (+ reduce F[i, 0..<n]);
+        for j in 0..<n do
+          sF[i] += F[i * this.N + j];
 
       var min_inter, min_inter_index: int(32);
 
@@ -147,7 +138,7 @@ module Problem_QAP
 
         for j in 0..<n {
           if (sF[j] != INF32) then
-            sF[j] -= F[j, min_inter_index];
+            sF[j] -= F[j * this.N + min_inter_index];
         }
       }
     }
@@ -202,7 +193,7 @@ module Problem_QAP
               cost_incre = 0;
               for q in 0..<p {
                 i = priority[q];
-                cost_incre += F[i, k] * D[alloc_temp[i], l];
+                cost_incre += F[i * N + k] * D[alloc_temp[i] * N + l];
               }
 
               if (cost_incre < min_cost_incre) {
@@ -237,7 +228,7 @@ module Problem_QAP
           if (mapping[j] == -1) then
             continue;
 
-          route_cost += F[i, j] * D[mapping[i], mapping[j]];
+          route_cost += F[i * this.N + j] * D[mapping[i] * this.N + mapping[j]];
         }
       }
 
@@ -481,7 +472,7 @@ module Problem_QAP
         x2 += 1;
       }
 
-      child.available[j] = false;
+      child.available[j] = 0;
 
       child.lower_bound = lb_new;
 
@@ -646,30 +637,11 @@ module Problem_QAP
             var child = new Node(parent);
             child.depth += 1;
             child.mapping[i] = j;
-            child.available[j] = false;
+            child.available[j] = 0;
 
             if (child.depth < this.n) {
-
-              var mapping_c = allocate(c_int, n);
-              for i in 0..<n do mapping_c[i] = child.mapping[i]:c_int;
-              var available_c = allocate(c_int, N);
-              for i in 0..<N do available_c[i] = child.available[i]:c_int;
-              var F_c = allocate(c_int, N**2);
-              for i in 0..<N do
-                for j in 0..<N do
-                  F_c[i*N+j] = this.F[i,j]:c_int;
-              var D_c = allocate(c_int, N**2);
-              for i in 0..<N do
-                for j in 0..<N do
-                  D_c[i*N+j] = this.D[i,j]:c_int;
-
-              var lb = bound_GLB(mapping_c, available_c, depth:c_int,
-                F_c, D_c, n: c_int, N:c_int);
-
-              deallocate(mapping_c);
-              deallocate(available_c);
-              deallocate(F_c);
-              deallocate(D_c);
+              var lb = bound_GLB(child.mapping, child.available, depth:c_int,
+                F, D, n: c_int, N:c_int);
 
               if (lb <= best_task) {
                 children.pushBack(child);

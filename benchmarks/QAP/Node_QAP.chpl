@@ -1,15 +1,17 @@
 module Node_QAP
 {
+  use CTypes;
+
   use Util;
 
   config param sizeMax: int(32) = 27;
 
   record Node_QAP
   {
-    var mapping: sizeMax*int(32);
+    var mapping: c_array(c_int, sizeMax);
     var lower_bound: int;
     var depth: uint(8);
-    var available: [0..<sizeMax] bool;
+    var available: c_array(c_int, sizeMax);
 
     var domCost: domain(1, idxType = int(32));
     var costs: [domCost] int;
@@ -25,8 +27,8 @@ module Node_QAP
     proc init(problem)
     {
       init this;
-      for i in 0..<problem.n do this.mapping[i] = -1;
-      this.available = true;
+      for i in 0..<problem.n do this.mapping[i] = -1:c_int;
+      for i in 0..<sizeMax do this.available[i] = 1:c_int;
 
       if (problem.lb_name == "hhb") {
         this.domCost = {0..<(problem.N**4)};
@@ -60,7 +62,7 @@ module Node_QAP
               if ((k == i) ^ (l == j)) then
                 this.costs[idx4D(i, j, k, l, N)] = INFD2;
               else
-                this.costs[idx4D(i, j, k, l, N)] = F[i, k] * D[j, l];
+                this.costs[idx4D(i, j, k, l, N)] = F[i * N + k] * D[j * N + l];
             }
           }
           this.leader[i*N + j] = this.costs[idx4D(i, j, i, j, N)];
