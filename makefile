@@ -44,7 +44,7 @@ main_pfsp.out: main_pfsp.chpl
 QAP_DIR = ./benchmarks/QAP
 QAP_SRC_DIR = $(QAP_DIR)/c_sources
 
-QAP_SOURCES = c_wrappers.cpp objective.cpp bound_glb.cpp
+QAP_SOURCES = c_wrappers.cpp objective.cpp bound_glb.cpp hungarian.cpp bound_rlt1.cpp rlt1_data.cpp
 QAP_OBJECTS = $(addprefix $(QAP_SRC_DIR)/, $(QAP_SOURCES:.cpp=.o))
 QAP_LIB = libqap.a
 

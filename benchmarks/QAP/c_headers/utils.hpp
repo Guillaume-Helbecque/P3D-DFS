@@ -22,8 +22,9 @@
     #define MAX_RLT1_ITMAX 100
     #define MAX_RLT2_ITMAX 200
 
-    const longint INF = std::numeric_limits<longint>::max();
-    const int INF_32  = std::numeric_limits<int>::max();
+    const longint INF    = std::numeric_limits<longint>::max();
+    const int     INF_32 = std::numeric_limits<int>::max();
+    const double  INF_D  = 1e18;  // double-precision sentinel threshold (used by RLT/NB/Hungarian)
 
     // CPU project: selects one of these as the primary B&B lower bound
     enum LowerBound
@@ -112,12 +113,12 @@
         return (((((long long)i * m + j) * m + k) * m + n) * m + p) * m + q;
     }
 
-    // RLT2 warm-start data: reduced matrices from parent node.
+    // RLT warm-start data: reduced matrices from parent node (shared by RLT1 and RLT2).
     // Uses double precision to avoid the systematic +1 asymmetry bias of integer
     // halving, which prevents the iterative Hahn RLT method from converging to
     // the true LP optimum. Accumulates across the B&B tree without lossy floor
     // conversions at each node.
-    struct RLT2_WarmData
+    struct RLT_WarmData
     {
         vector<double> leader;  // parent's reduced leader (m^2)
         vector<double> costs;   // parent's reduced quadratic costs (m^4)
