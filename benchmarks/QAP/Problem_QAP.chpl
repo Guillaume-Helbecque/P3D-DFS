@@ -6,18 +6,7 @@ module Problem_QAP
   use Util;
   use Problem;
   use Instances;
-
-  require "c_headers/bound_glb.h";
-
-  extern proc bound_GLB_wrapper(
-    mapping: c_ptr(c_int),
-    available: c_ptr(c_int),
-    depth: c_int,
-    F: c_ptr(c_int),
-    D: c_ptr(c_int),
-    n: c_int,
-    N: c_int
-  ): int(64);
+  use Header_chpl_c_QAP;
 
   const allowedLowerBounds = ["glb", "hhb"];
 
@@ -674,7 +663,7 @@ module Problem_QAP
                 for j in 0..<N do
                   D_c[i*N+j] = this.D[i,j]:c_int;
 
-              var lb = bound_GLB_wrapper(mapping_c, available_c, depth:c_int,
+              var lb = bound_GLB(mapping_c, available_c, depth:c_int,
                 F_c, D_c, n: c_int, N:c_int);
 
               deallocate(mapping_c);
