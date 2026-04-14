@@ -38,15 +38,19 @@ longint bound_RLT1(const std::vector<int>& mapping,
 
     int m2 = m * m;
 
-    // Persistent working buffers (function-scope static, reused across calls).
-    // Thread-safety: NOT safe for concurrent calls from multiple threads, since the
-    // static buffers are shared. The current B&B architecture is single-threaded at
-    // this level (OpenMP parallelizes INSIDE bound_RLT1, not around it), so this is
-    // safe. resize() only zero-initializes cells that are being newly added when the
-    // buffer grows; the initialization phase below then overwrites every used cell,
-    // so repeated same-m calls pay zero allocation or zero-init cost.
-    static std::vector<double> costs_pool;
-    static std::vector<double> leader_pool;
+    // Persistent working buffers (function-scope thread-local static, reused across
+    // calls). `thread_local` is required so that external callers running the
+    // bounding operator from multiple worker threads (e.g., Chapel tasks in the
+    // P3D-DFS integration) each get their own pool, avoiding the data race that
+    // would otherwise corrupt the cost/leader matrices. The CPU-standalone B&B is
+    // single-threaded at this level so only one pool is ever populated there, and
+    // the OpenMP regions below still parallelize safely because they only read
+    // and write to disjoint cells of the pool owned by the calling thread.
+    // resize() only zero-initializes cells that are being newly added when the
+    // buffer grows; the initialization phase below then overwrites every used
+    // cell, so repeated same-m calls pay zero allocation or zero-init cost.
+    thread_local static std::vector<double> costs_pool;
+    thread_local static std::vector<double> leader_pool;
     costs_pool.resize((size_t)m2 * m2);
     leader_pool.resize((size_t)m2);
     std::vector<double>& costs  = costs_pool;
