@@ -1,36 +1,11 @@
-#include "../c_headers/bound_glb.h"
+#include "../c_headers/bound_glb.hpp"
 #include "../c_headers/objective.hpp"
-
-// #include <limits>
-// #include <vector>
-// #include <algorithm>
-
-// using namespace std;
-// using longint = long long;
-// const longint INF = std::numeric_limits<longint>::max();
 
 
 static inline bool ckmin(longint &a, const longint &b)
 {
     return b < a ? (a = b, true) : false;
 }
-
-
-// longint Objective(const vector<int>& mapping, const vector<int>& F,
-//                   const vector<int>& D, int n, int N)
-// {
-//     longint cost = 0;
-//     for (int i = 0; i < n; ++i)
-//     {
-//         if (mapping[i] == -1) continue;
-//         for (int j = 0; j < n; ++j)
-//         {
-//             if (mapping[j] == -1) continue;
-//             cost += (longint)F[i * N + j] * D[mapping[i] * N + mapping[j]];
-//         }
-//     }
-//     return cost;
-// }
 
 
 longint Hungarian_GLB(const std::vector<longint>& L, int n, int N)
@@ -104,6 +79,7 @@ longint Hungarian_GLB(const std::vector<longint>& L, int n, int N)
 
     return total_cost;
 }
+
 
 longint bound_GLB(const vector<int>& mapping,
                   const vector<bool>& available,
@@ -198,26 +174,4 @@ longint bound_GLB(const vector<int>& mapping,
     longint remaining_lb = Hungarian_GLB(L, u, r);
 
     return fixed_cost + remaining_lb;
-}
-
-longint bound_GLB_wrapper(
-    int* mapping,
-    int* available,
-    int depth,
-    int* F,
-    int* D,
-    int n,
-    int N
-)
-{
-    // Conversion vers std::vector
-    std::vector<int> v_mapping(mapping, mapping + n);
-    std::vector<bool> v_available(N,true);
-    for (int i = 0; i < N; i++) {
-      v_available[i] = (available[i] == 0) ? false : true;
-    }
-    std::vector<int> v_F(F, F + N * N);
-    std::vector<int> v_D(D, D + N * N);
-
-    return bound_GLB(v_mapping, v_available, depth, v_F, v_D, n, N);
 }

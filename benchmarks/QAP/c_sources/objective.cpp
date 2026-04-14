@@ -1,7 +1,5 @@
 #include "../c_headers/objective.hpp"
 
-// #include <vector>
-
 
 longint Objective(const vector<int>& mapping, const vector<int>& F,
                   const vector<int>& D, int n, int N)
