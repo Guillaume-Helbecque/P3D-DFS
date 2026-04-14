@@ -1,0 +1,31 @@
+name: N-Queens tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  test-nqueens:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Chapel
+        uses: actions/cache@v4
+        with:
+          path: ~/chapel-2.8.0MC
+          key: ${{ runner.os }}-chapel-2.8.0MC
+
+      - name: Build Chapel (if needed)
+        working-directory: chpl_config
+        run: |
+          source laptop_multicore.sh
+          make all
+
+      - name: Run N-Queens tests
+        working-directory: tests
+        run: ./test_nqueens.sh
