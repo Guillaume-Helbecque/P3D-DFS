@@ -239,284 +239,6 @@ module Problem_QAP
                       HIGHTOWER-HAHN BOUND
     *******************************************************/
 
-    proc Hungarian_HHB(ref C, i0, j0, n)
-    {
-     var w, j_cur, j_next: int(32);
-
-     // job[j] = worker assigned to job j, or -1 if unassigned
-     var job = allocate(int(32), n+1);
-     for i in 0..n do job[i] = -1;
-
-     // yw[w] is the potential for worker w
-     // yj[j] is the potential for job j
-     var yw = allocate(int, n);
-     for i in 0..<n do yw[i] = 0;
-     var yj = allocate(int, n+1);
-     for i in 0..n do yj[i] = 0;
-
-     var min_to = allocate(int, n+1);
-     var prv = allocate(int(32), n+1);
-     var in_Z = allocate(bool, n+1);
-
-     // main Hungarian algorithm
-     for w_cur in 0..<n {
-       j_cur = n;
-       job[j_cur] = w_cur;
-
-       for i in 0..n do min_to[i] = INFD2;
-       for i in 0..n do prv[i] = -1;
-       for i in 0..n do in_Z[i] = false;
-
-       while (job[j_cur] != -1) {
-         in_Z[j_cur] = true;
-         w = job[j_cur];
-         var delta = INFD2;
-         j_next = 0;
-
-         for j in 0..<n {
-           if !in_Z[j] {
-             // reduced cost = C[w][j] - yw[w] - yj[j]
-             var cur_cost = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
-
-             if ckmin(min_to[j], cur_cost) then
-               prv[j] = j_cur;
-             if ckmin(delta, min_to[j]) then
-               j_next = j;
-           }
-         }
-
-         // update potentials
-         for j in 0..n {
-           if in_Z[j] {
-             yw[job[j]] += delta;
-             yj[j] -= delta;
-           }
-           else {
-             min_to[j] -= delta;
-           }
-         }
-
-         j_cur = j_next;
-       }
-
-       // update worker assignment along the found augmenting path
-       while (j_cur != n) {
-         var j = prv[j_cur];
-         job[j_cur] = job[j];
-         j_cur = j;
-       }
-     }
-
-     deallocate(min_to);
-     deallocate(prv);
-     deallocate(in_Z);
-
-     // compute total cost
-     var total_cost: int;
-
-     // for j in [0..n-1], job[j] is the worker assigned to job j
-     for j in 0..<n {
-       if (job[j] != -1) then
-         total_cost += C[idx4D(i0, j0, job[j], j, n)];
-     }
-
-     // OPTIONAL: Reflecting the "reduced costs" after the Hungarian
-     // algorithm by applying the final potentials:
-     for w in 0..<n {
-       for j in 0..<n {
-         if (C[idx4D(i0, j0, w, j, n)] < INFD2) {
-           // subtract the final potentials from the original cost
-           C[idx4D(i0, j0, w, j, n)] = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
-         }
-       }
-     }
-
-     deallocate(job);
-     deallocate(yw);
-     deallocate(yj);
-
-     return total_cost;
-    }
-
-    proc distributeLeader(ref C, ref L, n)
-    {
-      var leader_cost, leader_cost_div, leader_cost_rem, val: int;
-
-      if (n == 1) {
-        C[0] = 0;
-        L[0] = 0;
-
-        return;
-      }
-
-      for i in 0..<n {
-        for j in 0..<n {
-          leader_cost = L[i*n + j];
-
-          C[idx4D(i, j, i, j, n)] = 0;
-          L[i*n + j] = 0;
-
-          if (leader_cost == 0) {
-            continue;
-          }
-
-          leader_cost_div = leader_cost / (n - 1);
-          leader_cost_rem = leader_cost % (n - 1);
-
-          for k in 0..<n {
-            if (k == i) then
-              continue;
-
-            val = leader_cost_div + (k < leader_cost_rem || (k == leader_cost_rem && i < k));
-
-            for l in 0..<n {
-              if (l != j) then
-                C[idx4D(i, j, k, l, n)] += val;
-            }
-          }
-        }
-      }
-    }
-
-    proc halveComplementary(ref C, n)
-    {
-      var cost_sum: int;
-
-      for i in 0..<n {
-        for j in 0..<n {
-          for k in i..<n {
-            for l in 0..<n {
-              if ((k != i) && (l != j)) {
-                cost_sum = C[idx4D(i, j, k, l, n)] + C[idx4D(k, l, i, j, n)];
-                C[idx4D(i, j, k, l, n)] = cost_sum / 2;
-                C[idx4D(k, l, i, j, n)] = cost_sum / 2;
-
-                if (cost_sum % 2 == 1) {
-                  if ((i + j + k + l) % 2 == 0) then // total index parity for balance
-                    C[idx4D(i, j, k, l, n)] += 1;
-                  else
-                    C[idx4D(k, l, i, j, n)] += 1;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    proc reduceNode(type Node, parent, i, j, k, l, lb_new)
-    {
-      var child = new Node(parent);
-      child.depth += 1;
-
-      // assign q_i to P_j
-      child.mapping[i] = j;
-
-      const n = parent.size;
-      const m = n - 1;
-      child.size -= 1;
-
-      /* assert(n > 0 && "Cannot reduce problem of size 0.");
-      assert(std::min(i, j) >= 0 && std::max(i, j) < n && "Invalid reduction indices."); */
-
-      var L_copy = parent.leader;
-
-      child.domCost = {0..<m**4};
-      child.domLeader = {0..<m**2};
-
-      var x2, y2, p2, q2: int(32);
-
-      // Updating the leader
-      for x in 0..<n {
-        if (x == k) then
-          continue;
-
-        for y in 0..<n {
-          if (y != l) {
-            L_copy[x*n + y] += (parent.costs[idx4D(x, y, k, l, n)] + parent.costs[idx4D(k, l, x, y, n)]);
-          }
-        }
-      }
-
-      // reducing the matrix
-      x2 = 0;
-      for x in 0..<n {
-        if (x == k) then
-          continue;
-
-        y2 = 0;
-        for y in 0..<n {
-          if (y == l) then
-            continue;
-
-          // copy C_xy into C_x2y2
-          p2 = 0;
-          for p in 0..<n {
-            if (p == k) then
-              continue;
-
-            q2 = 0;
-            for q in 0..<n {
-              if (q == l) then
-                continue;
-
-              child.costs[idx4D(x2, y2, p2, q2, m)] = parent.costs[idx4D(x, y, p, q, n)];
-              q2 += 1;
-            }
-            p2 += 1;
-          }
-
-          child.leader[x2*m + y2] = L_copy[x*n + y];
-          y2 += 1;
-        }
-        x2 += 1;
-      }
-
-      child.available[j] = 0;
-
-      child.lower_bound = lb_new;
-
-      return child;
-    }
-
-    proc bound_HHB(ref node, best)
-    {
-      ref lb = node.lower_bound;
-      ref C = node.costs;
-      ref L = node.leader;
-      const m = node.size;
-
-      var cost, incre: int;
-
-      var it = 0;
-
-      while (it < this.it_max && lb <= best) {
-        it += 1;
-
-        distributeLeader(C, L, m);
-        halveComplementary(C, m);
-
-        // apply Hungarian algorithm to each sub-matrix
-        for i in 0..<m {
-          for j in 0..<m {
-            cost = Hungarian_HHB(C, i, j, m);
-
-            L[i*m + j] += cost;
-          }
-        }
-
-        // apply Hungarian algorithm to the leader matrix
-        incre = Hungarian_HHB(L, 0, 0, m);
-
-        if (incre == 0) then
-          break;
-
-        lb += incre;
-      }
-
-      return lb;
-    }
-
     proc decompose_HHB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
@@ -551,30 +273,34 @@ module Problem_QAP
         local {
           var i = this.priority_fac[depth];
 
-          // local index of q_i in the cost matrix
-          var k = localLogicalQubitIndex(parent.mapping, i);
+          var parentWarm: c_ptr(RLT_WarmData_wrapper);
+          var opt_solution: c_ptr(c_int);
+          if (depth + 1 < this.n) {
+            writeln("enter here");
+            const lb_parent = bound_RLT1(parent.mapping, parent.available, depth, this.F,
+              this.D, this.n:c_int, this.N:c_int, 25:c_int, 10**(-6):c_double, c_ptrTo(best_task), opt_solution,
+              nil, -1:c_int, -1:c_int, parentWarm);
+            writeln("exit here");
+
+            if (lb_parent > best_task) then return children;
+          }
 
           for j0 in 0..<this.N by -1 {
             const j = this.priority_loc[j0];
 
             if !parent.available[j] then continue; // skip if not available
 
-            // next available physical qubit
-            var l = localPhysicalQubitIndex(parent.available, j);
-
-            // increment lower bound
-            var incre = parent.leader[k*(this.N - depth) + l];
-            var lb_new = parent.lower_bound + incre;
-
-            // prune
-            if (lb_new > best_task) {
-              continue;
-            }
-
-            var child = reduceNode(Node, parent, i, j, k, l, lb_new);
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
 
             if (child.depth < this.n) {
-              var lb = bound_HHB(child, best_task);
+              // compte warm parent
+              var lb = bound_RLT1(parent.mapping, parent.available, depth, this.F,
+                this.D, this.n:c_int, this.N:c_int, 25, 10**(-6), c_ptrTo(best_task), opt_solution,
+                parentWarm, i, j, nil);
+
               if (lb <= best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
@@ -641,7 +367,7 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               var lb = bound_GLB(child.mapping, child.available, depth:c_int,
-                F, D, n: c_int, N:c_int);
+                this.F, this.D, this.n:c_int, this.N:c_int);
 
               if (lb <= best_task) {
                 children.pushBack(child);
