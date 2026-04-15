@@ -20,7 +20,7 @@ module main_qap
   config const itmax: int(32) = 25;
   config const tol: real      = 1e-6;
   config const ub: string     = "heuristic"; // heuristic
-  config const lb: string     = "glb"; // glb, rlt1
+  config const lb: string     = "glb"; // glb, rlt1, rlt2
 
   proc main(args: [] string): int
   {

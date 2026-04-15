@@ -7,7 +7,7 @@ module Problem_QAP
   use Instances;
   use Header_chpl_c_QAP;
 
-  const allowedLowerBounds = ["glb", "rlt1"];
+  const allowedLowerBounds = ["glb", "rlt1", "rlt2"];
 
   param INF: int = max(int);
   param INF32: int(32) = max(int(32));
@@ -274,7 +274,10 @@ module Problem_QAP
         }
       }
       else {
-        local {
+        if (parent.lower_bound >= best_task) {
+          return children;
+        }
+        /* local { */
           var i = this.priority_fac[depth];
 
           // Pull any cross-task improvement into the task-local UB before
@@ -346,6 +349,7 @@ module Problem_QAP
               }
 
               if (lb < best_task) {
+                child.lower_bound = lb;
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -359,7 +363,137 @@ module Problem_QAP
           if (parentWarm != nil) {
             RLT_WarmData_wrapper_free(parentWarm);
           }
+        /* } */
+      }
+
+      return children;
+    }
+
+    /*******************************************************
+                       RLT2-BASED BOUND
+    *******************************************************/
+
+    proc decompose_RLT2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var depth = parent.depth;
+
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if (eval <= best) {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
+          lock.writeEF(true);
         }
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
+        }
+      }
+      else {
+        if (parent.lower_bound >= best_task) {
+          return children;
+        }
+        /* local { */
+          var i = this.priority_fac[depth];
+
+          // Pull any cross-task improvement into the task-local UB before
+          // bounding. bound_RLT2 uses *best as its UB for loop termination
+          // (`lb < 2*UB`), so the tighter this is, the fewer iterations it runs
+          // and the tighter its returned bound. Without this, a task that
+          // started with the initial UB would keep using it even after another
+          // task has already improved `best` via a leaf.
+          if (best < best_task) then best_task = best;
+
+          var parentWarm: c_ptr(RLT_WarmData_wrapper) = nil;
+
+          // Step 1: Recompute the parent's bound on the reduced subproblem.
+          if (depth + 1 < this.n) {
+            parentWarm = RLT_WarmData_wrapper_new();
+
+            const lb_parent = bound_RLT2(parent.mapping, parent.available, depth:c_int,
+              this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+              nil, nil, -1:c_int, -1:c_int, parentWarm);
+
+            // bound_RLT2 may have tightened best_task via its internal
+            // Hungarian candidate.
+            if (best_task < best) {
+              lock.readFE();
+              if (best_task < best) {
+                best = best_task;
+                num_sol = 0;
+              }
+              else {
+                best_task = best;
+              }
+              lock.writeEF(true);
+            }
+
+            // early-prune signal if the parent lb already exceeds best_task
+            if (lb_parent >= best_task) {
+              RLT_WarmData_wrapper_free(parentWarm);
+              return children;
+            }
+          }
+
+          // Step 2: Enumerate children, reusing the parent's warm data.
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
+            if !parent.available[j] then continue; // skip if not available
+
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
+
+            if (child.depth < this.n) {
+              const lb = bound_RLT2(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+                nil, parentWarm, i:c_int, j:c_int, nil);
+
+              // Same UB propagation as after the parent bound.
+              if (best_task < best) {
+                lock.readFE();
+                if (best_task < best) {
+                  best = best_task;
+                  num_sol = 0;
+                }
+                else {
+                  best_task = best;
+                }
+                lock.writeEF(true);
+              }
+
+              if (lb < best_task) {
+                child.lower_bound = lb;
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+
+          if (parentWarm != nil) {
+            RLT_WarmData_wrapper_free(parentWarm);
+          }
+        /* } */
       }
 
       return children;
@@ -440,6 +574,9 @@ module Problem_QAP
         when "rlt1" {
           return decompose_RLT1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
+        when "rlt2" {
+          return decompose_RLT2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
@@ -463,7 +600,7 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (this.lb_name == "rlt1") {
+      if (this.lb_name == "rlt1" || this.lb_name == "rlt2") {
         writeln("Max bounding iterations: ", this.it_max);
         writeln("Relative tolerance of the stopping criterion: ", this.tol);
       }
@@ -517,7 +654,7 @@ module Problem_QAP
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("   --tol     real      relative tolerance of the stopping criterion");
-      writeln("   --lb      str       lower bound function ('glb' or 'rlt1')");
+      writeln("   --lb      str       lower bound function ('glb', 'rlt1', or 'rlt2')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

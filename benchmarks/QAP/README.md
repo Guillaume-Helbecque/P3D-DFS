@@ -50,6 +50,7 @@ where the available options are:
 - **`--lb`**: lower bound function
   - `glb`: Gilmore-Lawler bound [1] (default)
   - `rlt1`: Reformulation-Linearization Technique of rank 1 [2]
+  - `rlt2`: Reformulation-Linearization Technique of rank 2 [3]
 
 - **`--ub`**: initial upper bound (UB)
   - `heuristic`: initialize the UB using a greedy heuristic (default)
@@ -59,3 +60,4 @@ where the available options are:
 
 1. P. Gilmore. (1962) Optimal and Suboptimal Algorithms for the Quadratic Assignment Problem. *Journal of the Society for Industrial and Applied Mathematics*, 10(2):305-313. DOI: [10.1137/0110022](https://doi.org/10.1137/0110022).
 2. P. Hahn and T. Grant. (1998) Lower Bounds for the Quadratic Assignment Problem Based upon a Dual Formulation. *Operations Research*, 46(6):912-922. DOI: [10.1287/opre.46.6.912](https://doi.org/10.1287/opre.46.6.912).
+3. P. Hahn, W. Hightower, T. Johnson, M. Guignard-Spielberg, and C. Roucairol. (1998) A Lower Bound for the Quadratic Assignment Problem Based on a Level-2 Reformulation-Linearization Technique. ResearchGate. URL: [https://www.researchgate.net/publication/277286468_Lower_Bounds_for_the_Quadratic_Assignment_Problem_Based_Upon_a_Dual_Formulation](https://www.researchgate.net/publication/277286468_Lower_Bounds_for_the_Quadratic_Assignment_Problem_Based_Upon_a_Dual_Formulation).

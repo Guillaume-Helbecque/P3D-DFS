@@ -32,6 +32,11 @@ long long bound_RLT1_wrapper(const int* mapping, const int* available, int depth
   int* opt_solution, const RLT_WarmData_wrapper* warm, int warm_branch_fac,
   int warm_branch_loc, RLT_WarmData_wrapper* out);
 
+long long bound_RLT2_wrapper(const int* mapping, const int* available, int depth, const int* F,
+  const int* D, int n, int N, int rlt_itmax, double rlt_tol, long long* best,
+  int* opt_solution, const RLT_WarmData_wrapper* warm, int warm_branch_fac,
+  int warm_branch_loc, RLT_WarmData_wrapper* out);
+
 #ifdef __cplusplus
 }
 #endif

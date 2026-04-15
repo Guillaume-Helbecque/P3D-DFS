@@ -17,4 +17,10 @@ module Header_chpl_c_QAP
 		const D: c_ptrConst(c_int), n: c_int, N: c_int, rlt_itmax: c_int, rlt_tol: c_double,
 		ref best: int(64), opt_solution: c_ptr(c_int), const warm: c_ptrConst(RLT_WarmData_wrapper),
 		warm_branch_fac: c_int, warm_branch_loc: c_int, out_warm: c_ptr(RLT_WarmData_wrapper)): int(64);
+
+	extern "bound_RLT2_wrapper" proc bound_RLT2(const mapping: c_ptrConst(c_int),
+		const available: c_ptrConst(c_int), depth: c_int, const F: c_ptrConst(c_int),
+		const D: c_ptrConst(c_int), n: c_int, N: c_int, rlt_itmax: c_int, rlt_tol: c_double,
+		ref best: int(64), opt_solution: c_ptr(c_int), const warm: c_ptrConst(RLT_WarmData_wrapper),
+		warm_branch_fac: c_int, warm_branch_loc: c_int, out_warm: c_ptr(RLT_WarmData_wrapper)): int(64);
 }
