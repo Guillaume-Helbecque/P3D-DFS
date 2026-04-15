@@ -3,7 +3,6 @@ module Problem_QAP
   use List;
   use CTypes;
 
-  use Util;
   use Problem;
   use Instances;
   use Header_chpl_c_QAP;
@@ -26,13 +25,14 @@ module Problem_QAP
     var priority_loc: [0..<N] int(32);
 
     var it_max: int(32);
+    var tol: real;
 
     var lb_name: string;
 
     var ub_init: string;
     var initUB: int;
 
-    proc init(filename, itmax, lb, ub): void
+    proc init(filename, itmax, tol, lb, ub): void
     {
       this.filename = filename;
       var getFilenames = filename.split(",");
@@ -65,6 +65,7 @@ module Problem_QAP
         Prioritization(this.priority_loc, this.D, this.N);
 
       this.it_max = itmax;
+      this.tol = tol;
 
       if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
@@ -94,7 +95,7 @@ module Problem_QAP
 
     override proc copy()
     {
-      return new Problem_QAP(this.filename, this.it_max, this.lb_name, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.tol, this.lb_name, this.ub_init);
     }
 
     proc RowwiseNumZeros(const ref D, const N)
@@ -239,7 +240,7 @@ module Problem_QAP
     }
 
     /*******************************************************
-                      HIGHTOWER-HAHN BOUND
+                       RLT1-BASED BOUND
     *******************************************************/
 
     proc decompose_RLT1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -291,8 +292,8 @@ module Problem_QAP
             parentWarm = RLT_WarmData_wrapper_new();
 
             const lb_parent = bound_RLT1(parent.mapping, parent.available, depth:c_int,
-              this.F, this.D, this.n:c_int, this.N:c_int, 25, 1e-6, best_task, nil,
-              nil, -1:c_int, -1:c_int, parentWarm);
+              this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+              nil, nil, -1:c_int, -1:c_int, parentWarm);
 
             // bound_RLT1 may have tightened best_task via its internal
             // Hungarian candidate.
@@ -328,8 +329,8 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               const lb = bound_RLT1(child.mapping, child.available, child.depth:c_int,
-                this.F, this.D, this.n:c_int, this.N:c_int, 25, 1e-6, best_task, nil,
-                parentWarm, i:c_int, j:c_int, nil);
+                this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+                nil, parentWarm, i:c_int, j:c_int, nil);
 
               // Same UB propagation as after the parent bound.
               if (best_task < best) {
@@ -365,7 +366,7 @@ module Problem_QAP
     }
 
     /*******************************************************
-                       GILMORE-LAWLER
+                      GILMORE-LAWLER BOUND
     *******************************************************/
 
     proc decompose_GLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
@@ -462,8 +463,10 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (this.lb_name == "rlt1") then
+      if (this.lb_name == "rlt1") {
         writeln("Max bounding iterations: ", this.it_max);
+        writeln("Relative tolerance of the stopping criterion: ", this.tol);
+      }
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
       writeln("Lower bound function: ", this.lb_name);
@@ -513,6 +516,7 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
+      writeln("   --tol     real      relative tolerance of the stopping criterion");
       writeln("   --lb      str       lower bound function ('glb' or 'rlt1')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }

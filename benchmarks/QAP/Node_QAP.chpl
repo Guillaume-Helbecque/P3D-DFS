@@ -2,8 +2,6 @@ module Node_QAP
 {
   use CTypes;
 
-  use Util;
-
   config param sizeMax: int(32) = 27;
 
   record Node_QAP

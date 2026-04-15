@@ -41,8 +41,11 @@ where the available options are:
   Files must be placed in `./instances/data_QubitAlloc/inter` and
   `./instances/data_QubitAlloc/dist` folders, respectively.
 
-  - any positive integer (`10` by default)
 - **`--itmax`**: maximum number of bounding iterations (only for `rlt1` bound)
+  - any positive integer (`25` by default)
+
+- **`--tol`**: relative tolerance of the stopping criterion (only for `rlt1` bound)
+  - any positive real (`1e-6` by default)
 
 - **`--lb`**: lower bound function
   - `glb`: Gilmore-Lawler bound [1] (default)
