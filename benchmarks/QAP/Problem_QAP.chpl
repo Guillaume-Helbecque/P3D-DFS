@@ -71,7 +71,13 @@ module Problem_QAP
       else halt("Error - Unsupported lower bound");
 
       this.ub_init = ub;
-      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N);
+      if (ub == "heuristic") {
+        // The greedy fills `best_mapping` with its best assignment, then 2-opt
+        // refines it in place and returns the tightened objective cost.
+        var best_mapping: [0..<this.n] int(32);
+        this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N, best_mapping);
+        this.initUB = LocalSearch2Opt(this.D, this.F, this.n, this.N, best_mapping);
+      }
       else {
         try! this.initUB = ub:int(32);
 
@@ -118,7 +124,7 @@ module Problem_QAP
 
       for i in 0..<n do
         for j in 0..<n do
-          sF[i] += F[i * this.N + j];
+          sF[i] += F[i * this.N + j] + F[j * this.N + i];
 
       var min_inter, min_inter_index: int(32);
 
@@ -140,9 +146,11 @@ module Problem_QAP
 
         sF[min_inter_index] = INF32;
 
+        // Remove the contribution of the just-picked index in both directions.
         for j in 0..<n {
           if (sF[j] != INF32) then
-            sF[j] -= F[j * this.N + min_inter_index];
+            sF[j] -= F[j * this.N + min_inter_index]
+                   + F[min_inter_index * this.N + j];
         }
       }
     }
@@ -171,7 +179,8 @@ module Problem_QAP
       }
     }
 
-    proc GreedyAllocation(const ref D, const ref F, const ref priority, n, N)
+    proc GreedyAllocation(const ref D, const ref F, const ref priority, n, N,
+      ref best_mapping: [] int(32))
     {
       var route_cost = INF;
 
@@ -197,7 +206,8 @@ module Problem_QAP
               cost_incre = 0;
               for q in 0..<p {
                 i = priority[q];
-                cost_incre += F[i * N + k] * D[alloc_temp[i] * N + l];
+                cost_incre += F[i * N + k] * D[alloc_temp[i] * N + l]
+                            + F[k * N + i] * D[l * N + alloc_temp[i]];
               }
 
               if (cost_incre < min_cost_incre) {
@@ -213,11 +223,59 @@ module Problem_QAP
 
         route_cost_temp = ObjectiveFunction(alloc_temp, D, F, n);
 
-        if (route_cost_temp < route_cost) then
+        if (route_cost_temp < route_cost) {
           route_cost = route_cost_temp;
+          best_mapping = alloc_temp;
+        }
       }
 
       return route_cost;
+    }
+
+    /* 
+      2-opt local search. Starts from `mapping` and repeatedly swaps pairs of
+      location assignments whenever the swap strictly reduces the objective
+      cost.
+    */
+    proc LocalSearch2Opt(const ref D, const ref F, n: int(32), N: int(32),
+      ref mapping: [] int(32)): int
+    {
+      var bestCost: int = ObjectiveFunction(mapping, D, F, n);
+      var improved = true;
+
+      while improved {
+        improved = false;
+
+        for i in 0..<n {
+          for j in (i+1)..<n {
+            const a = mapping[i];
+            const b = mapping[j];
+
+            // Contributions that don't involve any third index k.
+            var delta: int =
+                (F[i * N + i]:int - F[j * N + j]:int) * (D[b * N + b]:int - D[a * N + a]:int)
+              + (F[i * N + j]:int - F[j * N + i]:int) * (D[b * N + a]:int - D[a * N + b]:int);
+
+            // Contributions from every third facility k (and both directions
+            // of the flow/distance product, since QAP is not assumed symmetric).
+            for k in 0..<n {
+              if (k == i || k == j) then continue;
+              delta += (F[i * N + k]:int - F[j * N + k]:int)
+                     * (D[b * N + mapping[k]]:int - D[a * N + mapping[k]]:int)
+                     + (F[k * N + i]:int - F[k * N + j]:int)
+                     * (D[mapping[k] * N + b]:int - D[mapping[k] * N + a]:int);
+            }
+
+            if (delta < 0) {
+              mapping[i] <=> mapping[j];
+              bestCost += delta;
+              improved = true;
+            }
+          }
+        }
+      }
+
+      return bestCost;
     }
 
     proc ObjectiveFunction(const mapping, const ref D, const ref F, n)
