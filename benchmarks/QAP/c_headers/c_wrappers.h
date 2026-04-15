@@ -24,10 +24,8 @@ typedef struct RLT_WarmData_wrapper
 // Caller owns the returned pointer and must free it via RLT_WarmData_wrapper_free.
 RLT_WarmData_wrapper* RLT_WarmData_wrapper_new(void);
 
-// Free all inner buffers and the wrapper struct itself. Safe to call with NULL.
+// Free all inner buffers and the wrapper struct itself.
 void RLT_WarmData_wrapper_free(RLT_WarmData_wrapper* w);
-
-// RLT_WarmData_wrapper* allocWarm(const int m, const int n, const int depth);
 
 long long bound_RLT1_wrapper(const int* mapping, const int* available, int depth, const int* F,
   const int* D, int n, int N, int rlt_itmax, double rlt_tol, long long* best,

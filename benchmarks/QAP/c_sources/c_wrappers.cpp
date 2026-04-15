@@ -24,7 +24,6 @@ longint bound_GLB_wrapper(int* mapping, int* available, int depth, int* F,
 extern "C"
 RLT_WarmData_wrapper* RLT_WarmData_wrapper_new(void)
 {
-  // calloc -> struct zero-initialized; all inner pointers start NULL.
   return (RLT_WarmData_wrapper*)std::calloc(1, sizeof(RLT_WarmData_wrapper));
 }
 
@@ -41,7 +40,7 @@ void RLT_WarmData_wrapper_free(RLT_WarmData_wrapper* w)
 }
 
 // Free inner buffers without freeing the struct (used before repopulating).
-static void rlt_warm_clear_inner(RLT_WarmData_wrapper* w)
+static void RLT_WarmData_wrapper_clear(RLT_WarmData_wrapper* w)
 {
   if (w == nullptr) return;
   std::free(w->leader); w->leader = nullptr;
@@ -53,28 +52,6 @@ static void rlt_warm_clear_inner(RLT_WarmData_wrapper* w)
   w->uf_size = 0;
   w->parent_bound = 0.0;
 }
-
-// extern "C"
-// RLT_WarmData_wrapper* allocWarm(const int m, const int n, const int depth)
-// {
-//   size_t size_leader = (size_t)m * m;
-//   size_t size_costs  = (size_t)m * m * m * m;
-//   size_t size_cubic  = (size_t)m * m * m * m * m * m;
-//   size_t size_al     = (size_t)m;
-//   size_t size_uf     = (size_t)n - depth;
-//
-//   RLT_WarmData_wrapper* out = (RLT_WarmData_wrapper*)malloc(sizeof(RLT_WarmData_wrapper));
-//
-//   if (out) {
-//     out->leader = (double*)malloc(size_leader * sizeof(double));
-//     out->costs  = (double*)malloc(size_costs  * sizeof(double));
-//     out->cubic  = (double*)malloc(size_cubic  * sizeof(double));
-//     out->al     = (int*)malloc(size_al * sizeof(int));
-//     out->uf     = (int*)malloc(size_uf * sizeof(int));
-//   }
-//
-//   return out;
-// }
 
 extern "C"
 longint bound_RLT1_wrapper(const int* mapping, const int* available, int depth, const int* F,
@@ -139,7 +116,7 @@ longint bound_RLT1_wrapper(const int* mapping, const int* available, int depth, 
       warm_branch_loc, &v_out);
 
     // Drop any previously held buffers before repopulating — allows reuse.
-    rlt_warm_clear_inner(out);
+    RLT_WarmData_wrapper_clear(out);
 
     const int m = v_out.m;
     const size_t size_leader = (size_t)m * m;
@@ -172,12 +149,6 @@ longint bound_RLT1_wrapper(const int* mapping, const int* available, int depth, 
     out->m            = m;
     out->uf_size      = (int)size_uf;
     out->parent_bound = v_out.parent_bound;
-  }
-  else {
-    // No warm, no out: just compute the bound.
-    res = bound_RLT1(v_mapping, v_available, depth, v_F, v_D, n, N, rlt_itmax,
-      rlt_tol, local_UB, v_opt_solution, nullptr, warm_branch_fac,
-      warm_branch_loc, nullptr);
   }
 
   // Propagate updated UB back to caller.

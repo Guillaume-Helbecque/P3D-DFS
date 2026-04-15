@@ -252,7 +252,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -273,43 +273,40 @@ module Problem_QAP
         local {
           var i = this.priority_fac[depth];
 
-          // The warm-start struct is allocated/freed on the C side so that Chapel
-          // never needs to know the layout of RLT_WarmData_wrapper. When
-          // parentWarm stays nil (e.g., last non-leaf level), children run the
-          // cold-start RLT1 path.
+          // Pull any cross-task improvement into the task-local UB before
+          // bounding. bound_RLT1 uses *best as its UB for loop termination
+          // (`lb < 2*UB`), so the tighter this is, the fewer iterations it runs
+          // and the tighter its returned bound. Without this, a task that
+          // started with the initial UB would keep using it even after another
+          // task has already improved `best` via a leaf.
+          if (best < best_task) then best_task = best;
+
           var parentWarm: c_ptr(RLT_WarmData_wrapper) = nil;
 
-          // Step 1: Recompute the parent's bound on the reduced subproblem. This
-          // produces both an early-prune signal (if the parent lb already exceeds
-          // best_task) and the reduced leader/costs matrices that the children
-          // consume via the warm-start path. Matches node.cpp's Reformulation
-          // logic in the QAP_BnB C++ project.
+          // Step 1: Recompute the parent's bound on the reduced subproblem.
           if (depth + 1 < this.n) {
             parentWarm = RLT_WarmData_wrapper_new();
 
-            // best_task is `int` (64-bit on our targets); bound_RLT1 expects
-            // int(64)* so we round-trip through a stack slot and copy back any
-            // UB tightening the bound computation produced.
-            /* var best_ll: int(64) = best_task; */
+            const lb_parent = bound_RLT1(parent.mapping, parent.available, depth:c_int,
+              this.F, this.D, this.n:c_int, this.N:c_int, 25, 1e-6, best_task, nil,
+              nil, -1:c_int, -1:c_int, parentWarm);
 
-            // Non-const parent copies: the C wrapper takes these as const int*
-            // at the ABI level, but we need a c_ptr(c_int) in Chapel. Create
-            // a local pair so we have a mutable-typed backing store.
-            var parent_mapping = parent.mapping;
-            var parent_available = parent.available;
+            // bound_RLT1 may have tightened best_task via its internal
+            // Hungarian candidate.
+            if (best_task < best) {
+              lock.readFE();
+              if (best_task < best) {
+                best = best_task;
+                num_sol = 0;
+              }
+              else {
+                best_task = best;
+              }
+              lock.writeEF(true);
+            }
 
-            const lb_parent = bound_RLT1(
-              parent_mapping, parent_available,
-              depth:c_int,
-              this.F, this.D, this.n:c_int, this.N:c_int,
-              25, 1e-6,
-              c_ptrTo(best_task), nil,
-              nil, -1:c_int, -1:c_int,
-              parentWarm);
-
-            /* best_task = best_ll:int; */
-
-            if (lb_parent > best_task) {
+            // early-prune signal if the parent lb already exceeds best_task
+            if (lb_parent >= best_task) {
               RLT_WarmData_wrapper_free(parentWarm);
               return children;
             }
@@ -327,20 +324,24 @@ module Problem_QAP
             child.available[j] = 0;
 
             if (child.depth < this.n) {
-              /* var best_ll: int(64) = best_task; */
+              const lb = bound_RLT1(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int, 25, 1e-6, best_task, nil,
+                parentWarm, i:c_int, j:c_int, nil);
 
-              const lb = bound_RLT1(
-                child.mapping, child.available,
-                child.depth:c_int,
-                this.F, this.D, this.n:c_int, this.N:c_int,
-                25, 1e-6,
-                c_ptrTo(best_task), nil,
-                parentWarm, i:c_int, j:c_int,
-                nil);
+              // Same UB propagation as after the parent bound.
+              if (best_task < best) {
+                lock.readFE();
+                if (best_task < best) {
+                  best = best_task;
+                  num_sol = 0;
+                }
+                else {
+                  best_task = best;
+                }
+                lock.writeEF(true);
+              }
 
-              /* best_task = best_ll:int; */
-
-              if (lb <= best_task) {
+              if (lb < best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -377,7 +378,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
