@@ -13,12 +13,6 @@ module Node_QAP
     var depth: uint(8);
     var available: c_array(c_int, sizeMax);
 
-    var domCost: domain(1, idxType = int(32));
-    var costs: [domCost] int;
-    var domLeader: domain(1, idxType = int(32));
-    var leader: [domLeader] int;
-    var size: int(32);
-
     // default-initializer
     proc init()
     {}
@@ -29,13 +23,6 @@ module Node_QAP
       init this;
       for i in 0..<problem.n do this.mapping[i] = -1:c_int;
       for i in 0..<sizeMax do this.available[i] = 1:c_int;
-
-      if (problem.lb_name == "hhb") {
-        this.domCost = {0..<(problem.N**4)};
-        this.domLeader = {0..<(problem.N**2)};
-        this.size = problem.N;
-        Assemble(problem.D, problem.F, problem.N);
-      }
     }
 
     // copy-initializer
@@ -45,29 +32,6 @@ module Node_QAP
       this.lower_bound = other.lower_bound;
       this.depth = other.depth;
       this.available = other.available;
-
-      this.domCost = other.domCost;
-      this.costs = other.costs;
-      this.domLeader = other.domLeader;
-      this.leader = other.leader;
-      this.size = other.size;
-    }
-
-    proc ref Assemble(D, F, N)
-    {
-      for i in 0..<N {
-        for j in 0..<N {
-          for k in 0..<N {
-            for l in 0..<N {
-              if ((k == i) ^ (l == j)) then
-                this.costs[idx4D(i, j, k, l, N)] = INFD2;
-              else
-                this.costs[idx4D(i, j, k, l, N)] = F[i * N + k] * D[j * N + l];
-            }
-          }
-          this.leader[i*N + j] = this.costs[idx4D(i, j, i, j, N)];
-        }
-      }
     }
   }
 }

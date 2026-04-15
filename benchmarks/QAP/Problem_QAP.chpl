@@ -8,7 +8,10 @@ module Problem_QAP
   use Instances;
   use Header_chpl_c_QAP;
 
-  const allowedLowerBounds = ["glb", "hhb"];
+  const allowedLowerBounds = ["glb", "rlt1"];
+
+  param INF: int = max(int);
+  param INF32: int(32) = max(int(32));
 
   class Problem_QAP : Problem
   {
@@ -239,7 +242,7 @@ module Problem_QAP
                       HIGHTOWER-HAHN BOUND
     *******************************************************/
 
-    proc decompose_HHB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_RLT1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -433,8 +436,8 @@ module Problem_QAP
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       select this.lb_name {
-        when "hhb" {
-          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        when "rlt1" {
+          return decompose_RLT1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
@@ -459,7 +462,7 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (this.lb_name == "hhb") then
+      if (this.lb_name == "rlt1") then
         writeln("Max bounding iterations: ", this.it_max);
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
@@ -510,7 +513,7 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
-      writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
+      writeln("   --lb      str       lower bound function ('glb' or 'rlt1')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

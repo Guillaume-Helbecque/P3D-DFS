@@ -19,7 +19,7 @@ module main_qap
   config const inst           = "10_sqn,16_melbourne";
   config const itmax: int(32) = 10;
   config const ub: string     = "heuristic"; // heuristic
-  config const lb: string     = "glb"; // glb, hhb
+  config const lb: string     = "glb"; // glb, rlt1
 
   proc main(args: [] string): int
   {
