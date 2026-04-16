@@ -1,4 +1,4 @@
-name: N-Queens tests
+name: PFSP tests
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-nqueens:
+  test-pfsp:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,8 +24,8 @@ jobs:
         working-directory: chpl_config
         run: |
           source laptop_multicore.sh
-          make main_nqueens.out
+          make main_pfsp.out
 
-      - name: Run N-Queens tests
+      - name: Run PFSP tests with LB1
         working-directory: tests
-        run: ./tests_nqueens.sh
+        run: ./tests_pfsp_lb1.sh
