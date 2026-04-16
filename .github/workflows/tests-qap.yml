@@ -1,0 +1,35 @@
+name: QAP tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  test-qap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Chapel
+        uses: actions/cache@v4
+        with:
+          path: ~/chapel-2.8.0MC
+          key: ${{ runner.os }}-chapel-2.8.0MC
+
+      - name: Build Chapel (if needed)
+        working-directory: chpl_config
+        run: |
+          source laptop_multicore.sh
+          make main_qap.out
+
+      - name: Run QAP tests with GLB
+        working-directory: tests
+        run: ./tests_qap_glb.sh
+
+      - name: Run QAP tests with HHB
+        working-directory: tests
+        run: ./tests_qap_hhb.sh
