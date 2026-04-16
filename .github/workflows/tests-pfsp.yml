@@ -29,3 +29,11 @@ jobs:
       - name: Run PFSP tests with LB1
         working-directory: tests
         run: ./tests_pfsp_lb1.sh
+
+      - name: Run PFSP tests with LB1_d
+        working-directory: tests
+        run: ./tests_pfsp_lb1_d.sh
+
+      - name: Run PFSP tests with LB2
+        working-directory: tests
+        run: ./tests_pfsp_lb2.sh
