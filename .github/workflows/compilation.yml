@@ -1,35 +1,37 @@
-name: Compilation
+name: Compilation tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Cache Chapel-2.8.0
-      id: cache-chapel-280
+    - name: Load CI environment
+      run: cat .github/workflows/ci.env >> $GITHUB_ENV
+
+    - name: Restore Chapel cache
+      id: cache-chapel
       uses: actions/cache@v4
       with:
-        path: ~/chapel-2.8.0MC
-        key: ${{ runner.os }}-chapel-2.8.0MC
+        path: ~/${{ env.CHAPEL_DIR }}
+        key: ${{ runner.os }}-${{ env.CHAPEL_CACHE_KEY }}
 
-    - name: Build Chapel 2.8.0 (if not cached)
-      if: steps.cache-chapel-280.outputs.cache-hit != 'true'
-      run: |
-        cd chpl_config
-        source laptop_multicore.sh
+    - name: Build Chapel (if needed)
+      if: steps.cache-chapel.outputs.cache-hit != 'true'
+      working-directory: chpl_config
+      run: source laptop_multicore.sh
 
     - name: Compile code
       working-directory: chpl_config
       run: |
-        source laptop_multicore.sh
+        source laptop_multicore.sh --no-build
         make all

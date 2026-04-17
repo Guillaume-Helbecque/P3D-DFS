@@ -8,28 +8,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-qap:
+  tests-qap:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    strategy:
+      matrix:
+        test_script:
+          - tests_qap_glb.sh
+          - tests_qap_hhb.sh
 
-      - name: Cache Chapel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load CI environment
+        run: cat .github/workflows/ci.env >> $GITHUB_ENV
+
+      - name: Restore Chapel cache
+        id: cache-chapel
         uses: actions/cache@v4
         with:
-          path: ~/chapel-2.8.0MC
-          key: ${{ runner.os }}-chapel-2.8.0MC
+          path: ~/${{ env.CHAPEL_DIR }}
+          key: ${{ runner.os }}-${{ env.CHAPEL_CACHE_KEY }}
 
       - name: Build Chapel (if needed)
+        if: steps.cache-chapel.outputs.cache-hit != 'true'
+        working-directory: chpl_config
+        run: source laptop_multicore.sh
+
+      - name: Compile QAP
         working-directory: chpl_config
         run: |
-          source laptop_multicore.sh
+          source laptop_multicore.sh --no-build
           make main_qap.out
 
-      - name: Run QAP tests with GLB
+      - name: Run QAP tests
         working-directory: tests
-        run: ./tests_qap_glb.sh
-
-      - name: Run QAP tests with HHB
-        working-directory: tests
-        run: ./tests_qap_hhb.sh
+        run: ./${{ matrix.test_script }}

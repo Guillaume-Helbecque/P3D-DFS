@@ -8,32 +8,41 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-pfsp:
+  tests-pfsp:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    strategy:
+      matrix:
+        test_script:
+          - tests_pfsp_lb1.sh
+          - tests_pfsp_lb1_d.sh
+          - tests_pfsp_lb2.sh
 
-      - name: Cache Chapel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load CI environment
+        run: cat .github/workflows/ci.env >> $GITHUB_ENV
+
+      - name: Restore Chapel cache
+        id: cache-chapel
         uses: actions/cache@v4
         with:
-          path: ~/chapel-2.8.0MC
-          key: ${{ runner.os }}-chapel-2.8.0MC
+          path: ~/${{ env.CHAPEL_DIR }}
+          key: ${{ runner.os }}-${{ env.CHAPEL_CACHE_KEY }}
 
       - name: Build Chapel (if needed)
+        if: steps.cache-chapel.outputs.cache-hit != 'true'
+        working-directory: chpl_config
+        run: source laptop_multicore.sh
+
+      - name: Compile PFSP
         working-directory: chpl_config
         run: |
-          source laptop_multicore.sh
+          source laptop_multicore.sh --no-build
           make main_pfsp.out
 
-      - name: Run PFSP tests with LB1
+      - name: Run PFSP tests
         working-directory: tests
-        run: ./tests_pfsp_lb1.sh
-
-      - name: Run PFSP tests with LB1_d
-        working-directory: tests
-        run: ./tests_pfsp_lb1_d.sh
-
-      - name: Run PFSP tests with LB2
-        working-directory: tests
-        run: ./tests_pfsp_lb2.sh
+        run: ./${{ matrix.test_script }}

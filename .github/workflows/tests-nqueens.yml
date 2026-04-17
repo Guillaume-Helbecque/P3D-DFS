@@ -8,24 +8,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-nqueens:
+  tests-nqueens:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Cache Chapel
+      - name: Load CI environment
+        run: cat .github/workflows/ci.env >> $GITHUB_ENV
+
+      - name: Restore Chapel cache
+        id: cache-chapel
         uses: actions/cache@v4
         with:
-          path: ~/chapel-2.8.0MC
-          key: ${{ runner.os }}-chapel-2.8.0MC
+          path: ~/${{ env.CHAPEL_DIR }}
+          key: ${{ runner.os }}-${{ env.CHAPEL_CACHE_KEY }}
 
       - name: Build Chapel (if needed)
+        if: steps.cache-chapel.outputs.cache-hit != 'true'
+        working-directory: chpl_config
+        run: source laptop_multicore.sh
+
+      - name: Compile N-Queens
         working-directory: chpl_config
         run: |
-          source laptop_multicore.sh
+          source laptop_multicore.sh --no-build
           make main_nqueens.out
 
-      - name: Run N-Queens tests
+      - name: Run tests
         working-directory: tests
         run: ./tests_nqueens.sh

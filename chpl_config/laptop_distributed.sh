@@ -6,6 +6,14 @@
 
 export HERE=$(pwd)
 
+NO_BUILD=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-build) NO_BUILD=1 ;;
+    *) echo "Unknown option: $arg"; return 1 ;;
+  esac
+done
+
 export CHPL_VERSION=$(cat CHPL_VERSION)
 export CHPL_HOME=~/chapel-${CHPL_VERSION}D
 
@@ -32,6 +40,10 @@ export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=udp
 export GASNET_SPAWNFN=L
 
-cd $CHPL_HOME
-make -j $NUM_T_LOCALE
+# Build Chapel unless disabled
+if [ $NO_BUILD -eq 0 ]; then
+  cd $CHPL_HOME
+  make -j $NUM_T_LOCALE
+fi
+
 cd $HERE/..
