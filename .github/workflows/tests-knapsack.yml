@@ -1,4 +1,4 @@
-name: PFSP tests
+name: Knapsack tests
 
 on:
   push:
@@ -8,15 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests-pfsp:
+  tests-knapsack:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         test_script:
-          - tests_pfsp_lb1.sh
-          - tests_pfsp_lb1_d.sh
-          - tests_pfsp_lb2.sh
+          - tests_knapsack_dantzig.sh
+          - tests_knapsack_martello.sh
 
     steps:
       - name: Checkout repository
@@ -37,11 +36,11 @@ jobs:
         working-directory: chpl_config
         run: source laptop_multicore.sh
 
-      - name: Compile PFSP
+      - name: Compile Knapsack
         working-directory: chpl_config
         run: |
           source laptop_multicore.sh --no-build
-          make main_pfsp.out
+          make main_knapsack.out
 
       - name: Run tests
         working-directory: tests

@@ -42,6 +42,6 @@ jobs:
           source laptop_multicore.sh --no-build
           make main_qap.out
 
-      - name: Run QAP tests
+      - name: Run tests
         working-directory: tests
         run: ./${{ matrix.test_script }}
