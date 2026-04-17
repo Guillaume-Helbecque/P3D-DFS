@@ -154,7 +154,7 @@ module Problem_UTS
       const elapsedTime: real): void
     {
       writeln("\n=================================");
-      writeln("Size of the explored tree: ", treeSize);
+      writeln("Size of the explored tree: ", treeSize+1); // +1 for root
       writeln("Number of leaves explored: ", nbSol, " (", 100 * nbSol:real / treeSize:real, "%)");
       writeln("Tree depth: ", maxDepth);
       writeln("Elapsed time: ", elapsedTime, " [s]");
