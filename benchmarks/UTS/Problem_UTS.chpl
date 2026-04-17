@@ -163,7 +163,7 @@ module Problem_UTS
       var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================");
-      writeln("Size of the explored tree: ", treeSize);
+      writeln("Size of the explored tree: ", treeSize+1); // +1 for root
       /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
       if isArray(subNodeExplored) {
         writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);

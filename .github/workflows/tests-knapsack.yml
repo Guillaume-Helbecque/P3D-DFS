@@ -1,0 +1,47 @@
+name: Knapsack tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  tests-knapsack:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        test_script:
+          - tests_knapsack_dantzig.sh
+          - tests_knapsack_martello.sh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Load CI environment
+        run: cat .github/workflows/ci.env >> $GITHUB_ENV
+
+      - name: Restore Chapel cache
+        id: cache-chapel
+        uses: actions/cache@v5
+        with:
+          path: ~/${{ env.CHAPEL_DIR }}
+          key: ${{ runner.os }}-${{ env.CHAPEL_CACHE_KEY }}
+
+      - name: Build Chapel (if needed)
+        if: steps.cache-chapel.outputs.cache-hit != 'true'
+        working-directory: chpl_config
+        run: source laptop_multicore.sh
+
+      - name: Compile Knapsack
+        working-directory: chpl_config
+        run: |
+          source laptop_multicore.sh --no-build
+          make main_knapsack.out
+
+      - name: Run tests
+        working-directory: tests
+        run: ./${{ matrix.test_script }}

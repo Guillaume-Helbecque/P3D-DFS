@@ -4,6 +4,14 @@
 
 export HERE=$(pwd)
 
+NO_BUILD=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-build) NO_BUILD=1 ;;
+    *) echo "Unknown option: $arg"; return 1 ;;
+  esac
+done
+
 export CHPL_VERSION=$(cat CHPL_VERSION)
 export CHPL_HOME=~/chapel-${CHPL_VERSION}MC
 
@@ -25,6 +33,10 @@ export CHPL_LLVM=none
 NUM_T_LOCALE=$(cat /proc/cpuinfo | grep processor | wc -l) # hyperthreading
 export CHPL_RT_NUM_THREADS_PER_LOCALE=$NUM_T_LOCALE
 
-cd $CHPL_HOME
-make -j $NUM_T_LOCALE
+# Build Chapel unless disabled
+if [ $NO_BUILD -eq 0 ]; then
+  cd $CHPL_HOME
+  make -j $NUM_T_LOCALE
+fi
+
 cd $HERE/..
