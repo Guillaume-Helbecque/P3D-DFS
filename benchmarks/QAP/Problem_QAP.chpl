@@ -3,11 +3,14 @@ module Problem_QAP
   use List;
   use CTypes;
 
-  use Util;
   use Problem;
   use Instances;
+  use Header_chpl_c_QAP;
 
-  const allowedLowerBounds = ["glb", "hhb"];
+  const allowedLowerBounds = ["glb", "rlt1", "rlt2"];
+
+  param INF: int = max(int);
+  param INF32: int(32) = max(int(32));
 
   class Problem_QAP : Problem
   {
@@ -15,20 +18,21 @@ module Problem_QAP
     var benchmark: string;
     var n: int(32);
     var N: int(32);
-    var F: [0..<N, 0..<N] int(32);
-    var D: [0..<N, 0..<N] int(32);
+    var F: c_ptr(c_int);
+    var D: c_ptr(c_int);
 
     var priority_fac: [0..<n] int(32);
     var priority_loc: [0..<N] int(32);
 
     var it_max: int(32);
+    var tol: real;
 
     var lb_name: string;
 
     var ub_init: string;
     var initUB: int;
 
-    proc init(filename, itmax, lb, ub): void
+    proc init(filename, itmax, tol, lb, ub): void
     {
       this.filename = filename;
       var getFilenames = filename.split(",");
@@ -49,22 +53,31 @@ module Problem_QAP
 
       init this;
 
+      this.F = allocate(c_int, N**2);
+      this.D = allocate(c_int, N**2);
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
       Prioritization(this.priority_fac, this.F, this.n, ascend = false);
-      if this.benchmark == "qubitAlloc" then
+      if (this.benchmark == "qubitAlloc") then
         Prioritization_loc_connec(this.D, this.N);
       else
         Prioritization(this.priority_loc, this.D, this.N);
 
       this.it_max = itmax;
+      this.tol = tol;
 
       if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
 
       this.ub_init = ub;
-      if (ub == "heuristic") then this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N);
+      if (ub == "heuristic") {
+        // The greedy fills `best_mapping` with its best assignment, then 2-opt
+        // refines it in place and returns the tightened objective cost.
+        var best_mapping: [0..<this.n] int(32);
+        this.initUB = GreedyAllocation(this.D, this.F, this.priority_fac, this.n, this.N, best_mapping);
+        this.initUB = LocalSearch2Opt(this.D, this.F, this.n, this.N, best_mapping);
+      }
       else {
         try! this.initUB = ub:int(32);
 
@@ -80,27 +93,15 @@ module Problem_QAP
       }
     }
 
-    proc init(const filename: string, const benchmark, const N, const D, const n,
-      const F, const priority_fac, const priority_loc, const it_max, const lb_name,
-      const ub_init, const initUB): void
+    proc deinit()
     {
-      this.filename = filename;
-      this.benchmark = benchmark;
-      this.n = n;
-      this.N = N;
-      this.F = F;
-      this.D = D;
-      this.priority_fac = priority_fac;
-      this.priority_loc = priority_loc;
-      this.it_max = it_max;
-      this.lb_name = lb_name;
-      this.ub_init = ub_init;
-      this.initUB = initUB;
+      deallocate(F);
+      deallocate(D);
     }
 
     override proc copy()
     {
-      return new Problem_QAP(this.filename, this.it_max, this.lb_name, this.ub_init);
+      return new Problem_QAP(this.filename, this.it_max, this.tol, this.lb_name, this.ub_init);
     }
 
     proc RowwiseNumZeros(const ref D, const N)
@@ -109,7 +110,7 @@ module Problem_QAP
 
       for i in 0..<N {
         for j in 0..<N {
-          if !D[i, j] then
+          if !D[i * N + j] then
             nzD[i] += 1;
         }
       }
@@ -122,7 +123,8 @@ module Problem_QAP
       var sF: [0..<n] int(32);
 
       for i in 0..<n do
-        sF[i] = (+ reduce F[i, 0..<n]);
+        for j in 0..<n do
+          sF[i] += F[i * this.N + j] + F[j * this.N + i];
 
       var min_inter, min_inter_index: int(32);
 
@@ -144,9 +146,11 @@ module Problem_QAP
 
         sF[min_inter_index] = INF32;
 
+        // Remove the contribution of the just-picked index in both directions.
         for j in 0..<n {
           if (sF[j] != INF32) then
-            sF[j] -= F[j, min_inter_index];
+            sF[j] -= F[j * this.N + min_inter_index]
+                   + F[min_inter_index * this.N + j];
         }
       }
     }
@@ -175,7 +179,8 @@ module Problem_QAP
       }
     }
 
-    proc GreedyAllocation(const ref D, const ref F, const ref priority, n, N)
+    proc GreedyAllocation(const ref D, const ref F, const ref priority, n, N,
+      ref best_mapping: [] int(32))
     {
       var route_cost = INF;
 
@@ -201,7 +206,8 @@ module Problem_QAP
               cost_incre = 0;
               for q in 0..<p {
                 i = priority[q];
-                cost_incre += F[i, k] * D[alloc_temp[i], l];
+                cost_incre += F[i * N + k] * D[alloc_temp[i] * N + l]
+                            + F[k * N + i] * D[l * N + alloc_temp[i]];
               }
 
               if (cost_incre < min_cost_incre) {
@@ -217,11 +223,59 @@ module Problem_QAP
 
         route_cost_temp = ObjectiveFunction(alloc_temp, D, F, n);
 
-        if (route_cost_temp < route_cost) then
+        if (route_cost_temp < route_cost) {
           route_cost = route_cost_temp;
+          best_mapping = alloc_temp;
+        }
       }
 
       return route_cost;
+    }
+
+    /*
+      2-opt local search. Starts from `mapping` and repeatedly swaps pairs of
+      location assignments whenever the swap strictly reduces the objective
+      cost.
+    */
+    proc LocalSearch2Opt(const ref D, const ref F, n: int(32), N: int(32),
+      ref mapping: [] int(32)): int
+    {
+      var bestCost: int = ObjectiveFunction(mapping, D, F, n);
+      var improved = true;
+
+      while improved {
+        improved = false;
+
+        for i in 0..<n {
+          for j in (i+1)..<n {
+            const a = mapping[i];
+            const b = mapping[j];
+
+            // Contributions that don't involve any third index k.
+            var delta: int =
+                (F[i * N + i]:int - F[j * N + j]:int) * (D[b * N + b]:int - D[a * N + a]:int)
+              + (F[i * N + j]:int - F[j * N + i]:int) * (D[b * N + a]:int - D[a * N + b]:int);
+
+            // Contributions from every third facility k (and both directions
+            // of the flow/distance product, since QAP is not assumed symmetric).
+            for k in 0..<n {
+              if (k == i || k == j) then continue;
+              delta += (F[i * N + k]:int - F[j * N + k]:int)
+                     * (D[b * N + mapping[k]]:int - D[a * N + mapping[k]]:int)
+                     + (F[k * N + i]:int - F[k * N + j]:int)
+                     * (D[mapping[k] * N + b]:int - D[mapping[k] * N + a]:int);
+            }
+
+            if (delta < 0) {
+              mapping[i] <=> mapping[j];
+              bestCost += delta;
+              improved = true;
+            }
+          }
+        }
+      }
+
+      return bestCost;
     }
 
     proc ObjectiveFunction(const mapping, const ref D, const ref F, n)
@@ -236,7 +290,7 @@ module Problem_QAP
           if (mapping[j] == -1) then
             continue;
 
-          route_cost += F[i, j] * D[mapping[i], mapping[j]];
+          route_cost += F[i * this.N + j] * D[mapping[i] * this.N + mapping[j]];
         }
       }
 
@@ -244,288 +298,10 @@ module Problem_QAP
     }
 
     /*******************************************************
-                      HIGHTOWER-HAHN BOUND
+                       RLT1-BASED BOUND
     *******************************************************/
 
-    proc Hungarian_HHB(ref C, i0, j0, n)
-    {
-     var w, j_cur, j_next: int(32);
-
-     // job[j] = worker assigned to job j, or -1 if unassigned
-     var job = allocate(int(32), n+1);
-     for i in 0..n do job[i] = -1;
-
-     // yw[w] is the potential for worker w
-     // yj[j] is the potential for job j
-     var yw = allocate(int, n);
-     for i in 0..<n do yw[i] = 0;
-     var yj = allocate(int, n+1);
-     for i in 0..n do yj[i] = 0;
-
-     var min_to = allocate(int, n+1);
-     var prv = allocate(int(32), n+1);
-     var in_Z = allocate(bool, n+1);
-
-     // main Hungarian algorithm
-     for w_cur in 0..<n {
-       j_cur = n;
-       job[j_cur] = w_cur;
-
-       for i in 0..n do min_to[i] = INFD2;
-       for i in 0..n do prv[i] = -1;
-       for i in 0..n do in_Z[i] = false;
-
-       while (job[j_cur] != -1) {
-         in_Z[j_cur] = true;
-         w = job[j_cur];
-         var delta = INFD2;
-         j_next = 0;
-
-         for j in 0..<n {
-           if !in_Z[j] {
-             // reduced cost = C[w][j] - yw[w] - yj[j]
-             var cur_cost = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
-
-             if ckmin(min_to[j], cur_cost) then
-               prv[j] = j_cur;
-             if ckmin(delta, min_to[j]) then
-               j_next = j;
-           }
-         }
-
-         // update potentials
-         for j in 0..n {
-           if in_Z[j] {
-             yw[job[j]] += delta;
-             yj[j] -= delta;
-           }
-           else {
-             min_to[j] -= delta;
-           }
-         }
-
-         j_cur = j_next;
-       }
-
-       // update worker assignment along the found augmenting path
-       while (j_cur != n) {
-         var j = prv[j_cur];
-         job[j_cur] = job[j];
-         j_cur = j;
-       }
-     }
-
-     deallocate(min_to);
-     deallocate(prv);
-     deallocate(in_Z);
-
-     // compute total cost
-     var total_cost: int;
-
-     // for j in [0..n-1], job[j] is the worker assigned to job j
-     for j in 0..<n {
-       if (job[j] != -1) then
-         total_cost += C[idx4D(i0, j0, job[j], j, n)];
-     }
-
-     // OPTIONAL: Reflecting the "reduced costs" after the Hungarian
-     // algorithm by applying the final potentials:
-     for w in 0..<n {
-       for j in 0..<n {
-         if (C[idx4D(i0, j0, w, j, n)] < INFD2) {
-           // subtract the final potentials from the original cost
-           C[idx4D(i0, j0, w, j, n)] = C[idx4D(i0, j0, w, j, n)] - yw[w] - yj[j];
-         }
-       }
-     }
-
-     deallocate(job);
-     deallocate(yw);
-     deallocate(yj);
-
-     return total_cost;
-    }
-
-    proc distributeLeader(ref C, ref L, n)
-    {
-      var leader_cost, leader_cost_div, leader_cost_rem, val: int;
-
-      if (n == 1) {
-        C[0] = 0;
-        L[0] = 0;
-
-        return;
-      }
-
-      for i in 0..<n {
-        for j in 0..<n {
-          leader_cost = L[i*n + j];
-
-          C[idx4D(i, j, i, j, n)] = 0;
-          L[i*n + j] = 0;
-
-          if (leader_cost == 0) {
-            continue;
-          }
-
-          leader_cost_div = leader_cost / (n - 1);
-          leader_cost_rem = leader_cost % (n - 1);
-
-          for k in 0..<n {
-            if (k == i) then
-              continue;
-
-            val = leader_cost_div + (k < leader_cost_rem || (k == leader_cost_rem && i < k));
-
-            for l in 0..<n {
-              if (l != j) then
-                C[idx4D(i, j, k, l, n)] += val;
-            }
-          }
-        }
-      }
-    }
-
-    proc halveComplementary(ref C, n)
-    {
-      var cost_sum: int;
-
-      for i in 0..<n {
-        for j in 0..<n {
-          for k in i..<n {
-            for l in 0..<n {
-              if ((k != i) && (l != j)) {
-                cost_sum = C[idx4D(i, j, k, l, n)] + C[idx4D(k, l, i, j, n)];
-                C[idx4D(i, j, k, l, n)] = cost_sum / 2;
-                C[idx4D(k, l, i, j, n)] = cost_sum / 2;
-
-                if (cost_sum % 2 == 1) {
-                  if ((i + j + k + l) % 2 == 0) then // total index parity for balance
-                    C[idx4D(i, j, k, l, n)] += 1;
-                  else
-                    C[idx4D(k, l, i, j, n)] += 1;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    proc reduceNode(type Node, parent, i, j, k, l, lb_new)
-    {
-      var child = new Node(parent);
-      child.depth += 1;
-
-      // assign q_i to P_j
-      child.mapping[i] = j;
-
-      const n = parent.size;
-      const m = n - 1;
-      child.size -= 1;
-
-      /* assert(n > 0 && "Cannot reduce problem of size 0.");
-      assert(std::min(i, j) >= 0 && std::max(i, j) < n && "Invalid reduction indices."); */
-
-      var L_copy = parent.leader;
-
-      child.domCost = {0..<m**4};
-      child.domLeader = {0..<m**2};
-
-      var x2, y2, p2, q2: int(32);
-
-      // Updating the leader
-      for x in 0..<n {
-        if (x == k) then
-          continue;
-
-        for y in 0..<n {
-          if (y != l) {
-            L_copy[x*n + y] += (parent.costs[idx4D(x, y, k, l, n)] + parent.costs[idx4D(k, l, x, y, n)]);
-          }
-        }
-      }
-
-      // reducing the matrix
-      x2 = 0;
-      for x in 0..<n {
-        if (x == k) then
-          continue;
-
-        y2 = 0;
-        for y in 0..<n {
-          if (y == l) then
-            continue;
-
-          // copy C_xy into C_x2y2
-          p2 = 0;
-          for p in 0..<n {
-            if (p == k) then
-              continue;
-
-            q2 = 0;
-            for q in 0..<n {
-              if (q == l) then
-                continue;
-
-              child.costs[idx4D(x2, y2, p2, q2, m)] = parent.costs[idx4D(x, y, p, q, n)];
-              q2 += 1;
-            }
-            p2 += 1;
-          }
-
-          child.leader[x2*m + y2] = L_copy[x*n + y];
-          y2 += 1;
-        }
-        x2 += 1;
-      }
-
-      child.available[j] = false;
-
-      child.lower_bound = lb_new;
-
-      return child;
-    }
-
-    proc bound_HHB(ref node, best)
-    {
-      ref lb = node.lower_bound;
-      ref C = node.costs;
-      ref L = node.leader;
-      const m = node.size;
-
-      var cost, incre: int;
-
-      var it = 0;
-
-      while (it < this.it_max && lb <= best) {
-        it += 1;
-
-        distributeLeader(C, L, m);
-        halveComplementary(C, m);
-
-        // apply Hungarian algorithm to each sub-matrix
-        for i in 0..<m {
-          for j in 0..<m {
-            cost = Hungarian_HHB(C, i, j, m);
-
-            L[i*m + j] += cost;
-          }
-        }
-
-        // apply Hungarian algorithm to the leader matrix
-        incre = Hungarian_HHB(L, 0, 0, m);
-
-        if (incre == 0) then
-          break;
-
-        lb += incre;
-      }
-
-      return lb;
-    }
-
-    proc decompose_HHB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+    proc decompose_RLT1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       var children: list(Node);
@@ -538,7 +314,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -556,34 +332,82 @@ module Problem_QAP
         }
       }
       else {
-        local {
+        if (parent.lower_bound >= best_task) {
+          return children;
+        }
+        /* local { */
           var i = this.priority_fac[depth];
 
-          // local index of q_i in the cost matrix
-          var k = localLogicalQubitIndex(parent.mapping, i);
+          // Pull any cross-task improvement into the task-local UB before
+          // bounding. bound_RLT1 uses *best as its UB for loop termination
+          // (`lb < 2*UB`), so the tighter this is, the fewer iterations it runs
+          // and the tighter its returned bound. Without this, a task that
+          // started with the initial UB would keep using it even after another
+          // task has already improved `best` via a leaf.
+          if (best < best_task) then best_task = best;
 
+          var parentWarm: c_ptr(RLT_WarmData_wrapper) = nil;
+
+          // Step 1: Recompute the parent's bound on the reduced subproblem.
+          if (depth + 1 < this.n) {
+            parentWarm = RLT_WarmData_wrapper_new();
+
+            const lb_parent = bound_RLT1(parent.mapping, parent.available, depth:c_int,
+              this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+              nil, nil, -1:c_int, -1:c_int, parentWarm);
+
+            // bound_RLT1 may have tightened best_task via its internal
+            // Hungarian candidate.
+            if (best_task < best) {
+              lock.readFE();
+              if (best_task < best) {
+                best = best_task;
+                num_sol = 0;
+              }
+              else {
+                best_task = best;
+              }
+              lock.writeEF(true);
+            }
+
+            // early-prune signal if the parent lb already exceeds best_task
+            if (lb_parent >= best_task) {
+              RLT_WarmData_wrapper_free(parentWarm);
+              return children;
+            }
+          }
+
+          // Step 2: Enumerate children, reusing the parent's warm data.
           for j0 in 0..<this.N by -1 {
             const j = this.priority_loc[j0];
 
             if !parent.available[j] then continue; // skip if not available
 
-            // next available physical qubit
-            var l = localPhysicalQubitIndex(parent.available, j);
-
-            // increment lower bound
-            var incre = parent.leader[k*(this.N - depth) + l];
-            var lb_new = parent.lower_bound + incre;
-
-            // prune
-            if (lb_new > best_task) {
-              continue;
-            }
-
-            var child = reduceNode(Node, parent, i, j, k, l, lb_new);
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
 
             if (child.depth < this.n) {
-              var lb = bound_HHB(child, best_task);
-              if (lb <= best_task) {
+              const lb = bound_RLT1(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+                nil, parentWarm, i:c_int, j:c_int, nil);
+
+              // Same UB propagation as after the parent bound.
+              if (best_task < best) {
+                lock.readFE();
+                if (best_task < best) {
+                  best = best_task;
+                  num_sol = 0;
+                }
+                else {
+                  best_task = best;
+                }
+                lock.writeEF(true);
+              }
+
+              if (lb < best_task) {
+                child.lower_bound = lb;
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -593,260 +417,149 @@ module Problem_QAP
               tree_loc += 1;
             }
           }
-        }
+
+          if (parentWarm != nil) {
+            RLT_WarmData_wrapper_free(parentWarm);
+          }
+        /* } */
       }
 
       return children;
     }
 
     /*******************************************************
-                       GILMORE-LAWLER
+                       RLT2-BASED BOUND
     *******************************************************/
 
-    proc Hungarian_GLB(const ref C, n, m)
+    proc decompose_RLT2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
-      var w, j_cur, j_next: int(32);
+      var children: list(Node);
 
-      // job[j] = worker assigned to job j, or -1 if unassigned
-      var job = allocate(int(32), m+1);
-      for i in 0..m do job[i] = -1;
+      var depth = parent.depth;
 
-      // yw[w] is the potential for worker w
-      // yj[j] is the potential for job j
-      var yw = allocate(int, n, clear=true);
-      var yj = allocate(int, m+1, clear=true);
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
-      var min_to = allocate(int, m+1);
-      var prv = allocate(int(32), m+1);
-      var in_Z = allocate(bool, m+1);
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if (eval <= best) {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
+          lock.writeEF(true);
+        }
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
+        }
+      }
+      else {
+        if (parent.lower_bound >= best_task) {
+          return children;
+        }
+        /* local { */
+          var i = this.priority_fac[depth];
 
-      // main Hungarian algorithm
-      for w_cur in 0..<n {
-        j_cur = m; // dummy job index
-        job[j_cur] = w_cur;
+          // Pull any cross-task improvement into the task-local UB before
+          // bounding. bound_RLT2 uses *best as its UB for loop termination
+          // (`lb < 2*UB`), so the tighter this is, the fewer iterations it runs
+          // and the tighter its returned bound. Without this, a task that
+          // started with the initial UB would keep using it even after another
+          // task has already improved `best` via a leaf.
+          if (best < best_task) then best_task = best;
 
-        for i in 0..m do min_to[i] = INFD2;
-        for i in 0..m do prv[i] = -1;
-        for i in 0..m do in_Z[i] = false;
+          var parentWarm: c_ptr(RLT_WarmData_wrapper) = nil;
 
-        while (job[j_cur] != -1) {
-          in_Z[j_cur] = true;
-          w = job[j_cur];
-          var delta = INFD2;
-          j_next = 0;
+          // Step 1: Recompute the parent's bound on the reduced subproblem.
+          if (depth + 1 < this.n) {
+            parentWarm = RLT_WarmData_wrapper_new();
 
-          for j in 0..<m {
-            if !in_Z[j] {
-              // reduced cost = C[w][j] - yw[w] - yj[j]
-              var cur_cost = C[w*m + j] - yw[w] - yj[j];
+            const lb_parent = bound_RLT2(parent.mapping, parent.available, depth:c_int,
+              this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+              nil, nil, -1:c_int, -1:c_int, parentWarm);
 
-              if ckmin(min_to[j], cur_cost) then
-                prv[j] = j_cur;
-              if ckmin(delta, min_to[j]) then
-                j_next = j;
+            // bound_RLT2 may have tightened best_task via its internal
+            // Hungarian candidate.
+            if (best_task < best) {
+              lock.readFE();
+              if (best_task < best) {
+                best = best_task;
+                num_sol = 0;
+              }
+              else {
+                best_task = best;
+              }
+              lock.writeEF(true);
+            }
+
+            // early-prune signal if the parent lb already exceeds best_task
+            if (lb_parent >= best_task) {
+              RLT_WarmData_wrapper_free(parentWarm);
+              return children;
             }
           }
 
-          // update potentials
-          for j in 0..m {
-            if in_Z[j] {
-              yw[job[j]] += delta;
-              yj[j] -= delta;
+          // Step 2: Enumerate children, reusing the parent's warm data.
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
+            if !parent.available[j] then continue; // skip if not available
+
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
+
+            if (child.depth < this.n) {
+              const lb = bound_RLT2(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int, this.it_max, this.tol, best_task,
+                nil, parentWarm, i:c_int, j:c_int, nil);
+
+              // Same UB propagation as after the parent bound.
+              if (best_task < best) {
+                lock.readFE();
+                if (best_task < best) {
+                  best = best_task;
+                  num_sol = 0;
+                }
+                else {
+                  best_task = best;
+                }
+                lock.writeEF(true);
+              }
+
+              if (lb < best_task) {
+                child.lower_bound = lb;
+                children.pushBack(child);
+                tree_loc += 1;
+              }
             }
             else {
-              min_to[j] -= delta;
+              children.pushBack(child);
+              tree_loc += 1;
             }
           }
 
-          j_cur = j_next;
-        }
-
-        // update worker assignment along the found augmenting path
-        while (j_cur != m) {
-          var j = prv[j_cur];
-          job[j_cur] = job[j];
-          j_cur = j;
-        }
+          if (parentWarm != nil) {
+            RLT_WarmData_wrapper_free(parentWarm);
+          }
+        /* } */
       }
 
-      deallocate(min_to);
-      deallocate(prv);
-      deallocate(in_Z);
-
-      // compute total cost
-      var total_cost: int;
-
-      // for j in [0..m-1], job[j] is the worker assigned to job j
-      for j in 0..<m {
-        if (job[j] != -1) then
-          total_cost += C[job[j]*m + j];
-      }
-
-      deallocate(job);
-      deallocate(yw);
-      deallocate(yj);
-
-      return total_cost;
+      return children;
     }
 
-    proc insertion_sort_device(ref arr, const n, const ascend)
-    {
-      // ascend=true  -> increasing
-      // ascend=false -> decreasing
-
-      if (n <= 1) then
-        return;
-
-      for i in 1..<n {
-        const x = arr[i];
-        var j = i - 1;
-
-        if ascend {
-          while (j >= 0 && arr[j] > x) {
-            arr[j + 1] = arr[j];
-            j -= 1;
-          }
-        }
-        else {
-          while (j >= 0 && arr[j] < x) {
-            arr[j + 1] = arr[j];
-            j -= 1;
-          }
-        }
-
-        arr[j + 1] = x;
-      }
-    }
-
-    proc Assemble_LAP(ref L, const dp, const partial_mapping, const ref av)
-    {
-      var assigned_fac = allocate(int(32), dp);
-      var unassigned_fac = allocate(int(32), this.n-dp);
-      var unassigned_loc = allocate(int(32), this.N-dp);
-      var c1, c2, c4: int(32) = 0;
-
-      for i in 0..<this.n {
-        if (partial_mapping[i] != -1) {
-          assigned_fac[c1] = i;
-          c1 += 1;
-        }
-        else {
-          unassigned_fac[c2] = i;
-          c2 += 1;
-        }
-      }
-
-      for i in 0..<this.N {
-        if av[i] {
-          unassigned_loc[c4] = i;
-          c4 += 1;
-        }
-      }
-
-      var u = this.n - dp;
-      var r = this.N - dp;
-
-      // Precompute sorted distances from each location k to other free locations
-      var sortedDidx = allocate(int(32), r*(r-1));
-
-      var tmp = allocate(int(32), r-1);
-
-      for k_idx in 0..<r {
-        var k = unassigned_loc[k_idx];
-
-        // create temporary vector of {dist, l_idx} pairs
-        var c5: int(32) = 0;
-
-        for l_idx in 0..<r {
-          if (k_idx == l_idx) then
-            continue;
-
-          var l = unassigned_loc[l_idx];
-          tmp[c5] = this.D[k, l];
-          c5 += 1;
-        }
-
-        // sort by distance (ascending)
-        insertion_sort_device(tmp, r-1, true);
-
-        for t in 0..<(r-1) do
-          sortedDidx[k_idx*(r-1)+t] = tmp[t];
-      }
-
-      deallocate(tmp);
-
-      var flows = allocate(int(32), u-1);
-
-      // Loop over unassigned facilities
-      for i_idx in 0..<u {
-        var i = unassigned_fac[i_idx];
-
-        // extract flows from i to other unassigned facilities
-        var c6: int(32) = 0;
-
-        for j_idx in 0..<u {
-          var j = unassigned_fac[j_idx];
-
-          if (i == j) then
-            continue;
-
-          flows[c6] = this.F[i, j];
-          c6 += 1;
-        }
-
-        // sort extracted flows (descending)
-        insertion_sort_device(flows, u-1, false);
-
-        // compute L[i_idx, k_idx] for each location k
-        for k_idx in 0..<r {
-          var k = unassigned_loc[k_idx];
-          var cost: int;
-
-          // unassigned–unassigned part: GLB pairing
-          var pairs = min(u-1, r-1);
-          for t in 0..<pairs {
-            cost += flows[t]:int * sortedDidx[k_idx*(r-1)+t]:int;
-          }
-
-          // assigned–unassigned part (both directions)
-          for a_idx in 0..<dp {
-            var j = assigned_fac[a_idx];
-            var l = partial_mapping[j];
-
-            cost += this.F[i, j]:int * this.D[k, l]:int;
-            cost += this.F[j, i]:int * this.D[l, k]:int;
-          }
-
-          L[i_idx*r + k_idx] = cost;
-        }
-      }
-
-      deallocate(flows);
-
-      deallocate(sortedDidx);
-      deallocate(assigned_fac);
-      deallocate(unassigned_fac);
-      deallocate(unassigned_loc);
-    }
-
-    proc bound_GLB(const ref node)
-    {
-      const partial_mapping = node.mapping;
-      const ref av = node.available;
-      const dp = node.depth;
-
-      var L = allocate(int, (this.n - dp)*(this.N - dp), clear=true);
-
-      Assemble_LAP(L, dp, partial_mapping, av);
-
-      var fixed_cost = ObjectiveFunction(partial_mapping, this.D, this.F, this.n);
-
-      var remaining_lb = Hungarian_GLB(L, this.n - dp, this.N - dp);
-
-      deallocate(L);
-
-      return fixed_cost + remaining_lb;
-    }
+    /*******************************************************
+                      GILMORE-LAWLER BOUND
+    *******************************************************/
 
     proc decompose_GLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
@@ -861,7 +574,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -890,10 +603,12 @@ module Problem_QAP
             var child = new Node(parent);
             child.depth += 1;
             child.mapping[i] = j;
-            child.available[j] = false;
+            child.available[j] = 0;
 
             if (child.depth < this.n) {
-              var lb = bound_GLB(child);
+              var lb = bound_GLB(child.mapping, child.available, depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int);
+
               if (lb <= best_task) {
                 children.pushBack(child);
                 tree_loc += 1;
@@ -914,8 +629,11 @@ module Problem_QAP
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
       select this.lb_name {
-        when "hhb" {
-          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        when "rlt1" {
+          return decompose_RLT1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "rlt2" {
+          return decompose_RLT2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
@@ -940,8 +658,10 @@ module Problem_QAP
         writeln("Number of logical qubits: ", this.n);
         writeln("Number of physical qubits: ", this.N);
       }
-      if (this.lb_name == "hhb") then
+      if (this.lb_name == "rlt1" || this.lb_name == "rlt2") {
         writeln("Max bounding iterations: ", this.it_max);
+        writeln("Relative tolerance of the stopping criterion: ", this.tol);
+      }
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
       writeln("Lower bound function: ", this.lb_name);
@@ -991,7 +711,8 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
-      writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
+      writeln("   --tol     real      relative tolerance of the stopping criterion");
+      writeln("   --lb      str       lower bound function ('glb', 'rlt1', or 'rlt2')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

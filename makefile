@@ -5,10 +5,11 @@ SHELL := /bin/bash
 # ==========================
 
 CHPL_COMPILER = chpl
-CHPL_COMMONS_DIR = ./commons
-CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
 
-CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
+COMMONS_DIR = ./commons
+DATA_STRUCT_DIR = ./DistBag-DFS
+
+CHPL_COMMON_OPTS = --fast -M $(COMMONS_DIR) -M $(DATA_STRUCT_DIR)
 
 # ==========================
 # Build Chapel codes
@@ -30,74 +31,84 @@ main_%.out: main_%.chpl
 # PFSP
 # ==================
 
-CHPL_PFSP_MODULES_DIR = ./benchmarks/PFSP
-CHPL_PFSP_OPTS = -M $(CHPL_PFSP_MODULES_DIR) -M $(CHPL_PFSP_MODULES_DIR)/instances
+PFSP_DIR = ./benchmarks/PFSP
+PFSP_OPTS = -M $(PFSP_DIR) -M $(PFSP_DIR)/instances
 
 main_pfsp.out: main_pfsp.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_PFSP_OPTS) $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(PFSP_OPTS) $< -o $@
 
 # ==================
 # QAP
 # ==================
 
-CHPL_QAP_MODULES_DIR = ./benchmarks/QAP
-CHPL_QAP_OPTS = -M $(CHPL_QAP_MODULES_DIR) -M $(CHPL_QAP_MODULES_DIR)/instances
+QAP_DIR = ./benchmarks/QAP
+QAP_SRC_DIR = $(QAP_DIR)/c_sources
 
-main_qap.out: main_qap.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_QAP_OPTS) -snewRangeLiteralType $< -o $@
+QAP_SOURCES = $(wildcard $(QAP_SRC_DIR)/*.cpp)
+QAP_OBJECTS = $(QAP_SOURCES:.cpp=.o)
+QAP_LIB = libqap.a
+
+QAP_OPTS = -M $(QAP_DIR) -M $(QAP_DIR)/instances
+
+# ---- C++ compilation rule ----
+$(QAP_SRC_DIR)/%.o: $(QAP_SRC_DIR)/%.cpp
+	g++ -O3 -c $< -o $@
+
+# ---- Static library ----
+$(QAP_LIB): $(QAP_OBJECTS)
+	ar rcs $@ $^
+
+# ---- Chapel executable ----
+main_qap.out: main_qap.chpl $(QAP_LIB)
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(QAP_OPTS) -snewRangeLiteralType $< $(QAP_LIB) -o $@
 
 # ==================
 # UTS
 # ==================
 
-CHPL_UTS_MODULES_DIR = ./benchmarks/UTS
+UTS_DIR = ./benchmarks/UTS
+UTS_SRC_DIR = $(UTS_DIR)/c_sources
 
 # Default random number generator (RNG)
 ifndef RNG
 RNG=BRG
 endif
 
-RNG_SRC_DIR  = $(CHPL_UTS_MODULES_DIR)/c_sources
-RNG_INCL_DIR = $(CHPL_UTS_MODULES_DIR)/c_headers
-
 ifeq ($(RNG), BRG)
-RNG_SRC = $(RNG_SRC_DIR)/brg_sha1.c
-RNG_INCL= $(RNG_INCL_DIR)/brg_sha1.h
+RNG_SRC = $(UTS_SRC_DIR)/brg_sha1.c
 RNG_DEF = -DBRG_RNG
 endif
+
 ifeq ($(RNG), ALFG)
-RNG_SRC = $(RNG_SRC_DIR)/alfg.c
-RNG_INCL= $(RNG_INCL_DIR)/alfg.h
+RNG_SRC = $(UTS_SRC_DIR)/alfg.c
 RNG_DEF = -DUTS_ALFG
 endif
 
-C_FILES = $(RNG_SRC) $(RNG_INCL)
-C_OPTS = --ccflags $(RNG_DEF)
-
-CHPL_UTS_OPTS = -M $(CHPL_UTS_MODULES_DIR) $(C_OPTS) $(C_FILES)
+UTS_C_OPTS = --ccflags $(RNG_DEF)
+UTS_OPTS = -M $(UTS_DIR) $(UTS_C_OPTS) $(RNG_SRC)
 
 main_uts.out: main_uts.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_UTS_OPTS) $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(UTS_OPTS) $< -o $@
 
 # ==================
 # NQueens
 # ==================
 
-CHPL_NQUEENS_MODULES_DIR = ./benchmarks/NQueens
-CHPL_NQUEENS_OPTS = -M $(CHPL_NQUEENS_MODULES_DIR)
+NQUEENS_DIR = ./benchmarks/NQueens
+NQUEENS_OPTS = -M $(NQUEENS_DIR)
 
 main_nqueens.out: main_nqueens.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_NQUEENS_OPTS) $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(NQUEENS_OPTS) $< -o $@
 
 # ==================
 # Knapsack
 # ==================
 
-CHPL_KNAPSACK_MODULES_DIR = ./benchmarks/Knapsack
-CHPL_KNAPSACK_OPTS = -M $(CHPL_KNAPSACK_MODULES_DIR) -M $(CHPL_KNAPSACK_MODULES_DIR)/instances
+KNAPSACK_DIR = ./benchmarks/Knapsack
+KNAPSACK_OPTS = -M $(KNAPSACK_DIR) -M $(KNAPSACK_DIR)/instances
 
 main_knapsack.out: main_knapsack.chpl
-	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(CHPL_KNAPSACK_OPTS) $< -o $@
+	$(CHPL_COMPILER) $(CHPL_COMMON_OPTS) $(KNAPSACK_OPTS) $< -o $@
 
 # ==========================
 # Utilities
@@ -108,3 +119,4 @@ main_knapsack.out: main_knapsack.chpl
 clean:
 	rm -f $(EXECUTABLES)
 	rm -f $(EXECUTABLES:=_real)
+	rm -f $(QAP_OBJECTS) $(QAP_LIB)
