@@ -8,7 +8,8 @@ class Instance_QAP : Instance
   var flow: [dom] int(32);
   var distance: [dom] int(32);
 
-  proc init(filename) {
+  proc init(filename)
+  {
     this.name = filename;
 
     init this;

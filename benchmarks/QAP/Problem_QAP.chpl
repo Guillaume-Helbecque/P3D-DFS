@@ -59,7 +59,7 @@ module Problem_QAP
       inst.get_distance(this.D);
 
       Prioritization(this.priority_fac, this.F, this.n, ascend = false);
-      if this.benchmark == "qubitAlloc" then
+      if (this.benchmark == "qubitAlloc") then
         Prioritization_loc_connec(this.D, this.N);
       else
         Prioritization(this.priority_loc, this.D, this.N);
@@ -232,7 +232,7 @@ module Problem_QAP
       return route_cost;
     }
 
-    /* 
+    /*
       2-opt local search. Starts from `mapping` and repeatedly swaps pairs of
       location assignments whenever the swap strictly reduces the objective
       cost.
