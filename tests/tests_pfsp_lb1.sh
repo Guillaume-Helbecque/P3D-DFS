@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Known optimal makespan
-declare -A instances=(
-  ["ta003"]=1081
-  ["ta004"]=1293
-  ["ta007"]=1234
-  ["ta009"]=1230
-  ["ta011"]=1582
-  ["ta012"]=1659
-  ["ta013"]=1496
-  ["ta014"]=1377
-  ["ta015"]=1419
-  ["ta016"]=1397
-  ["ta019"]=1593
+source ./instances_pfsp.sh
+
+tests=(
+  "ta003"
+  "ta004"
+  "ta007"
+  "ta009"
+  "ta011"
+  "ta012"
+  "ta013"
+  "ta014"
+  "ta015"
+  "ta016"
+  "ta019"
 )
 
 # Upper bounds to test
 ubs=("opt")
 
-for inst in "${!instances[@]}"; do
+for inst in "${tests[@]}"; do
   expected="${instances[$inst]}"
 
   for ub in "${ubs[@]}"; do
@@ -56,7 +57,6 @@ for inst in "${!instances[@]}"; do
       exit 1
     fi
 
-    echo "Result: $result"
     echo "PASS"
   done
 done

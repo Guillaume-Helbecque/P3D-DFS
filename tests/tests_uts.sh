@@ -1,85 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ==============================
-# UTS test configurations
-# ==============================
+source ./instances_uts.sh
 
-declare -A configs=(
-  # Geometric [fixed]
-  [T1]="--t 1 --a 3 --d 10 --b 4 --r 19"
-  # Geometric [linear dec.]
-  [T2]="--t 1 --a 0 --d 20 --b 4 --r 34"
-  # Geometric [cyclic]
-  [T3]="--t 1 --a 2 --d 16 --b 6 --r 502"
-  # Binomial
-  [T4]="--t 0 --b 2000 --q 0.124875 --m 8 --r 42"
-  # Hybrid
-  [T5]="--t 2 --a 0 --d 16 --b 6 --r 1 --q 0.234375 --m 4 --r 1"
-  # Binomial
-  [T6]="--t 0 --b 2000 --m 2 --q 0.499995 --r 30"
-  # Geometric [fixed]
-  [T7]="--t 1 --a 3 --d 13 --b 4 --r 29"
-  # Geometric [cyclic]
-  [T8]="--t 1 --a 2 --d 23 --b 7 --r 220"
-  # Binomial
-  [T9]="--t 0 --b 2000 --q 0.200014 --m 5 --r 7"
+tests=(
+  "T1"
+  "T2"
+  "T3"
+  "T4"
+  "T5"
+  "T6"
+  "T7"
+  "T8"
+  "T9"
 )
 
-# ==============================
-# Expected results
-# ==============================
-
-declare -A expected_size=(
-  [T1]=4130071
-  [T2]=4147582
-  [T3]=4117769
-  [T4]=4112897
-  [T5]=4132453
-  [T6]=51747899
-  [T7]=102181082
-  [T8]=96793510
-  [T9]=111345631
-)
-
-declare -A expected_depth=(
-  [T1]=10
-  [T2]=20
-  [T3]=81
-  [T4]=1572
-  [T5]=134
-  [T6]=16604
-  [T7]=13
-  [T8]=67
-  [T9]=17844
-)
-
-declare -A expected_leaves=(
-  [T1]=3305118
-  [T2]=2181318
-  [T3]=2342762
-  [T4]=3599034
-  [T5]=3108986
-  [T6]=25874949
-  [T7]=81746377
-  [T8]=53791152
-  [T9]=89076904
-)
-
-# ==============================
-# Tests
-# ==============================
-
-for key in "${!configs[@]}"; do
-  args="${configs[$key]}"
+for key in "${tests[@]}"; do
+  args="${instances[$key]}"
+  expected_size="${instances_size[$key]}"
+  expected_leaves="${instances_leaves[$key]}"
+  expected_depth="${instances_depth[$key]}"
 
   echo "======================================"
-  echo "Testing $key"
-  echo "Args: $args"
+  echo "Testing $key ($args)"
 
   # Run solver
   if ! output=$(timeout 60s ../main_uts.out --mode sequential $args); then
-    echo "FAIL $key (timeout or crash)"
+    echo "FAIL (timeout or crash)"
     exit 1
   fi
 
@@ -98,30 +45,27 @@ for key in "${!configs[@]}"; do
 
   # Validate parsing
   if [ -z "$size" ] || [ -z "$leaves" ] || [ -z "$depth" ]; then
-    echo "FAIL $key (parsing error)"
+    echo "FAIL (parsing error)"
     exit 1
   fi
 
   # Check correctness
-  if [ "$size" -ne "${expected_size[$key]}" ]; then
-    echo "FAIL $key (tree size)"
-    echo "Expected: ${expected_size[$key]}, Got: $size"
+  if [ "$size" -ne "$expected_size" ]; then
+    echo "FAIL (tree size: expected $expected_size, got $size)"
     exit 1
   fi
 
-  if [ "$leaves" -ne "${expected_leaves[$key]}" ]; then
-    echo "FAIL $key (leaves)"
-    echo "Expected: ${expected_leaves[$key]}, Got: $leaves"
+  if [ "$leaves" -ne "$expected_leaves" ]; then
+    echo "FAIL (leaves: expected $expected_leaves, got $leaves)"
     exit 1
   fi
 
-  if [ "$depth" -ne "${expected_depth[$key]}" ]; then
-    echo "FAIL $key (depth)"
-    echo "Expected: ${expected_depth[$key]}, Got: $depth"
+  if [ "$depth" -ne "$expected_depth" ]; then
+    echo "FAIL (depth: expected $expected_depth, got $depth)"
     exit 1
   fi
 
-  echo "PASS $key"
+  echo "PASS"
 done
 
 echo "All UTS tests passed!"
