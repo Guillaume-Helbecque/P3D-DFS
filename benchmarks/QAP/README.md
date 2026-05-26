@@ -60,8 +60,7 @@ where the available options are:
   - `heuristic`: initialize the UB using a greedy heuristic (default)
   - `{NUM}`: initialize the UB to the given number
 
-**Note:** `evb` and `qpb` bounds require the Eigen C++ template library.
-Eigen is automatically downloaded during the build process.
+**Note:** `evb` and `qpb` bounds require the Eigen C++ template library. It can be downloaded using `make download-eigen`.
 
 ### References
 

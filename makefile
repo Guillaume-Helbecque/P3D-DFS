@@ -43,21 +43,50 @@ main_pfsp.out: main_pfsp.chpl
 
 QAP_DIR = ./benchmarks/QAP
 QAP_SRC_DIR = $(QAP_DIR)/c_sources
-
-QAP_EIGEN_DIR = $(QAP_DIR)/external/eigen3
-QAP_CXX_FLAGS = -O3 -std=c++17 -march=native -DEIGEN_NO_DEBUG -I$(QAP_EIGEN_DIR)
+QAP_HDR_DIR = $(QAP_DIR)/c_headers
 
 QAP_SOURCES = $(wildcard $(QAP_SRC_DIR)/*.cpp)
 QAP_OBJECTS = $(QAP_SOURCES:.cpp=.o)
 QAP_LIB = libqap.a
 
+EIGEN_VERSION := $(shell cat $(QAP_HDR_DIR)/EIGEN_VERSION)
+EIGEN_DIR = $(QAP_HDR_DIR)/eigen-$(EIGEN_VERSION)/
+EIGEN_URL = https://gitlab.com/libeigen/eigen/-/archive/$(EIGEN_VERSION)/eigen-$(EIGEN_VERSION).tar.gz
+
+QAP_CXX_FLAGS = -O3 -std=c++17 -march=native -DEIGEN_NO_DEBUG -I$(EIGEN_DIR)
+
 QAP_OPTS = -M $(QAP_DIR) -M $(QAP_DIR)/instances
 
-# ---- C++ compilation rule ----
+download-eigen:
+	@echo "Checking Eigen version $(EIGEN_VERSION)..."
+	@if [ -d "$(EIGEN_DIR)" ]; then \
+		echo "Eigen already present at $(EIGEN_DIR), skipping."; \
+		exit 0; \
+	fi; \
+	set -e; \
+	TMP_DIR="$(QAP_HDR_DIR)/.eigen_tmp"; \
+	TMP_TAR="$$TMP_DIR/eigen.tar.gz"; \
+	mkdir -p "$$TMP_DIR"; \
+	echo "Downloading Eigen from $(EIGEN_URL)..."; \
+	if ! wget -q --show-progress -O "$$TMP_TAR" "$(EIGEN_URL)"; then \
+		echo "ERROR: Failed to download Eigen version $(EIGEN_VERSION)"; \
+		rm -rf "$$TMP_DIR"; \
+		exit 1; \
+	fi; \
+	echo "Extracting..."; \
+	tar -xzf "$$TMP_TAR" -C "$$TMP_DIR"; \
+	echo "Installing headers..."; \
+	mkdir -p "$(EIGEN_DIR)"; \
+	cp -r "$$TMP_DIR/eigen-$(EIGEN_VERSION)/Eigen" "$(EIGEN_DIR)/"; \
+	rm -rf "$$TMP_DIR"; \
+	echo "Eigen $(EIGEN_VERSION) installed."
+
+clean-eigen:
+	@rm -rf "$(QAP_HDR_DIR)"/eigen-*
+
 $(QAP_SRC_DIR)/%.o: $(QAP_SRC_DIR)/%.cpp
 	g++ $(QAP_CXX_FLAGS) -c $< -o $@
 
-# ---- Static library ----
 $(QAP_LIB): $(QAP_OBJECTS)
 	ar rcs $@ $^
 
@@ -117,9 +146,9 @@ main_knapsack.out: main_knapsack.chpl
 # Utilities
 # ==========================
 
-.PHONY: clean
+.PHONY: clean download-eigen clean-eigen
 
 clean:
-	rm -f $(EXECUTABLES)
-	rm -f $(EXECUTABLES:=_real)
-	rm -f $(QAP_OBJECTS) $(QAP_LIB)
+	@rm -f $(EXECUTABLES)
+	@rm -f $(EXECUTABLES:=_real)
+	@rm -f $(QAP_OBJECTS) $(QAP_LIB)
