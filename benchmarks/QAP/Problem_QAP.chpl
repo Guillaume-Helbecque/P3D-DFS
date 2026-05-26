@@ -7,7 +7,7 @@ module Problem_QAP
   use Instances;
   use Header_chpl_c_QAP;
 
-  const allowedLowerBounds = ["glb", "rlt1", "rlt2"];
+  const allowedLowerBounds = ["glb", "iglb", "evb", "rlt1", "rlt2", "qpb"];
 
   param INF: int = max(int);
   param INF32: int(32) = max(int(32));
@@ -31,6 +31,10 @@ module Problem_QAP
 
     var ub_init: string;
     var initUB: int;
+
+    // QPB-specific integer-symmetry flags for F and D.
+    var f_symmetric: c_int;
+    var d_symmetric: c_int;
 
     proc init(filename, itmax, tol, lb, ub): void
     {
@@ -58,17 +62,34 @@ module Problem_QAP
       inst.get_flow(this.F);
       inst.get_distance(this.D);
 
+      this.f_symmetric = is_symmetric_matrix_c(this.F, this.n, this.N);
+      this.d_symmetric = is_symmetric_matrix_c(this.D, this.N, this.N);
+
       Prioritization(this.priority_fac, this.F, this.n, ascend = false);
       if (this.benchmark == "qubitAlloc") then
         Prioritization_loc_connec(this.D, this.N);
       else
         Prioritization(this.priority_loc, this.D, this.N);
 
-      this.it_max = itmax;
-      this.tol = tol;
-
       if (allowedLowerBounds.find(lb) != -1) then this.lb_name = lb;
       else halt("Error - Unsupported lower bound");
+
+      // Apply LB-specific defaults for itmax and tol
+      if (itmax > 0) {
+        this.it_max = itmax;
+      } else if (this.lb_name == "qpb") {
+        this.it_max = 15;
+      } else {
+        this.it_max = 25;
+      }
+
+      if (tol > 0.0) {
+        this.tol = tol;
+      } else if (this.lb_name == "qpb") {
+        this.tol = 1e-5;
+      } else {
+        this.tol = 1e-6;
+      }
 
       this.ub_init = ub;
       if (ub == "heuristic") {
@@ -625,6 +646,272 @@ module Problem_QAP
       return children;
     }
 
+    /*******************************************************
+                  IMPROVED GILMORE-LAWLER BOUND
+    *******************************************************/
+
+    proc decompose_IGLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var depth = parent.depth;
+
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if (eval <= best) {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
+          lock.writeEF(true);
+        }
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
+        }
+      }
+      else {
+        local {
+          var i = this.priority_fac[depth];
+
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
+            if !parent.available[j] then continue; // skip if not available
+
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
+
+            if (child.depth < this.n) {
+              var lb = bound_IGLB(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int);
+
+              if (lb < best_task) {
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+      }
+
+      return children;
+    }
+
+    /*******************************************************
+                      EIGENVALUE-BASED BOUND
+    *******************************************************/
+
+    proc decompose_EVB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var depth = parent.depth;
+
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if (eval <= best) {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
+          lock.writeEF(true);
+        }
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
+        }
+      }
+      else {
+        if (best < best_task) then best_task = best;
+
+        local {
+          var i = this.priority_fac[depth];
+
+          for j0 in 0..<this.N by -1 {
+            const j = this.priority_loc[j0];
+
+            if !parent.available[j] then continue; // skip if not available
+
+            var child = new Node(parent);
+            child.depth += 1;
+            child.mapping[i] = j;
+            child.available[j] = 0;
+
+            if (child.depth < this.n) {
+              var lb = bound_EVB(child.mapping, child.available, child.depth:c_int,
+                this.F, this.D, this.n:c_int, this.N:c_int, best_task);
+
+              if (lb < best_task) {
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+            else {
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+      }
+
+      return children;
+    }
+
+    /*******************************************************
+                QUADRATIC-PROGRAMMING-BASED BOUND
+    *******************************************************/
+
+    proc decompose_QPB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+    {
+      var children: list(Node);
+
+      var depth = parent.depth;
+
+      if (parent.depth == this.n) {
+        const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
+
+        if (eval < best_task) {
+          best_task = eval;
+          lock.readFE();
+          if (eval <= best) {
+            best = eval;
+            num_sol = 1;
+          }
+          else {
+            best_task = best;
+            num_sol = 0;
+          }
+          lock.writeEF(true);
+        }
+        else if (eval == best_task) {
+          num_sol += 1;
+        }
+        else {
+          tree_loc -= 1;
+        }
+      }
+      else {
+        if (parent.lower_bound >= best_task) {
+          return children;
+        }
+
+        const i = this.priority_fac[depth];
+
+        // Pull any cross-task improvement into the task-local UB before
+        // bounding. bound_QPB_child uses UB as the FW early-termination
+        // target, so the tighter this is, the fewer FW iterations the solver
+        // runs.
+        if (best < best_task) then best_task = best;
+
+        if (depth + 1 == this.n) {
+          // All children are leaves -- no QPB context, no bounding. Just
+          // enumerate the remaining available locations and push each child
+          // for the leaf-evaluation branch (`parent.depth == this.n`) to
+          // pick up on the next decompose.
+          local {
+            for j0 in 0..<this.N by -1 {
+              const j = this.priority_loc[j0];
+
+              if !parent.available[j] then continue; // skip if not available
+
+              var child = new Node(parent);
+              child.depth += 1;
+              child.mapping[i] = j;
+              child.available[j] = 0;
+              children.pushBack(child);
+              tree_loc += 1;
+            }
+          }
+        }
+        else {
+          // Build QPB parent context once. The context owns the precomputed
+          // parent_C, the A-side eigen cache, child_uf, A_sub, and the FW
+          // solver scratch. The parent's QPB buffers are always passed (the
+          // c_arrays are inline storage, never nil); the wrapper ignores them
+          // when parent_qpb_has_data == 0.
+          var qpb_ctx = QPB_ParentContext_new(
+            parent.mapping, parent.available,
+            depth:c_int, i:c_int,
+            this.F, this.D, this.n:c_int, this.N:c_int,
+            this.it_max, this.tol,
+            parent.qpb_has_data, parent.qpb_m,
+            parent.qpb_X, parent.qpb_reduced_costs,
+            parent.qpb_unassigned_fac, parent.qpb_unassigned_loc,
+            parent.qpb_fixed_cost, parent.qpb_bound_cont_last,
+            this.f_symmetric, this.d_symmetric);
+
+          // Enumerate children in reverse priority order (DFS). Inside the
+          // local block: the wrapper is extern C / purely computational,
+          // parent / this fields are accessed via already-resolved pointers,
+          // and we never touch the cross-task `lock` / `best` here (only
+          // `best_task` and the task-local `children` / `tree_loc`). Matches
+          // the local-block usage in decompose_GLB.
+          local {
+            for j0 in 0..<this.N by -1 {
+              const j = this.priority_loc[j0];
+
+              if !parent.available[j] then continue; // skip if not available
+
+              var child = new Node(parent);
+              child.depth += 1;
+              child.mapping[i] = j;
+              child.available[j] = 0;
+
+              const lb = bound_QPB_child(
+                qpb_ctx, j:c_int, best_task,
+                child.qpb_X, child.qpb_reduced_costs,
+                child.qpb_unassigned_fac, child.qpb_unassigned_loc,
+                child.qpb_m, child.qpb_has_data,
+                child.qpb_bound_cont, child.qpb_bound_cont_last,
+                child.qpb_fixed_cost);
+
+              // bound_QPB_child returns INT64_MAX (LLONG_MAX) when the
+              // cheap variable-fixing prune fires; skip the child entirely.
+              if (lb == max(int(64))) then continue;
+
+              if (lb < best_task) {
+                child.lower_bound = lb;
+                children.pushBack(child);
+                tree_loc += 1;
+              }
+            }
+          }
+
+          QPB_ParentContext_free(qpb_ctx);
+        }
+      }
+
+      return children;
+    }
+
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
       ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
     {
@@ -637,6 +924,15 @@ module Problem_QAP
         }
         when "glb" {
           return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "iglb" {
+          return decompose_IGLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "evb" {
+          return decompose_EVB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+        }
+        when "qpb" {
+          return decompose_QPB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -660,7 +956,11 @@ module Problem_QAP
       }
       if (this.lb_name == "rlt1" || this.lb_name == "rlt2") {
         writeln("Max bounding iterations: ", this.it_max);
-        writeln("Relative tolerance of the stopping criterion: ", this.tol);
+        writeln("Convergence relative tolerance: ", this.tol);
+      }
+      else if (this.lb_name == "qpb") {
+        writeln("Max Frank-Wolfe iterations: ", this.it_max);
+        writeln("Relative FW duality gap tolerance: ", this.tol);
       }
       const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
       writeln("Initial upper bound: ", this.initUB, heuristic);
@@ -711,8 +1011,10 @@ module Problem_QAP
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
+      writeln("                       (default: 25 for 'rlt1'/'rlt2', 15 for 'qpb')");
       writeln("   --tol     real      relative tolerance of the stopping criterion");
-      writeln("   --lb      str       lower bound function ('glb', 'rlt1', or 'rlt2')");
+      writeln("                       (default: 1e-6 for 'rlt1'/'rlt2', 1e-5 for 'qpb')");
+      writeln("   --lb      str       lower bound function ('glb', 'iglb', 'evb', 'rlt1', 'rlt2', or 'qpb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
 

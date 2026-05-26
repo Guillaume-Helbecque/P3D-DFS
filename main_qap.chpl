@@ -17,10 +17,10 @@ module main_qap
 
   // Problem-specific option
   config const inst           = "10_sqn,16_melbourne";
-  config const itmax: int(32) = 25;
-  config const tol: real      = 1e-6;
+  config const itmax: int(32) = -1;
+  config const tol: real      = -1.0;
   config const ub: string     = "heuristic"; // heuristic
-  config const lb: string     = "glb"; // glb, rlt1, rlt2
+  config const lb: string     = "glb"; // glb, iglb, evb, rlt1, rlt2, qpb
 
   proc main(args: [] string): int
   {

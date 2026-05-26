@@ -44,6 +44,9 @@ main_pfsp.out: main_pfsp.chpl
 QAP_DIR = ./benchmarks/QAP
 QAP_SRC_DIR = $(QAP_DIR)/c_sources
 
+QAP_EIGEN_DIR = $(QAP_DIR)/external/eigen3
+QAP_CXX_FLAGS = -O3 -std=c++17 -march=native -DEIGEN_NO_DEBUG -I$(QAP_EIGEN_DIR)
+
 QAP_SOURCES = $(wildcard $(QAP_SRC_DIR)/*.cpp)
 QAP_OBJECTS = $(QAP_SOURCES:.cpp=.o)
 QAP_LIB = libqap.a
@@ -52,7 +55,7 @@ QAP_OPTS = -M $(QAP_DIR) -M $(QAP_DIR)/instances
 
 # ---- C++ compilation rule ----
 $(QAP_SRC_DIR)/%.o: $(QAP_SRC_DIR)/%.cpp
-	g++ -O3 -c $< -o $@
+	g++ $(QAP_CXX_FLAGS) -c $< -o $@
 
 # ---- Static library ----
 $(QAP_LIB): $(QAP_OBJECTS)
