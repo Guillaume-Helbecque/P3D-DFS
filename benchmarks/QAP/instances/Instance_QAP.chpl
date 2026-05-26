@@ -8,7 +8,8 @@ class Instance_QAP : Instance
   var flow: [dom] int(32);
   var distance: [dom] int(32);
 
-  proc init(filename) {
+  proc init(filename)
+  {
     this.name = filename;
 
     init this;
@@ -37,11 +38,15 @@ class Instance_QAP : Instance
 
   override proc get_flow(ref F)
   {
-    F = this.flow;
+    for i in 0..<this.n do
+      for j in 0..<this.n do
+        F[i * this.n + j] = this.flow[i, j];
   }
 
   override proc get_distance(ref D)
   {
-    D = this.distance;
+    for i in 0..<this.n do
+      for j in 0..<this.n do
+        D[i * this.n + j] = this.distance[i, j];
   }
 }
