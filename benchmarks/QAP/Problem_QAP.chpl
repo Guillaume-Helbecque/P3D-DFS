@@ -1012,7 +1012,7 @@ module Problem_QAP
       writeln("   --inst    str       file(s) containing the instance data");
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("                       (default: 25 for 'rlt1'/'rlt2', 15 for 'qpb')");
-      writeln("   --tol     real      relative tolerance of the stopping criterion");
+      writeln("   --tol     real      relative tolerance for the stopping criterion");
       writeln("                       (default: 1e-6 for 'rlt1'/'rlt2', 1e-5 for 'qpb')");
       writeln("   --lb      str       lower bound function ('glb', 'iglb', 'evb', 'rlt1', 'rlt2', or 'qpb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
