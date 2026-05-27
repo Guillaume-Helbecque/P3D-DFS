@@ -113,7 +113,8 @@ module Problem_Knapsack
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -128,9 +129,11 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             if (best_task < child.profit) {
               best_task = child.profit;
+              solutions.clear();
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
+                solutions.pushBack(solToString(child.items, this.N));
                 num_sol = 1;
               }
               else {
@@ -140,6 +143,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
+              solutions.pushBack(solToString(child.items, this.N));
               num_sol += 1;
             }
           }
@@ -190,7 +194,8 @@ module Problem_Knapsack
     }
 
     proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -205,9 +210,11 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             if (best_task < child.profit) {
               best_task = child.profit;
+              solutions.clear();
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
+                solutions.pushBack(solToString(child.items, this.N));
                 num_sol = 1;
               }
               else {
@@ -217,6 +224,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
+              solutions.pushBack(solToString(child.items, this.N));
               num_sol += 1;
             }
           }
@@ -236,14 +244,15 @@ module Problem_Knapsack
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       select this.ub_name {
         when "dantzig" {
-          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         when "martello" {
-          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         otherwise {
           halt("DEADCODE");
@@ -339,5 +348,14 @@ module Problem_Knapsack
       swap(w[i], w[max_id]);
       swap(p[i], p[max_id]);
     }
+  }
+
+  proc solToString(const ref solution, const n)
+  {
+    var s: string;
+    for i in 0..<(n-1) do s += solution[i]:string + " ";
+    s += solution[n-1]:string;
+
+    return s;
   }
 }

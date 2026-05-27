@@ -9,6 +9,8 @@ module search_sequential
   proc search_sequential(type Node, problem, const saveTime: bool): void
   {
     var best: int = problem.getInitBound();
+    /*NOTE: need to get the solution associated to initBound*/
+    var solutions: list(string);
     /* Not needed in sequential mode, but we use it only to match the generic template. */
     var lockBest: sync bool = true;
 
@@ -44,7 +46,7 @@ module search_sequential
 
       // Decompose the element
       var children = problem.decompose(Node, parent, exploredTree, exploredSol,
-        maxDepth, best, lockBest, best);
+        maxDepth, best, lockBest, best, solutions);
 
       pool.pushBack(children);
     }
@@ -54,6 +56,9 @@ module search_sequential
     // ========
     // OUTPUTS
     // ========
+
+    writeln(solutions);
+    /*NOTE: need to think how to write this to a file*/
 
     writeln("\nExploration terminated.");
 

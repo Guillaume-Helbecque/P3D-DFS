@@ -36,7 +36,8 @@ module Problem_NQueens
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 

@@ -528,7 +528,8 @@ module Problem_QAP
     }
 
     proc decompose_HHB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -539,9 +540,11 @@ module Problem_QAP
 
         if (eval < best_task) {
           best_task = eval;
+          solutions.clear();
           lock.readFE();
           if (eval <= best) {
             best = eval;
+            solutions.pushBack(solToString(parent.mapping, this.n));
             num_sol = 1;
           }
           else {
@@ -551,6 +554,7 @@ module Problem_QAP
           lock.writeEF(true);
         }
         else if (eval == best_task) {
+          solutions.pushBack(solToString(parent.mapping, this.n));
           num_sol += 1;
         }
         else {
@@ -853,7 +857,8 @@ module Problem_QAP
     }
 
     proc decompose_GLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -864,9 +869,11 @@ module Problem_QAP
 
         if (eval < best_task) {
           best_task = eval;
+          solutions.clear();
           lock.readFE();
           if (eval <= best) {
             best = eval;
+            solutions.pushBack(solToString(parent.mapping, this.n));
             num_sol = 1;
           }
           else {
@@ -876,6 +883,7 @@ module Problem_QAP
           lock.writeEF(true);
         }
         else if (eval == best_task) {
+          solutions.pushBack(solToString(parent.mapping, this.n));
           num_sol += 1;
         }
         else {
@@ -917,14 +925,15 @@ module Problem_QAP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       select this.lb_name {
         when "hhb" {
-          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         when "glb" {
-          return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         otherwise {
           halt("DEADCODE");
@@ -999,6 +1008,15 @@ module Problem_QAP
       writeln("   --itmax   int       maximum number of bounding iterations");
       writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
+    }
+
+    proc solToString(const ref solution, const n)
+    {
+      var s: string;
+      for i in 0..<(n-1) do s += solution[i]:string + " ";
+      s += solution[n-1]:string;
+
+      return s;
     }
 
   } // end class

@@ -159,7 +159,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb1(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -171,9 +172,11 @@ module Problem_PFSP
 
         if (eval < best_task) {
           best_task = eval;
+          solutions.clear();
           lock.readFE();
           if (eval <= best) {
             best = eval;
+            solutions.pushBack(solToString(parent.prmu, this.jobs));
             num_sol = 1;
           }
           else {
@@ -183,6 +186,7 @@ module Problem_PFSP
           lock.writeEF(true);
         }
         else if (eval == best_task) {
+          solutions.pushBack(solToString(parent.prmu, this.jobs));
           num_sol += 1;
         }
       }
@@ -207,7 +211,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb1_d(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -219,9 +224,11 @@ module Problem_PFSP
 
         if (eval < best_task) {
           best_task = eval;
+          solutions.clear();
           lock.readFE();
           if (eval <= best) {
             best = eval;
+            solutions.pushBack(solToString(parent.prmu, this.jobs));
             num_sol = 1;
           }
           else {
@@ -231,6 +238,7 @@ module Problem_PFSP
           lock.writeEF(true);
         }
         else if (eval == best_task) {
+          solutions.pushBack(solToString(parent.prmu, this.jobs));
           num_sol += 1;
         }
       }
@@ -278,7 +286,8 @@ module Problem_PFSP
     }
 
     proc decompose_lb2(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -290,9 +299,11 @@ module Problem_PFSP
 
         if (eval < best_task) {
           best_task = eval;
+          solutions.clear();
           lock.readFE();
           if (eval <= best) {
             best = eval;
+            solutions.pushBack(solToString(parent.prmu, this.jobs));
             num_sol = 1;
           }
           else {
@@ -302,6 +313,7 @@ module Problem_PFSP
           lock.writeEF(true);
         }
         else if (eval == best_task) {
+          solutions.pushBack(solToString(parent.prmu, this.jobs));
           num_sol += 1;
         }
       }
@@ -326,17 +338,18 @@ module Problem_PFSP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       select this.lb_name {
         when "lb1" {
-          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb1(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         when "lb1_d" {
-          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb1_d(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         when "lb2" {
-          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_lb2(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         otherwise {
           halt("DEADCODE");
@@ -404,6 +417,15 @@ module Problem_PFSP
       writeln("   --lb     str       lower bound function (lb1, lb1_d, lb2)");
       writeln("   --br     str       branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
       writeln("   --ub     str/int   upper bound initialization ('opt', 'inf', or any integer)\n");
+    }
+
+    proc solToString(const ref solution, const n)
+    {
+      var s: string;
+      for i in 0..<(n-1) do s += solution[i]:string + " ";
+      s += solution[n-1]:string;
+
+      return s;
     }
 
   } // end class

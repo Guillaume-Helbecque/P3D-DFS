@@ -15,6 +15,8 @@ module search_multicore
 
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
+    /*NOTE: need to get the solution associated to initBound*/
+    var solutions: list(string);
     var lockBest: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
@@ -52,9 +54,10 @@ module search_multicore
       ref max_depth = eachMaxDepth[0];
 
       coforall taskId in 0..<numTasks with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref best, ref solutions) {
 
         var best_task: int = best;
+        var local_solutions: list(string);
         var tree = tree_loc;
         var num = num_sol;
         var max = max_depth;
@@ -64,7 +67,7 @@ module search_multicore
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+            max, best, lockBest, best_task, local_solutions);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
@@ -72,6 +75,8 @@ module search_multicore
         tree_loc += tree;
         num_sol += num;
         max_depth += max;
+
+        /*NOTE: need to think how to aggregate local_solutions here*/
       }
 
       // Static distribution of the set
@@ -101,10 +106,11 @@ module search_multicore
     // =====================
 
     coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
-      ref eachMaxDepth, ref eachTaskState, ref best) {
+      ref eachMaxDepth, ref eachTaskState, ref best, ref solutions) {
 
       // Task variables
       var best_task: int = best;
+      var local_solutions: list(string);
       var taskState: bool = BUSY;
       var counter: int = 0;
       ref tree_loc = eachExploredTree[taskId];
@@ -149,7 +155,7 @@ module search_multicore
 
         // Decompose an element
         var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, best, lockBest, best_task);
+          max_depth, best, lockBest, best_task, local_solutions);
 
         bag.addBulk(children, taskId);
 
@@ -160,7 +166,13 @@ module search_multicore
         } */
       }
 
-      if best_task != best then num_sol = 0;
+      if (best_task != best) then num_sol = 0;
+      else {
+        // aggregate local_solutions into solutions
+        lockBest.readFE();
+        for s in local_solutions do solutions.pushBack(s);
+        lockBest.writeEF(true);
+      }
     }
 
     globalTimer.stop();
@@ -168,6 +180,9 @@ module search_multicore
     // ========
     // OUTPUTS
     // ========
+
+    writeln(solutions);
+    /*NOTE: need to think how to write this to a file*/
 
     writeln("\nExploration terminated.");
 
