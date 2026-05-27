@@ -312,7 +312,7 @@ module Problem_Knapsack
 
     override proc output_filepath(): string
     {
-      return "./chpl_knapsack_" + splitExt(this.name)[0] + "_" + this.ub_name + ".txt";
+      return "./knapsack_solutions_" + this.name + ".txt";
     }
 
     override proc help_message(): void

@@ -998,7 +998,7 @@ module Problem_QAP
 
     override proc output_filepath(): string
     {
-      return "./chpl_qap.txt";
+      return "./qap_solutions_" + this.filename + ".txt";
     }
 
     override proc help_message(): void

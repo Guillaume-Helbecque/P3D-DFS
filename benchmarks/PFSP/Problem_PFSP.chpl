@@ -406,8 +406,7 @@ module Problem_PFSP
 
     override proc output_filepath(): string
     {
-      return "./chpl_pfsp_" + splitExt(this.name)[0] + "_" + this.lb_name +
-              "_" + this.branching + ".txt";
+      return "./pfsp_solutions_" + this.name + ".txt";
     }
 
     override proc help_message(): void

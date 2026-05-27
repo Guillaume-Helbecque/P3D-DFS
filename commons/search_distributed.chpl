@@ -218,10 +218,9 @@ module search_distributed
     // OUTPUTS
     // ========
 
-    writeln(solutions);
-    /*NOTE: need to think how to write this to a file*/
-
     writeln("\nExploration terminated.");
+
+    writeSolutions(problem.output_filepath(), solutions);
 
     if saveTime {
       const path = problem.output_filepath();
