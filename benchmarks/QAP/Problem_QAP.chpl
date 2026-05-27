@@ -9,6 +9,8 @@ module Problem_QAP
 
   const allowedLowerBounds = ["glb", "hhb"];
 
+  import main_qap.findAll as findAll;
+
   class Problem_QAP : Problem
   {
     var filename: string;
@@ -53,7 +55,7 @@ module Problem_QAP
       inst.get_distance(this.D);
 
       Prioritization(this.priority_fac, this.F, this.n, ascend = false);
-      if this.benchmark == "qubitAlloc" then
+      if (this.benchmark == "qubitAlloc") then
         Prioritization_loc_connec(this.D, this.N);
       else
         Prioritization(this.priority_loc, this.D, this.N);
@@ -538,7 +540,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -583,7 +585,9 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               var lb = bound_HHB(child, best_task);
-              if (lb <= best_task) {
+              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+
+              if isBetter {
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -861,7 +865,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -894,7 +898,9 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               var lb = bound_GLB(child);
-              if (lb <= best_task) {
+              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+
+              if isBetter {
                 children.pushBack(child);
                 tree_loc += 1;
               }

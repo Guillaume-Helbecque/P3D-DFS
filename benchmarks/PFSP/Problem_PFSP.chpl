@@ -14,6 +14,8 @@ module Problem_PFSP
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
+  import main_pfsp.findAll as findAll;
+
   param BEGIN: c_int    =-1;
   param BEGINEND: c_int = 0;
   param END: c_int      = 1;
@@ -170,7 +172,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -192,8 +194,9 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lb = lb1_bound(lbound1, child.prmu, child.limit1:c_int, jobs);
+          const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
 
-          if (lb <= best_task) {
+          if isBetter {
             children.pushBack(child);
             tree_loc += 1;
           }
@@ -217,7 +220,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -248,8 +251,9 @@ module Problem_PFSP
         for i in parent.limit1+1..parent.limit2-1 {
           const job = parent.prmu[i];
           const lb = (beginEnd == BEGIN) * lb_begin[job] + (beginEnd == END) * lb_end[job];
+          const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
 
-          if (lb <= best_task) {
+          if isBetter {
             var child = new Node(parent);
             child.depth += 1;
 
@@ -287,7 +291,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -309,8 +313,9 @@ module Problem_PFSP
           child.limit1 += 1;
 
           const lb = lb2_bound(lbound1, lbound2, child.prmu, child.limit1:c_int, jobs, best_task:c_int);
+          const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
 
-          if (lb <= best_task) {
+          if isBetter {
             children.pushBack(child);
             tree_loc += 1;
           }

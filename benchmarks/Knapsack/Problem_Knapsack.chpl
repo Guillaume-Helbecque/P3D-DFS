@@ -12,6 +12,8 @@ module Problem_Knapsack
 
   const allowedUpperBounds = ["dantzig", "martello"];
 
+  import main_knapsack.findAll as findAll;
+
   class Problem_Knapsack : Problem
   {
     var name: string;          // instance name
@@ -127,7 +129,7 @@ module Problem_Knapsack
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if best <= child.profit {
+              if (best <= child.profit) {
                 best = child.profit;
                 num_sol = 1;
               }
@@ -142,7 +144,10 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_dantzig(Node, child)) { // bounding and pruning
+            const lb = bound_dantzig(Node, child);
+            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+
+            if isBetter { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -201,7 +206,7 @@ module Problem_Knapsack
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if best <= child.profit {
+              if (best <= child.profit) {
                 best = child.profit;
                 num_sol = 1;
               }
@@ -216,7 +221,10 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_martello(Node, child)) { // bounding and pruning
+            const lb = bound_martello(Node, child);
+            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+
+            if isBetter { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }

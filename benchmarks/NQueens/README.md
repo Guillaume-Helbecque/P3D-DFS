@@ -2,7 +2,7 @@
 
 ### Formulation
 
-The problem consists in placing `N` chess queens on a $N \times N$ chessboard so that no two queens attack each other; thus, a solution requires that no two queens share the same row, column, or diagonal.
+The problem consists of placing `N` chess queens on a $N \times N$ chessboard so that no two queens attack each other; thus, a solution requires that no two queens share the same row, column, or diagonal.
 
 ### Configuration options
 
