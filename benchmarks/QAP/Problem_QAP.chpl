@@ -585,7 +585,9 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               var lb = bound_HHB(child, best_task);
-              if (lb <= best_task) {
+              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+
+              if isBetter {
                 children.pushBack(child);
                 tree_loc += 1;
               }
@@ -896,7 +898,9 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               var lb = bound_GLB(child);
-              if (lb <= best_task) {
+              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+
+              if isBetter {
                 children.pushBack(child);
                 tree_loc += 1;
               }

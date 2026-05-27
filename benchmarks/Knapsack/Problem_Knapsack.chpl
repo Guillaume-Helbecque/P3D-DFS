@@ -144,7 +144,10 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_dantzig(Node, child)) { // bounding and pruning
+            const lb = bound_dantzig(Node, child);
+            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+
+            if isBetter { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
@@ -218,7 +221,10 @@ module Problem_Knapsack
             }
           }
           else {
-            if (best_task <= bound_martello(Node, child)) { // bounding and pruning
+            const lb = bound_martello(Node, child);
+            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+
+            if isBetter { // bounding and pruning
               children.pushBack(child);
               tree_loc += 1;
             }
