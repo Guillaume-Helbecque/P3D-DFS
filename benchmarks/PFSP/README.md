@@ -2,7 +2,7 @@
 
 ### Formulation
 
-The problem consists in finding an optimal processing order (a permutation) for $n$ jobs on $m$ machines, such that the completion time of the last job on the last machine (makespan) is minimized. The commonly used Taillard's [1] and VRF's [2] instances are supported as test-cases.
+The problem consists of finding an optimal processing order (a permutation) for $n$ jobs on $m$ machines, such that the completion time of the last job on the last machine (makespan) is minimized. The commonly used Taillard's [1] and VRF's [2] instances are supported as test cases.
 
 ### Configuration options
 
@@ -16,9 +16,9 @@ where the available options are:
   - `VFRi_j_k_Gap.txt`: VRF's instance where `i` is the number of jobs, `j` the number of machines, and `k` the instance's index
 
 <!-- TODO: give references -->
-- **`--lb`**: lower bound function
+- **`--lb`**: lower-bound function
   - `lb1`: one-machine bound which can be computed in $\mathcal{O}(mn)$ steps per subproblem (default)
-  - `lb1_d`: fast implementation of `lb1`, which can be compute in $\mathcal{O}(m)$ steps per subproblem
+  - `lb1_d`: fast implementation of `lb1`, which can be computed in $\mathcal{O}(m)$ steps per subproblem
   - `lb2`: two-machine bound which can be computed in $\mathcal{O}(m^2n)$ steps per subproblem
   <!-- a two-machine bound which relies on the exact resolution of two-machine problems obtained by relaxing capacity constraints on all machines, with the exception of a pair of machines \(M<sub>u</sub>,M<sub>v</sub>\)<sub>1<=u<v<=m</sub>, and taking the maximum over all $\frac{m(m-1)}{2}$ machine-pairs. It can be computed in $\mathcal{O}(m^2n)$ steps per subproblem. -->
 
@@ -31,7 +31,7 @@ where the available options are:
   - `minBranch`: MinBranch
 
 - **`--ub`**: initial upper bound (UB)
-  - `opt`: initialize the UB to the best solution known (default)
+  - `opt`: initialize the UB to the best-known solution (default)
   - `inf`: initialize the UB to $+\infty$, leading to a search from scratch
   - `{NUM}`: initialize the UB to the given number
 

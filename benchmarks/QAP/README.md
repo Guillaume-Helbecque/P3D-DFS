@@ -1,4 +1,4 @@
-# The Quadratic Assignment problem
+# The Quadratic Assignment Problem (QAP)
 
 ### Formulation
 
@@ -44,7 +44,7 @@ where the available options are:
 - **`--itmax`**: maximum number of bounding iterations (only for `hhb` bound)
   - any positive integer (`10` by default)
 
-- **`--lb`**: lower bound function
+- **`--lb`**: lower-bound function
   - `glb`: Gilmore-Lawler bound [1] (default)
   - `hhb`: Hightower-Hahn bound [2]
 

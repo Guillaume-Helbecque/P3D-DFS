@@ -55,7 +55,7 @@ module Problem_QAP
       inst.get_distance(this.D);
 
       Prioritization(this.priority_fac, this.F, this.n, ascend = false);
-      if this.benchmark == "qubitAlloc" then
+      if (this.benchmark == "qubitAlloc") then
         Prioritization_loc_connec(this.D, this.N);
       else
         Prioritization(this.priority_loc, this.D, this.N);
@@ -540,7 +540,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -863,7 +863,7 @@ module Problem_QAP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }

@@ -129,7 +129,7 @@ module Problem_Knapsack
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if best <= child.profit {
+              if (best <= child.profit) {
                 best = child.profit;
                 num_sol = 1;
               }
@@ -203,7 +203,7 @@ module Problem_Knapsack
             if (best_task < child.profit) {
               best_task = child.profit;
               lock.readFE();
-              if best <= child.profit {
+              if (best <= child.profit) {
                 best = child.profit;
                 num_sol = 1;
               }

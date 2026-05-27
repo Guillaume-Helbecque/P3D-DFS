@@ -172,7 +172,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -219,7 +219,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }
@@ -289,7 +289,7 @@ module Problem_PFSP
         if (eval < best_task) {
           best_task = eval;
           lock.readFE();
-          if eval <= best {
+          if (eval <= best) {
             best = eval;
             num_sol = 1;
           }

@@ -22,7 +22,7 @@ where the available options are:
   list of weights (delimited with spaces)
   ```
 
-- **`--ub`**: upper bound function
+- **`--ub`**: upper-bound function
   - `dantzig`: implementation of Dantzig's bound [1] (default)
   - `martello`: implementation of Martello and Toth's bound [2]
 
