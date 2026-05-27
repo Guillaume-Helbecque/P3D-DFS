@@ -105,7 +105,7 @@ module Problem_NQueens
 
     override proc output_filepath(): string
     {
-      return "./chpl_nqueens_" + this.N:string + ".txt";
+      return "./nqueens_solutions_" + this.N:string + ".txt";
     }
 
     override proc help_message(): void

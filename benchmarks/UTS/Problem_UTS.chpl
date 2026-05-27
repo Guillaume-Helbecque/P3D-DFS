@@ -178,7 +178,7 @@ module Problem_UTS
 
     override proc output_filepath(): string
     {
-      var path = "./chpl_uts_" + uts_trees_str[this.treeType]:string +
+      var path = "./uts_solutions_" + uts_trees_str[this.treeType]:string +
                   "_b" + this.b_0:int:string + "_r" + this.rootId:string;
 
       if (this.treeType == BIN || this.treeType == HYBRID) then
@@ -190,7 +190,7 @@ module Problem_UTS
       if (this.treeType == BALANCED) then
         path += "_d" + this.gen_mx:string;
 
-      return path + "_g" + this.computeGranularity:string + ".txt";
+      return path + ".txt";
     }
 
     override proc help_message(): void

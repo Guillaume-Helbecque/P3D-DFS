@@ -14,7 +14,6 @@ module main_qap
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const findAll: bool   = false;
   config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific option
   config const inst           = "10_sqn,16_melbourne";
@@ -41,13 +40,13 @@ module main_qap
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_QAP, qap, saveTime);
+        search_sequential(Node_QAP, qap);
       }
       when "multicore" {
-        search_multicore(Node_QAP, qap, saveTime, activeSet);
+        search_multicore(Node_QAP, qap, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_QAP, qap, saveTime, activeSet);
+        search_distributed(Node_QAP, qap, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

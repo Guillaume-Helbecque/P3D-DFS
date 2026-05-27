@@ -9,7 +9,7 @@ module search_multicore
 
   config param activeSetSize: int = 1;
 
-  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(type Node, problem, const activeSet: bool): void
   {
     const numTasks = here.maxTaskPar;
 
@@ -184,11 +184,6 @@ module search_multicore
     writeln("\nExploration terminated.");
 
     writeSolutions(problem.output_filepath(), solutions);
-
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(numTasks, globalTimer.elapsed(), path);
-    }
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
       globalTimer.elapsed());

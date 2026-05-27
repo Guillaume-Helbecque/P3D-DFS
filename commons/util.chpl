@@ -43,17 +43,6 @@ module util
     }
   }
 
-  proc save_time(const numTasks: int, const time: real, const path: string): void
-  {
-    try! {
-      var f: file = open(path, ioMode.a);
-      var channel = f.writer(locking=false);
-      channel.writeln(numTasks, " ", time);
-      channel.close();
-      f.close();
-    }
-  }
-
   proc writeSolutions(const path: string, const ref solutions): void
   {
     try! {
@@ -72,7 +61,6 @@ module util
     writeln("   --mode           str    parallel execution mode (sequential, multicore, distributed)");
     writeln("   --findAll        bool   find all optimal solutions");
     writeln("   --activeSet      bool   compute and distribute an initial set of elements");
-    writeln("   --saveTime       bool   save processing time in a file");
     writeln("   --help (or -h)          print this message");
   }
 

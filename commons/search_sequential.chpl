@@ -6,7 +6,7 @@ module search_sequential
   use util;
   use Problem;
 
-  proc search_sequential(type Node, problem, const saveTime: bool): void
+  proc search_sequential(type Node, problem): void
   {
     var best: int = problem.getInitBound();
     /*NOTE: need to get the solution associated to initBound*/
@@ -60,11 +60,6 @@ module search_sequential
     writeln("\nExploration terminated.");
 
     writeSolutions(problem.output_filepath(), solutions);
-
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(1, globalTimer.elapsed(), path);
-    }
 
     problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
