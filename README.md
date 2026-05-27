@@ -28,6 +28,8 @@ where the available options are:
   - `multicore`: single-node multi-core execution
   - `distributed`: multi-node multi-core execution
 
+- **`--findAll`**: find all optimal solutions
+
 - **`--activeSet`**: compute and distribute an initial set of elements
 
 - **`--saveTime`**: save execution time in a file

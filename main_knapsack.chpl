@@ -14,6 +14,7 @@ module main_knapsack
 
   // Common options
   config const mode: string    = "multicore"; // sequential, multicore, distributed
+  config const findAll: bool   = false;
   config const activeSet: bool = false;
   config const saveTime: bool  = false;
 

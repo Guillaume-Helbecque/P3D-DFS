@@ -12,6 +12,8 @@ module Problem_Knapsack
 
   const allowedUpperBounds = ["dantzig", "martello"];
 
+  import main_knapsack.findAll as findAll;
+
   class Problem_Knapsack : Problem
   {
     var name: string;          // instance name

@@ -14,6 +14,8 @@ module Problem_PFSP
   const allowedLowerBounds = ["lb1", "lb1_d", "lb2"];
   const allowedBranchingRules = ["fwd", "bwd", "alt", "maxSum", "minMin", "minBranch"];
 
+  import main_pfsp.findAll as findAll;
+
   param BEGIN: c_int    =-1;
   param BEGINEND: c_int = 0;
   param END: c_int      = 1;

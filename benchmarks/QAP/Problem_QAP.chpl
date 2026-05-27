@@ -9,6 +9,8 @@ module Problem_QAP
 
   const allowedLowerBounds = ["glb", "hhb"];
 
+  import main_qap.findAll as findAll;
+
   class Problem_QAP : Problem
   {
     var filename: string;
