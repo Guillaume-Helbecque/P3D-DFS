@@ -86,7 +86,7 @@ module Problem_PFSP
       else {
         try! this.initUB = ub:int;
 
-        // NOTE: If `ub` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // NOTE: If `ub` cannot be cast into `int`, an error is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
@@ -413,7 +413,6 @@ module Problem_PFSP
       writeln("   --lb     str       lower bound function (lb1, lb1_d, lb2)");
       writeln("   --br     str       branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
       writeln("   --ub     str/int   upper bound initialization ('opt', 'heuristic', or any integer)\n");
-    }
     }
 
   } // end class
