@@ -45,12 +45,14 @@ module util
 
   proc writeSolutions(const path: string, const ref solutions): void
   {
-    try! {
-      var f: file = open(path, ioMode.cw);
-      var channel = f.writer(locking=false);
-      for s in solutions do channel.writeln(s);
-      channel.close();
-      f.close();
+    if !solutions.isEmpty() {
+      try! {
+        var f: file = open(path, ioMode.cw);
+        var channel = f.writer(locking=false);
+        for s in solutions do channel.writeln(s);
+        channel.close();
+        f.close();
+      }
     }
   }
 
