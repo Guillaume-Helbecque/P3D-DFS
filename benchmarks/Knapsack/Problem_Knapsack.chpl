@@ -86,6 +86,12 @@ module Problem_Knapsack
       this.initLB  = init_lb;
     }
 
+    proc deinit()
+    {
+      deallocate(this.profits);
+      deallocate(this.weights);
+    }
+
     override proc copy()
     {
       return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
