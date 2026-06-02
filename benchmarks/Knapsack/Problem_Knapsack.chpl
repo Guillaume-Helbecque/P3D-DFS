@@ -45,13 +45,31 @@ module Problem_Knapsack
       inst.get_profits(this.profits);
       inst.get_weights(this.weights);
 
+      /*
+        NOTE: The bounding operator assumes that the items are sorted in decreasing
+        order according to the ratio profit / weight.
+      */
+      sortItems(this.N, this.weights, this.profits);
+
       if (allowedUpperBounds.find(ub) != -1) then this.ub_name = ub;
       else halt("Error - Unsupported upper bound");
 
       this.lb_init = lb;
 
       if (lb == "opt") then this.initLB = inst.get_best_lb();
-      else if (lb == "inf") then this.initLB = 0;
+      else if (lb == "heuristic") {
+        var remainingWeight = this.W;
+        var totalProfit = 0;
+
+        for i in 0..<this.N {
+          if (this.weights[i] <= remainingWeight) {
+            remainingWeight -= this.weights[i];
+            totalProfit += this.profits[i];
+          }
+        }
+
+        this.initLB = totalProfit;
+      }
       else {
         try! this.initLB = lb:int;
 
@@ -65,12 +83,6 @@ module Problem_Knapsack
           halt("Error - Unsupported initial lower bound");
         } */
       }
-
-      /*
-        NOTE: The bounding operator assumes that the items are sorted in decreasing
-        order according to the ratio profit / weight.
-      */
-      sortItems(this.N, this.weights, this.profits);
     }
 
     // copy-initialisation
@@ -268,7 +280,10 @@ module Problem_Knapsack
       writeln("  Capacity of the bag: ", this.W);
       /* writeln("  items's profit: ", this.profits);
       writeln("  items's weight: ", this.weights); */
-      writeln("  Initial lower bound: ", this.initLB);
+      const lbOptMsg = if (this.lb_init == "heuristic") then " (heuristic)"
+                       else if (this.lb_init == "opt") then " (opt)"
+                       else "";
+      writeln("  Initial lower bound: ", this.initLB, lbOptMsg);
       writeln("  Upper bound function: ", this.ub_name);
       writeln("=================================================");
     }
@@ -310,7 +325,7 @@ module Problem_Knapsack
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
       writeln("   --ub      str       upper bound function (dantzig, martello)");
-      writeln("   --lb      str/int   lower bound initialization ('opt', 'inf', or any integer)\n");
+      writeln("   --lb      str/int   lower bound initialization ('opt', 'heuristic', or any integer)\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str       file containing the data\n");
       writeln("   For Pisinger's instances:\n");
