@@ -948,8 +948,8 @@ module Problem_QAP
       }
       if (this.lb_name == "hhb") then
         writeln("Max bounding iterations: ", this.it_max);
-      const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
-      writeln("Initial upper bound: ", this.initUB, heuristic);
+      const ubOptMsg = if (this.ub_init == "heuristic") then " (heuristic)" else "";
+      writeln("Initial upper bound: ", this.initUB, ubOptMsg);
       writeln("Lower bound function: ", this.lb_name);
       writeln("=================================================");
     }
