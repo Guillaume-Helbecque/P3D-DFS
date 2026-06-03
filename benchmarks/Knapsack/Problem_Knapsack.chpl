@@ -22,6 +22,8 @@ module Problem_Knapsack
     var profits: c_ptr(c_int); // items' profit
     var weights: c_ptr(c_int); // items' weight
 
+    var sortPermutation: c_ptr(c_int);
+
     var ub_name: string;
 
     var lb_init: string;
@@ -44,6 +46,8 @@ module Problem_Knapsack
       this.weights = allocate(c_int, n);
       inst.get_profits(this.profits);
       inst.get_weights(this.weights);
+
+      this.sortPermutation = allocate(c_int, n);
 
       if (allowedUpperBounds.find(ub) != -1) then this.ub_name = ub;
       else halt("Error - Unsupported upper bound");
@@ -70,7 +74,7 @@ module Problem_Knapsack
         NOTE: The bounding operator assumes that the items are sorted in decreasing
         order according to the ratio profit / weight.
       */
-      sortItems(this.N, this.weights, this.profits);
+      sortItems(this.N, this.weights, this.profits, this.sortPermutation);
     }
 
     // copy-initialisation
@@ -90,6 +94,7 @@ module Problem_Knapsack
     {
       deallocate(this.profits);
       deallocate(this.weights);
+      deallocate(this.sortPermutation);
     }
 
     override proc copy()
@@ -139,7 +144,7 @@ module Problem_Knapsack
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
-                solutions.pushBack(solToString(child.items, this.N));
+                solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
                 num_sol = 1;
               }
               else {
@@ -149,7 +154,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
-              solutions.pushBack(solToString(child.items, this.N));
+              solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
               num_sol += 1;
             }
           }
@@ -220,7 +225,7 @@ module Problem_Knapsack
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
-                solutions.pushBack(solToString(child.items, this.N));
+                solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
                 num_sol = 1;
               }
               else {
@@ -230,7 +235,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
-              solutions.pushBack(solToString(child.items, this.N));
+              solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
               num_sol += 1;
             }
           }
@@ -342,18 +347,32 @@ module Problem_Knapsack
     This function is used to sort the items in decreasing order according to the
     ratio profit / weight.
   */
-  proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int))
+  proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int), sortPerm: c_ptr(c_int))
   {
     var r: [0..#n] real;
-    for i in 0..#n do r[i] = p[i]:real / w[i]:real;
+    for i in 0..#n {
+      r[i] = p[i]:real / w[i]:real;
+      sortPerm[i] = i:c_int;
+    }
 
     for i in 0..#n {
       var max = (max reduce r[i..]);
       var max_id = r[i..].find(max);
+
       r[i] <=> r[max_id];
+      swap(sortPerm[i], sortPerm[max_id]);
       swap(w[i], w[max_id]);
       swap(p[i], p[max_id]);
     }
+  }
+
+  proc unsortItems(const n, ref items, sortPerm: c_ptr(c_int))
+  {
+    var unsortedItems: [0..#n] uint(32);
+
+    for i in 0..#n do unsortedItems[sortPerm[i]] = items[i];
+
+    return unsortedItems;
   }
 
   proc solToString(const ref solution, const n)
