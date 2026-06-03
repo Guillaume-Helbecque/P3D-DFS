@@ -76,11 +76,17 @@ module Problem_PFSP
 
       this.ub_init = ub;
       if (ub == "opt") then this.initUB = inst.get_best_ub();
-      else if (ub == "inf") then this.initUB = max(int);
+      else if (ub == "heuristic") {
+        /*TODO: Implement a better heuristic*/
+        var prmu = allocate(c_int, this.jobs);
+        for i in 0..#this.jobs do prmu[i] = i:c_int;
+        this.initUB = eval_solution(this.lbound1, prmu);
+        deallocate(prmu);
+      }
       else {
         try! this.initUB = ub:int;
 
-        // NOTE: If `ub` cannot be cast into `int`, an errow is thrown. For now, we cannot
+        // NOTE: If `ub` cannot be cast into `int`, an error is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
@@ -370,7 +376,10 @@ module Problem_PFSP
     {
       writeln("\n=================================================");
       writeln("PFSP instance: ", this.name, " (m = ", this.machines, ", n = ", this.jobs, ")");
-      writeln("Initial upper bound: ", this.initUB);
+      const ubOptMsg = if (this.ub_init == "heuristic") then " (heuristic)"
+                       else if (this.ub_init == "opt") then " (opt)"
+                       else "";
+      writeln("Initial upper bound: ", this.initUB, ubOptMsg);
       writeln("Lower bound function: ", this.lb_name);
       writeln("Branching rule: ", this.branching);
       writeln("=================================================");
@@ -415,7 +424,7 @@ module Problem_PFSP
       writeln("   --inst   str       instance's name");
       writeln("   --lb     str       lower bound function (lb1, lb1_d, lb2)");
       writeln("   --br     str       branching rule (fwd, bwd, alt, maxSum, minMin, minBranch)");
-      writeln("   --ub     str/int   upper bound initialization ('opt', 'inf', or any integer)\n");
+      writeln("   --ub     str/int   upper bound initialization ('opt', 'heuristic', or any integer)\n");
     }
 
     proc solToString(const ref solution, const n)

@@ -70,7 +70,7 @@ module Problem_QAP
       else {
         try! this.initUB = ub:int(32);
 
-        // NOTE: If `ub` cannot be cast into `int(32)`, an errow is thrown. For now, we cannot
+        // NOTE: If `ub` cannot be cast into `int(32)`, an error is thrown. For now, we cannot
         // manage it as only catch-less try! statements are allowed in initializers.
         // Ideally, we'd like to do this:
 
@@ -957,8 +957,8 @@ module Problem_QAP
       }
       if (this.lb_name == "hhb") then
         writeln("Max bounding iterations: ", this.it_max);
-      const heuristic = if (this.ub_init == "heuristic") then " (heuristic)" else "";
-      writeln("Initial upper bound: ", this.initUB, heuristic);
+      const ubOptMsg = if (this.ub_init == "heuristic") then " (heuristic)" else "";
+      writeln("Initial upper bound: ", this.initUB, ubOptMsg);
       writeln("Lower bound function: ", this.lb_name);
       writeln("=================================================");
     }

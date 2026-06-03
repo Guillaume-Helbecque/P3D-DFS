@@ -28,7 +28,7 @@ where the available options are:
 
 - **`--lb`**: initial lower bound (LB)
   - `opt`: initialize the LB to the best solution known (default)
-  - `inf`: initialize the LB to 0, leading to a search from scratch
+  - `heuristic`: initialize the LB using a greedy fill heuristic up to capacity
   - `{NUM}`: initialize the LB to the given number
 
 Specifically for targeting hard Pisinger's instances [3], the following parameters can be used (and `--inst` omitted):
