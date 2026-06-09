@@ -21,6 +21,7 @@ module main_knapsack
   config const inst: string = "";
   config const ub: string   = "dantzig"; // dantzig, martello
   config const lb: string   = "opt"; // opt, inf
+  config const mb: int      = 1; // multi-variable branching factor
 
   config const n: c_int  = 100;
   config const r: c_int  = 10000;

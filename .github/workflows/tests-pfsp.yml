@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        test_script:
+        test_scripts:
           - tests_pfsp_lb1.sh
           - tests_pfsp_lb1_d.sh
           - tests_pfsp_lb2.sh
@@ -45,4 +45,4 @@ jobs:
 
       - name: Run tests
         working-directory: tests
-        run: ./${{ matrix.test_script }}
+        run: ./${{ matrix.test_scripts }}

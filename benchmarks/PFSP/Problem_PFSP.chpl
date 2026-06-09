@@ -398,7 +398,7 @@ module Problem_PFSP
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", treeSize);

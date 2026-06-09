@@ -13,6 +13,7 @@ module Problem_Knapsack
   const allowedUpperBounds = ["dantzig", "martello"];
 
   import main_knapsack.findAll as findAll;
+  import main_knapsack.mb as mb;
 
   class Problem_Knapsack : Problem
   {
@@ -141,12 +142,20 @@ module Problem_Knapsack
     {
       var children: list(Node);
 
-      for i in 0..1 {
+      const M = min(mb, this.N - parent.depth);
+      const numChild = 1 << M; // 2^M
+
+      for i in 0..<numChild {
         var child = new Node(parent);
-        child.depth += 1;
-        child.items[parent.depth] = i:uint(32);
-        child.weight += i*this.weights[parent.depth];
-        child.profit += i*this.profits[parent.depth];
+        child.depth += M;
+
+        for j in 0..<M by -1 {
+          const bit = ((i >> j) & 1):uint(32);
+
+          child.items[parent.depth+j] = bit;
+          child.weight += bit*this.weights[parent.depth+j];
+          child.profit += bit*this.profits[parent.depth+j];
+        }
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
@@ -222,12 +231,20 @@ module Problem_Knapsack
     {
       var children: list(Node);
 
-      for i in 0..1 {
+      const M = min(mb, this.N - parent.depth);
+      const numChild = 1 << M; // 2^M
+
+      for i in 0..<numChild {
         var child = new Node(parent);
-        child.depth += 1;
-        child.items[parent.depth] = i:uint(32);
-        child.weight += i*this.weights[parent.depth];
-        child.profit += i*this.profits[parent.depth];
+        child.depth += M;
+
+        for j in 0..<M by -1 {
+          const bit = ((i >> j) & 1):uint(32);
+
+          child.items[parent.depth+j] = bit;
+          child.weight += bit*this.weights[parent.depth+j];
+          child.profit += bit*this.profits[parent.depth+j];
+        }
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
@@ -305,6 +322,7 @@ module Problem_Knapsack
                        else "";
       writeln("  Initial lower bound: ", this.initLB, lbOptMsg);
       writeln("  Upper bound function: ", this.ub_name);
+      if (mb > 1) then writeln("  Multi-variable branching scheme with ", mb, " variables");
       writeln("=================================================");
     }
 
@@ -321,7 +339,7 @@ module Problem_Knapsack
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       const is_better = if (best > this.initLB) then " (improved)"
@@ -345,7 +363,8 @@ module Problem_Knapsack
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");
       writeln("   --ub      str       upper bound function (dantzig, martello)");
-      writeln("   --lb      str/int   lower bound initialization ('opt', 'heuristic', or any integer)\n");
+      writeln("   --lb      str/int   lower bound initialization ('opt', 'heuristic', or any integer)");
+      writeln("   --mb      int       multi-variable branching factor\n");
       writeln("   For user-defined instances:\n");
       writeln("    --inst   str       file containing the data\n");
       writeln("   For Pisinger's instances:\n");
@@ -371,8 +390,8 @@ module Problem_Knapsack
     }
 
     for i in 0..#n {
-      var max = (max reduce r[i..]);
-      var max_id = r[i..].find(max);
+      const max = (max reduce r[i..]);
+      const max_id = r[i..].find(max);
 
       r[i] <=> r[max_id];
       swap(sortPerm[i], sortPerm[max_id]);

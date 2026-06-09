@@ -33,8 +33,5 @@ module Node_PFSP
       this.limit2 = other.limit2;
       this.prmu   = other.prmu;
     }
-
-    proc deinit()
-    {}
   }
 }

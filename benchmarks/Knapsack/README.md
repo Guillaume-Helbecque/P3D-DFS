@@ -31,6 +31,9 @@ where the available options are:
   - `heuristic`: initialize the LB using a greedy fill heuristic up to capacity
   - `{NUM}`: initialize the LB to the given number
 
+- **`--mb`**: multi-variable branching factor
+  - any positive integer (`1` by default)
+
 Specifically for targeting hard Pisinger's instances [3], the following parameters can be used (and `--inst` omitted):
 - **`--n`**: number of items
   - any positive integer (`100` by default)

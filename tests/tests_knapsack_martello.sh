@@ -3,6 +3,11 @@ set -euo pipefail
 
 source ./instances_knapsack.sh
 
+MB="${1:-1}" # default = 1 if not provided
+
+mb_info=""
+[[ "${MB:-1}" != 1 ]] && mb_info=" and mb=$MB"
+
 tests=(
   "KP1"
   "KP2"
@@ -30,10 +35,10 @@ for key in "${tests[@]}"; do
 
   for lb in "${lbs[@]}"; do
     echo "======================================"
-    echo "Testing $key ($args)"
+    echo "Testing $key ($args)$mb_info"
 
     # Run solver
-    if ! output=$(timeout 60s ./main_knapsack.out --mode sequential --ub martello --lb $lb $args); then
+    if ! output=$(timeout 60s ./main_knapsack.out --mode sequential --ub martello --lb $lb $args --mb $MB); then
       echo "FAIL (timeout or crash)"
       exit 1
     fi
@@ -64,4 +69,4 @@ for key in "${tests[@]}"; do
   done
 done
 
-echo "All Knapsack tests with Martello bound passed!"
+echo "All Knapsack tests with Martello bound$mb_info passed!"
