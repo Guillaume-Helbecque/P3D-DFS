@@ -15,8 +15,7 @@ jobs:
       matrix:
         test_scripts:
           - tests_qap_glb.sh
-          - tests_qap_rlt1.sh
-          - tests_qap_rlt2.sh
+          - tests_qap_hhb.sh
 
     steps:
       - name: Checkout repository
