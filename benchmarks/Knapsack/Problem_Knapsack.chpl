@@ -319,7 +319,7 @@ module Problem_Knapsack
         nbSol = subSolExplored;
       }
 
-      var par_mode: string = if (numLocales == 1) then "tasks" else "locales";
+      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
 
       writeln("\n=================================================");
       const is_better = if (best > this.initLB) then " (improved)"
@@ -367,8 +367,8 @@ module Problem_Knapsack
     for i in 0..#n do r[i] = p[i]:real / w[i]:real;
 
     for i in 0..#n {
-      var max = (max reduce r[i..]);
-      var max_id = r[i..].find(max);
+      const max = (max reduce r[i..]);
+      const max_id = r[i..].find(max);
       r[i] <=> r[max_id];
       swap(w[i], w[max_id]);
       swap(p[i], p[max_id]);

@@ -27,8 +27,5 @@ module Node_Knapsack
       this.weight = other.weight;
       this.profit = other.profit;
     }
-
-    proc deinit()
-    {}
   }
 }

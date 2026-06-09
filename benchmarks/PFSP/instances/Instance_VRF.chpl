@@ -12,8 +12,8 @@ class Instance_VRF : Instance
   proc init(const fileName: string)
   {
     this.name = fileName;
-    var tup = ("./benchmarks/PFSP/instances/data_VRF/", fileName);
-    var path = "".join(tup);
+    const tup = ("./benchmarks/PFSP/instances/data_VRF/", fileName);
+    const path = "".join(tup);
 
     var f = open(path, ioMode.r);
     var channel = f.reader(locking=false);
@@ -22,8 +22,8 @@ class Instance_VRF : Instance
     this.machines = channel.read(c_int);
 
     this.data = allocate(c_int, this.jobs*this.machines);
-    var data1 = channel.read([0..#2*jobs*machines] c_int);
-    var data2: [0..#jobs*machines] c_int = data1(1..#2*jobs*machines by 2);
+    const data1 = channel.read([0..#2*jobs*machines] c_int);
+    const data2: [0..#jobs*machines] c_int = data1(1..#2*jobs*machines by 2);
     for j in 0..#machines {
       for i in 0..#jobs {
         this.data[i+j*jobs] = data2[j+i*machines];
@@ -61,7 +61,7 @@ class Instance_VRF : Instance
     var f = open(path, ioMode.r);
     var channel = f.reader(locking=false);
 
-    var file = channel.read([0..240, 0..2] string);
+    const file = channel.read([0..240, 0..2] string);
 
     channel.close();
     f.close();
