@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        test_script:
+        test_scripts:
           - tests_knapsack_dantzig.sh
           - tests_knapsack_martello.sh
 
@@ -44,4 +44,4 @@ jobs:
 
       - name: Run tests
         working-directory: tests
-        run: ./${{ matrix.test_script }}
+        run: ./${{ matrix.test_scripts }}

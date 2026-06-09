@@ -13,9 +13,10 @@ jobs:
 
     strategy:
       matrix:
-        test_script:
+        test_scripts:
           - tests_qap_glb.sh
-          - tests_qap_hhb.sh
+          - tests_qap_rlt1.sh
+          - tests_qap_rlt2.sh
 
     steps:
       - name: Checkout repository
@@ -44,4 +45,4 @@ jobs:
 
       - name: Run tests
         working-directory: tests
-        run: ./${{ matrix.test_script }}
+        run: ./${{ matrix.test_scripts }}

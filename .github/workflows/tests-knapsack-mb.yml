@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         test_runs:
-          - ./tests_knapsack_dantzig.sh MB=2
-          - ./tests_knapsack_dantzig.sh MB=3
-          - ./tests_knapsack_dantzig.sh MB=4
-          - ./tests_knapsack_dantzig.sh MB=5
-          - ./tests_knapsack_martello.sh MB=2
-          - ./tests_knapsack_martello.sh MB=3
-          - ./tests_knapsack_martello.sh MB=4
-          - ./tests_knapsack_martello.sh MB=5
+          - ./tests_knapsack_dantzig.sh 2
+          - ./tests_knapsack_dantzig.sh 3
+          - ./tests_knapsack_dantzig.sh 4
+          - ./tests_knapsack_dantzig.sh 5
+          - ./tests_knapsack_martello.sh 2
+          - ./tests_knapsack_martello.sh 3
+          - ./tests_knapsack_martello.sh 4
+          - ./tests_knapsack_martello.sh 5
 
     steps:
       - name: Checkout repository
