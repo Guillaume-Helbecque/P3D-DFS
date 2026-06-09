@@ -1,4 +1,4 @@
-name: QAP tests
+name: Knapsack tests with multi-variable branching
 
 on:
   push:
@@ -8,14 +8,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests-qap:
+  tests-knapsack:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        test_scripts:
-          - tests_qap_glb.sh
-          - tests_qap_hhb.sh
+        test_runs:
+          - ./tests_knapsack_dantzig.sh 2
+          - ./tests_knapsack_dantzig.sh 3
+          - ./tests_knapsack_dantzig.sh 4
+          - ./tests_knapsack_dantzig.sh 5
+          - ./tests_knapsack_martello.sh 2
+          - ./tests_knapsack_martello.sh 3
+          - ./tests_knapsack_martello.sh 4
+          - ./tests_knapsack_martello.sh 5
 
     steps:
       - name: Checkout repository
@@ -36,12 +42,12 @@ jobs:
         working-directory: chpl_config
         run: source laptop_multicore.sh
 
-      - name: Compile QAP
+      - name: Compile Knapsack
         working-directory: chpl_config
         run: |
           source laptop_multicore.sh --no-build
-          make main_qap.out
+          make main_knapsack.out
 
       - name: Run tests
         working-directory: tests
-        run: ./${{ matrix.test_scripts }}
+        run: ${{ matrix.test_runs }}
