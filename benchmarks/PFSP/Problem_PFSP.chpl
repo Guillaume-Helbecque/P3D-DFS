@@ -430,8 +430,8 @@ module Problem_PFSP
     proc solToString(const ref solution, const n)
     {
       var s: string;
-      for i in 0..<(n-1) do s += solution[i]:string + " ";
-      s += solution[n-1]:string;
+      for i in 0..<(n-1) do s += (solution[i]+1):string + " ";
+      s += (solution[n-1]+1):string;
 
       return s;
     }
