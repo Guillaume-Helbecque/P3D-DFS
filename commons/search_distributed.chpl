@@ -59,23 +59,23 @@ module search_distributed
 
         var best_task: int = best;
         var local_solutions: list(string);
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        var tree = 0;
+        var num = 0;
+        var maxd = 0;
 
         var parent: Node;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task, local_solutions);
+            maxd, best, lockBest, best_task, local_solutions);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
 
         tree_loc += tree;
         num_sol += num;
-        max_depth += max;
+        max_depth = max(max_depth, maxd);
 
         /*NOTE: need to think how to aggregate local_solutions here*/
       }
@@ -130,7 +130,7 @@ module search_distributed
         var best_task: int = best; //_locale;
         var local_solutions: list(string);
         var taskState, locState: bool = BUSY;
-        var counter: int = 0;
+        /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
         ref max_depth = eachLocalMaxDepth[taskId];
