@@ -27,8 +27,8 @@ where the available options are:
   - `martello`: implementation of Martello and Toth's bound [2]
 
 - **`--lb`**: initial lower bound (LB)
-  - `opt`: initialize the LB to the best solution known (default)
-  - `heuristic`: initialize the LB using a greedy fill heuristic up to capacity
+  - `opt`: initialize the LB to the best solution known
+  - `heuristic`: initialize the LB using a greedy fill heuristic up to capacity (default)
   - `{NUM}`: initialize the LB to the given number
 
 - **`--mb`**: multi-variable branching factor

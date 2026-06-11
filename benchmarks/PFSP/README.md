@@ -31,8 +31,8 @@ where the available options are:
   - `minBranch`: MinBranch
 
 - **`--ub`**: initial upper bound (UB)
-  - `opt`: initialize the UB to the best-known solution (default)
-  - `heuristic`: initialize the UB with the cost of the root node (identity permutation)
+  - `opt`: initialize the UB to the best-known solution
+  - `heuristic`: initialize the UB with the cost of the identity permutation (default)
   - `{NUM}`: initialize the UB to the given number
 
 ### References

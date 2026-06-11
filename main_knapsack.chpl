@@ -21,7 +21,7 @@ module main_knapsack
   // Problem-specific option
   config const inst: string = "";
   config const ub: string   = "dantzig"; // dantzig, martello
-  config const lb: string   = "opt"; // opt, inf
+  config const lb: string   = "heuristic"; // opt, heuristic
   config const mb: int      = 1; // multi-variable branching factor
 
   config const n: c_int  = 100;
