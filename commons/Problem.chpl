@@ -8,7 +8,8 @@ module Problem
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions)
     {
       compilerError("Problem.decompose() not implemented");
     }
@@ -36,7 +37,6 @@ module Problem
     proc output_filepath(): string
     {
       compilerWarning("Problem.output_filepath() not implemented");
-      return "";
     }
 
     proc help_message(): void

@@ -11,10 +11,12 @@ module search_distributed
 
   config param activeSetSize: int = 1;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(type Node, problem, const activeSet: bool): void
   {
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
+    /*NOTE: need to get the solution associated to initBound*/
+    var solutions: list(string);
     var lockBest: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
@@ -53,26 +55,29 @@ module search_distributed
       ref max_depth = eachMaxDepth[0];
 
       coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref best, ref solutions) {
 
         var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        var local_solutions: list(string);
+        var tree = 0;
+        var num = 0;
+        var maxd = 0;
 
         var parent: Node;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+            maxd, best, lockBest, best_task, local_solutions);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
 
         tree_loc += tree;
         num_sol += num;
-        max_depth += max;
+        max_depth = max(max_depth, maxd);
+
+        /*NOTE: need to think how to aggregate local_solutions here*/
       }
 
       // Static distribution of the set
@@ -102,7 +107,7 @@ module search_distributed
     // =====================
 
     coforall loc in Locales with (const ref problem, ref eachLocaleState, ref eachExploredTree,
-      ref eachExploredSol, ref eachMaxDepth, ref best) do on loc {
+      ref eachExploredSol, ref eachMaxDepth, ref best, ref solutions) do on loc {
 
       const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
@@ -118,12 +123,14 @@ module search_distributed
       var eachLocalMaxDepth: [0..#numTasks] int;
 
       coforall taskId in 0..#numTasks with (ref eachLocalExploredTree, ref eachLocalExploredSol,
-        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref best/*, ref best_locale*/) {
+        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref best, ref solutions
+        /*, ref best_locale*/) {
 
         // Task variables
         var best_task: int = best; //_locale;
+        var local_solutions: list(string);
         var taskState, locState: bool = BUSY;
-        var counter: int = 0;
+        /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
         ref max_depth = eachLocalMaxDepth[taskId];
@@ -178,7 +185,7 @@ module search_distributed
 
           // Decompose an element
           var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+            max_depth, best, lockBest, best_task, local_solutions);
 
           bag.addBulk(children, taskId);
 
@@ -191,7 +198,13 @@ module search_distributed
           best_task = best_locale; */
         }
 
-        if best_task != best then num_sol = 0;
+        if (best_task != best) then num_sol = 0;
+        else {
+          // aggregate local_solutions into solutions
+          lockBest.readFE();
+          for s in local_solutions do solutions.pushBack(s);
+          lockBest.writeEF(true);
+        }
       } // end coforall tasks
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
@@ -207,10 +220,7 @@ module search_distributed
 
     writeln("\nExploration terminated.");
 
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(numLocales, globalTimer.elapsed(), path);
-    }
+    writeSolutions(problem.output_filepath(), solutions);
 
     problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
       globalTimer.elapsed());
