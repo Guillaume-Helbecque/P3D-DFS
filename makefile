@@ -6,9 +6,8 @@ SHELL := /bin/bash
 
 CHPL_COMPILER = chpl
 CHPL_COMMONS_DIR = ./commons
-CHPL_DATA_STRUCT_DIR = ./DistBag-DFS
 
-CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR) -M $(CHPL_DATA_STRUCT_DIR)
+CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR)
 
 # ==========================
 # Build Chapel codes
