@@ -14,7 +14,6 @@ module main_pfsp
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const findAll: bool   = false;
   config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific options
   config const inst: string = "ta14"; // instance's name
@@ -41,13 +40,13 @@ module main_pfsp
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_PFSP, pfsp, saveTime);
+        search_sequential(Node_PFSP, pfsp);
       }
       when "multicore" {
-        search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
+        search_multicore(Node_PFSP, pfsp, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
+        search_distributed(Node_PFSP, pfsp, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

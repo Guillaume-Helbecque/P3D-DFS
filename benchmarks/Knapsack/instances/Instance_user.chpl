@@ -12,7 +12,7 @@ class Instance_user : Instance
 
   proc init(const fileName: string)
   {
-    this.name = fileName;
+    this.name = replaceExt(fileName, "");
 
     var path = "./benchmarks/Knapsack/instances/" + fileName;
 

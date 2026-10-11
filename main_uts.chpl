@@ -15,7 +15,6 @@ module main_uts
   // Common options
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific options
   config const t: c_int    = 0; // BIN
@@ -47,13 +46,13 @@ module main_uts
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_UTS, uts, saveTime);
+        search_sequential(Node_UTS, uts);
       }
       when "multicore" {
-        search_multicore(Node_UTS, uts, saveTime, activeSet);
+        search_multicore(Node_UTS, uts, activeSet);
       }
       when "distributed" {
-        search_distributed(Node_UTS, uts, saveTime, activeSet);
+        search_distributed(Node_UTS, uts, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

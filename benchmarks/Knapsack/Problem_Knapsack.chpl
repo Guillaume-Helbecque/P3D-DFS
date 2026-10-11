@@ -23,6 +23,8 @@ module Problem_Knapsack
     var profits: c_ptr(c_int); // items' profit
     var weights: c_ptr(c_int); // items' weight
 
+    var sortPermutation: c_ptr(c_int);
+
     var ub_name: string;
 
     var lb_init: string;
@@ -46,11 +48,13 @@ module Problem_Knapsack
       inst.get_profits(this.profits);
       inst.get_weights(this.weights);
 
+      this.sortPermutation = allocate(c_int, n);
+
       /*
         NOTE: The bounding operator assumes that the items are sorted in decreasing
         order according to the ratio profit / weight.
       */
-      sortItems(this.N, this.weights, this.profits);
+      sortItems(this.N, this.weights, this.profits, this.sortPermutation);
 
       if (allowedUpperBounds.find(ub) != -1) then this.ub_name = ub;
       else halt("Error - Unsupported upper bound");
@@ -99,6 +103,13 @@ module Problem_Knapsack
       this.initLB  = init_lb;
     }
 
+    proc deinit()
+    {
+      deallocate(this.profits);
+      deallocate(this.weights);
+      deallocate(this.sortPermutation);
+    }
+
     override proc copy()
     {
       return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
@@ -126,7 +137,8 @@ module Problem_Knapsack
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -149,9 +161,11 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             if (best_task < child.profit) {
               best_task = child.profit;
+              solutions.clear();
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
+                solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
                 num_sol = 1;
               }
               else {
@@ -161,6 +175,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
+              solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
               num_sol += 1;
             }
           }
@@ -211,7 +226,8 @@ module Problem_Knapsack
     }
 
     proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       var children: list(Node);
 
@@ -234,9 +250,11 @@ module Problem_Knapsack
           if (child.depth == this.N) { // leaf
             if (best_task < child.profit) {
               best_task = child.profit;
+              solutions.clear();
               lock.readFE();
               if (best <= child.profit) {
                 best = child.profit;
+                solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
                 num_sol = 1;
               }
               else {
@@ -246,6 +264,7 @@ module Problem_Knapsack
               lock.writeEF(true);
             }
             else if (best_task == child.profit) {
+              solutions.pushBack(solToString(unsortItems(this.N, child.items, this.sortPermutation), this.N));
               num_sol += 1;
             }
           }
@@ -265,14 +284,15 @@ module Problem_Knapsack
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int,
+      ref solutions: list(string)): list(?)
     {
       select this.ub_name {
         when "dantzig" {
-          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         when "martello" {
-          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task, solutions);
         }
         otherwise {
           halt("DEADCODE");
@@ -336,7 +356,7 @@ module Problem_Knapsack
 
     override proc output_filepath(): string
     {
-      return "./chpl_knapsack_" + splitExt(this.name)[0] + "_" + this.ub_name + ".txt";
+      return "./knapsack_solutions_" + this.name + ".txt";
     }
 
     override proc help_message(): void
@@ -361,17 +381,40 @@ module Problem_Knapsack
     This function is used to sort the items in decreasing order according to the
     ratio profit / weight.
   */
-  proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int))
+  proc sortItems(const n, w: c_ptr(c_int), p: c_ptr(c_int), sortPerm: c_ptr(c_int))
   {
     var r: [0..#n] real;
-    for i in 0..#n do r[i] = p[i]:real / w[i]:real;
+    for i in 0..#n {
+      r[i] = p[i]:real / w[i]:real;
+      sortPerm[i] = i:c_int;
+    }
 
     for i in 0..#n {
       const max = (max reduce r[i..]);
       const max_id = r[i..].find(max);
+
       r[i] <=> r[max_id];
+      swap(sortPerm[i], sortPerm[max_id]);
       swap(w[i], w[max_id]);
       swap(p[i], p[max_id]);
     }
+  }
+
+  proc unsortItems(const n, ref items, sortPerm: c_ptr(c_int))
+  {
+    var unsortedItems: [0..#n] uint(32);
+
+    for i in 0..#n do unsortedItems[sortPerm[i]] = items[i];
+
+    return unsortedItems;
+  }
+
+  proc solToString(const ref solution, const n)
+  {
+    var s: string;
+    for i in 0..<(n-1) do s += solution[i]:string + " ";
+    s += solution[n-1]:string;
+
+    return s;
   }
 }

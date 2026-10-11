@@ -43,14 +43,16 @@ module util
     }
   }
 
-  proc save_time(const numTasks: int, const time: real, const path: string): void
+  proc writeSolutions(const path: string, const ref solutions): void
   {
-    try! {
-      var f: file = open(path, ioMode.a);
-      var channel = f.writer(locking=false);
-      channel.writeln(numTasks, " ", time);
-      channel.close();
-      f.close();
+    if !solutions.isEmpty() {
+      try! {
+        var f: file = open(path, ioMode.cw);
+        var channel = f.writer(locking=false);
+        for s in solutions do channel.writeln(s);
+        channel.close();
+        f.close();
+      }
     }
   }
 
@@ -61,17 +63,18 @@ module util
     writeln("   --mode           str    parallel execution mode (sequential, multicore, distributed)");
     writeln("   --findAll        bool   find all optimal solutions");
     writeln("   --activeSet      bool   compute and distribute an initial set of elements");
-    writeln("   --saveTime       bool   save processing time in a file");
     writeln("   --help (or -h)          print this message");
   }
 
-  proc pushFrontSafe(ref L: list(?), lockList: sync, elt) {
+  proc pushFrontSafe(ref L: list(?), lockList: sync, elt): void
+  {
     lockList.readFE(); // acquire
     L.insert(0, elt);
     lockList.writeEF(false); // release
   }
 
-  proc popBackSafe(ref L: list(?), lockList: sync, inout elt): bool {
+  proc popBackSafe(ref L: list(?), lockList: sync, inout elt): bool
+  {
     lockList.readFE();
     if L.size > 0 {
       elt = L.popBack();
