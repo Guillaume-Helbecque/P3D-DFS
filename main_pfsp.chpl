@@ -1,20 +1,10 @@
 module main_pfsp
 {
-  // Common modules
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_PFSP;
   use Problem_PFSP;
-
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const findAll: bool   = false;
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific options
   config const inst: string = "ta14"; // instance's name

@@ -1,23 +1,13 @@
 module main_uts
 {
-  // Common modules
-  use CTypes;
-
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_UTS;
   use Problem_UTS;
 
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
-
   // Problem-specific options
+  use CTypes;
   config const t: c_int    = 0; // BIN
   config const b: c_double = 2000.0;
   config const r: c_int    = 30;

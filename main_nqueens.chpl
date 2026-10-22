@@ -1,19 +1,10 @@
 module main_queens
 {
-  // Common modules
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_NQueens;
   use Problem_NQueens;
-
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific option
   config const N: int = 13;

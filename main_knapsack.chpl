@@ -1,22 +1,10 @@
 module main_knapsack
 {
-  use CTypes;
-
-  // Common modules
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_Knapsack;
   use Problem_Knapsack;
-
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const findAll: bool   = false;
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific option
   config const inst: string = "";
@@ -24,6 +12,7 @@ module main_knapsack
   config const lb: string   = "heuristic"; // opt, heuristic
   config const mb: int      = 1; // multi-variable branching factor
 
+  use CTypes;
   config const n: c_int  = 100;
   config const r: c_int  = 10000;
   config const t: c_int  = 1;
