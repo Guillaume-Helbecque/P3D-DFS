@@ -9,7 +9,7 @@ module Problem_QAP
 
   const allowedLowerBounds = ["glb", "hhb"];
 
-  import main_qap.findAll as findAll;
+  import commons.findAll as findAll;
 
   class Problem_QAP : Problem
   {

@@ -12,7 +12,7 @@ module Problem_Knapsack
 
   const allowedUpperBounds = ["dantzig", "martello"];
 
-  import main_knapsack.findAll as findAll;
+  import commons.findAll as findAll;
   import main_knapsack.mb as mb;
 
   class Problem_Knapsack : Problem
