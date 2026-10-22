@@ -50,9 +50,66 @@ The B&B skeletons have already been tested on the following benchmark problems:
 - [The Unbalanced Tree Search benchmark](./benchmarks/UTS) (UTS)
 - [The N-Queens problem](./benchmarks/NQueens)
 
-### Plug your own problem
+### Integrate your own problem
 
-To come...
+The B&B skeletons are designed to be problem-independent, allowing users to integrate their own optimization problems while reusing the underlying parallel tree exploration and load-balancing mechanisms.
+
+To facilitate this integration, we provide a [`main_template.chpl`](./main_template.chpl) file that serves as a starting point for implementing a new problem. Existing benchmark implementations in [./benchmarks/](./benchmarks/) can also be used as concrete examples.
+
+The integration mainly consists of three steps:
+
+**Step 1: Implement your problem-specific components.**
+
+Start by copying `main_template.chpl` and adapting the following components:
+
+- **`MyNode`**: a Chapel record representing a node in the search tree. It must provide three initializers:
+  - A default initializer.
+  - A root initializer, taking the problem instance as an argument.
+  - A copy initializer, taking another node as an argument.
+- **`MyProblem`**: a class inheriting from the generic `Problem` class, implementing the problem-specific logic required by the B&B algorithm.
+- **Problem-specific procedures**: implement the required operations, such as branching, bounding, and solution evaluation, following the interfaces illustrated in the existing benchmarks.
+
+These modules must follow the interfaces expected by the generic B&B skeleton.
+
+**Step 2: Create your main program.**
+
+The template already provides a generic entry point:
+
+```chapel
+proc main(args: [] string): int
+{
+  // TODO: Initialize your problem instance.
+  var myProblem = new MyProblem(
+    /* problem-specific options here */
+  );
+
+  // Launch the generic Branch-and-Bound search.
+  // No modification is required here.
+  run_search(args, MyNode, myProblem);
+
+  return 0;
+}
+```
+
+Adapt the initialization of `MyProblem` to include any problem-specific configuration options.
+
+The `run_search` procedure connects your implementation to the generic B&B skeleton and handles the selected execution mode, allowing you to focus on the optimization problem rather than the underlying parallelization mechanisms.
+
+**Step 3: Compile and execute.**
+
+The provided `Makefile` provides a generic compilation rule for all `main_*.chpl` files. Simply ensure that your implementation follows this naming convention (e.g., `main_myproblem.chpl`), then compile using:
+
+```bash
+make main_template.out
+```
+
+Once compiled, execute your problem using any of the supported options:
+
+```bash
+./main_myproblem.out {...}
+```
+
+Additional problem-specific configuration options can be passed through the command line.
 
 ### Related publications
 
