@@ -17,32 +17,7 @@ module main_pfsp
     // Initialization of the problem
     var pfsp = new Problem_PFSP(inst, lb, br, ub);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        pfsp.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_PFSP, pfsp, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_PFSP, pfsp, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_PFSP, pfsp, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    run_search(args, Node_PFSP, pfsp);
 
     return 0;
   }

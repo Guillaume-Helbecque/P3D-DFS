@@ -23,32 +23,7 @@ module main_uts
     // Initialization of the problem
     var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        uts.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_UTS, uts, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_UTS, uts, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_UTS, uts, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    run_search(args, Node_UTS, uts);
 
     return 0;
   }

@@ -24,32 +24,7 @@ module main_knapsack
     // Initialization of the problem
     var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        knapsack.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_Knapsack, knapsack, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_Knapsack, knapsack, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_Knapsack, knapsack, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    run_search(args, Node_Knapsack, knapsack);
 
     return 0;
   }

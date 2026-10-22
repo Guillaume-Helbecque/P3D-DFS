@@ -14,32 +14,7 @@ module main_queens
     // Initialization of the problem
     var nqueens = new Problem_NQueens(N);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        nqueens.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_NQueens, nqueens, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_NQueens, nqueens, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_NQueens, nqueens, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    run_search(args, Node_NQueens, nqueens);
 
     return 0;
   }

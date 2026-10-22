@@ -54,17 +54,6 @@ module util
     }
   }
 
-  proc common_help_message(executable): void
-  {
-    writeln("\n    usage:   ", executable, " [parameter value] ...");
-    writeln("\n  General Parameters:\n");
-    writeln("   --mode           str    parallel execution mode (sequential, multicore, distributed)");
-    writeln("   --findAll        bool   find all optimal solutions");
-    writeln("   --activeSet      bool   compute and distribute an initial set of elements");
-    writeln("   --saveTime       bool   save processing time in a file");
-    writeln("   --help (or -h)          print this message");
-  }
-
   proc pushFrontSafe(ref L: list(?), lockList: sync, elt) {
     lockList.readFE(); // acquire
     L.insert(0, elt);

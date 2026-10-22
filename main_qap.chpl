@@ -17,32 +17,7 @@ module main_qap
     // Initialization of the problem
     var qap = new Problem_QAP(inst, itmax, lb, ub);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        qap.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_QAP, qap, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_QAP, qap, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_QAP, qap, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    run_search(args, Node_QAP, qap);
 
     return 0;
   }
