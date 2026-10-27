@@ -21,10 +21,13 @@ module main_knapsack
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
+    // initialize root node
+    var root = new Node_Knapsack();
 
-    run_search(args, Node_Knapsack, knapsack);
+    // launch B&B search
+    run_search(args, root, knapsack);
 
     return 0;
   }

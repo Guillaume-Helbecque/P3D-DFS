@@ -11,10 +11,13 @@ module main_queens
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var nqueens = new Problem_NQueens(N);
+    // initialize root node
+    var root = new Node_NQueens(N);
 
-    run_search(args, Node_NQueens, nqueens);
+    // launch B&B search
+    run_search(args, root, nqueens);
 
     return 0;
   }

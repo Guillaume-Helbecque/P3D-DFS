@@ -11,18 +11,18 @@ module Node_NQueens
     var board: NMax*uint(8);
     var depth: uint(8);
 
-    // default-initializer
+    // default initializer
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
+    // root initializer
+    proc init(const N: int)
     {
       init this;
-      for i in 0..#problem.N do this.board[i] = i:uint(8);
+      for i in 0..#N do this.board[i] = i:uint(8);
     }
 
-    // copy-initializer
+    // copy initializer
     proc init(other: Node_NQueens)
     {
       this.board = other.board;

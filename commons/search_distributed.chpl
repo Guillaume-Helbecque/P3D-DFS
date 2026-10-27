@@ -11,8 +11,10 @@ module search_distributed
 
   config param activeSetSize: int = 1;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(const rootNode, problem, const saveTime: bool, const activeSet: bool): void
   {
+    type nodeType = rootNode.type;
+
     // Global variables (best solution found and termination)
     var best: int = problem.getInitBound();
     var lockBest: sync bool = true;
@@ -35,8 +37,7 @@ module search_distributed
     // INITIALIZATION
     // ===============
 
-    var bag = new distBag_DFS(Node, targetLocales = Locales);
-    var root = new Node(problem);
+    var bag = new distBag_DFS(nodeType, targetLocales = Locales);
 
     if activeSet {
       /*
@@ -44,8 +45,8 @@ module search_distributed
         We require at least `activeSetSize` elements per task.
       */
       var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
-      var initList: list(Node);
-      initList.pushBack(root);
+      var initList: list(nodeType);
+      initList.pushBack(rootNode);
       var lockList: sync bool = false;
 
       ref tree_loc = eachExploredTree[0];
@@ -60,11 +61,11 @@ module search_distributed
         var num = num_sol;
         var max = max_depth;
 
-        var parent: Node;
+        var parent: nodeType;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
-          var children = problem.decompose(Node, parent, tree, num,
+          var children = problem.decompose(nodeType, parent, tree, num,
             max, best, lockBest, best_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
@@ -94,7 +95,7 @@ module search_distributed
       /*
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
-      bag.add(root, 0);
+      bag.add(rootNode, 0);
     }
 
     // =====================
@@ -134,7 +135,7 @@ module search_distributed
         while true do {
 
           // Try to remove an element
-          var (hasWork, parent): (int, Node) = bag.remove(taskId);
+          var (hasWork, parent): (int, nodeType) = bag.remove(taskId);
 
           /*
             Check (or not) the termination condition regarding the value of 'hasWork':
@@ -177,7 +178,7 @@ module search_distributed
           }
 
           // Decompose an element
-          var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
+          var children = problem_loc.decompose(nodeType, parent, tree_loc, num_sol,
             max_depth, best, lockBest, best_task);
 
           bag.addBulk(children, taskId);

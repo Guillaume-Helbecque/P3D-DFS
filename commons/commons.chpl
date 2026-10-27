@@ -34,7 +34,7 @@ module commons
     }
   }
 
-  proc run_search(const args : [] string, type NodeType, const ref problem) : void
+  proc run_search(const args : [] string, const rootNode, const ref problem) : void
   {
     // Help
     handle_help(args, problem);
@@ -43,13 +43,13 @@ module commons
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(NodeType, problem, saveTime);
+        search_sequential(rootNode, problem, saveTime);
       }
       when "multicore" {
-        search_multicore(NodeType, problem, saveTime, activeSet);
+        search_multicore(rootNode, problem, saveTime, activeSet);
       }
       when "distributed" {
-        search_distributed(NodeType, problem, saveTime, activeSet);
+        search_distributed(rootNode, problem, saveTime, activeSet);
       }
       otherwise {
         halt("unknown execution mode");

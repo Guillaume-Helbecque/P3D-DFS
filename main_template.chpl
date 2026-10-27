@@ -40,9 +40,9 @@ module main_template
     }
 
     // root initializer
-    proc init(problem)
+    proc init(someArgs)
     {
-      // TODO: Initialize the root node using the problem instance.
+      // TODO: Initialize the root node using given arguments.
     }
 
     // copy initializer
@@ -85,13 +85,13 @@ module main_template
   proc main(args: [] string): int
   {
     // TODO: Initialize your problem instance.
-    var myProblem = new MyProblem(
-      /* problem-specific options here */
-    );
+    var myProblem = new MyProblem(/* problem-specific options here */);
+    // TODO: Initialize your root node
+    var root = new MyNode(/* args */);
 
     // Launch the generic Branch-and-Bound search.
     // No modification is required here.
-    run_search(args, MyNode, myProblem);
+    run_search(args, root, myProblem);
 
     return 0;
   }

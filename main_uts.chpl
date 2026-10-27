@@ -20,10 +20,13 @@ module main_uts
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
+    // initialize root node
+    var root = new Node_UTS(t, r);
 
-    run_search(args, Node_UTS, uts);
+    // launch B&B search
+    run_search(args, root, uts);
 
     return 0;
   }

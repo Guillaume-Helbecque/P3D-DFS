@@ -14,10 +14,13 @@ module main_qap
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var qap = new Problem_QAP(inst, itmax, lb, ub);
+    // initialize root node
+    var root = new Node_QAP(qap);
 
-    run_search(args, Node_QAP, qap);
+    // launch B&B search
+    run_search(args, root, qap);
 
     return 0;
   }

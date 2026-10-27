@@ -14,10 +14,13 @@ module main_pfsp
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var pfsp = new Problem_PFSP(inst, lb, br, ub);
+    // initialize root node
+    var root = new Node_PFSP(pfsp.jobs);
 
-    run_search(args, Node_PFSP, pfsp);
+    // launch B&B search
+    run_search(args, root, pfsp);
 
     return 0;
   }
