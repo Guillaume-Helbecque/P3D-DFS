@@ -22,7 +22,7 @@ module commons
     writeln("   --help (or -h)          print this message");
   }
 
-  proc handle_help(const args : [] string, const ref problem) : void
+  proc handle_help(const args : [] string, const ref problem): void
   {
     for a in args[1..] {
       if (a == "-h" || a == "--help") {
@@ -34,7 +34,7 @@ module commons
     }
   }
 
-  proc run_search(const args : [] string, const rootNode, const ref problem) : void
+  proc run_search(const args : [] string, const rootNode, const ref problem): void
   {
     // Help
     handle_help(args, problem);

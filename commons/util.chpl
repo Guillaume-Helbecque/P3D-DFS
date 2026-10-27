@@ -54,13 +54,15 @@ module util
     }
   }
 
-  proc pushFrontSafe(ref L: list(?), lockList: sync, elt) {
+  proc pushFrontSafe(ref L: list(?), lockList: sync, elt): void
+  {
     lockList.readFE(); // acquire
     L.insert(0, elt);
     lockList.writeEF(false); // release
   }
 
-  proc popBackSafe(ref L: list(?), lockList: sync, inout elt): bool {
+  proc popBackSafe(ref L: list(?), lockList: sync, inout elt): bool
+  {
     lockList.readFE();
     if L.size > 0 {
       elt = L.popBack();

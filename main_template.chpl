@@ -86,7 +86,7 @@ module main_template
   {
     // TODO: Initialize your problem instance.
     var myProblem = new MyProblem(/* problem-specific options here */);
-    // TODO: Initialize your root node
+    // TODO: Initialize your root node.
     var root = new MyNode(/* args */);
 
     // Launch the generic Branch-and-Bound search.

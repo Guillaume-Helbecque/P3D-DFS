@@ -79,13 +79,13 @@ The template already provides a generic entry point:
 proc main(args: [] string): int
 {
   // TODO: Initialize your problem instance.
-  var myProblem = new MyProblem(
-    /* problem-specific options here */
-  );
+  var myProblem = new MyProblem(/* problem-specific options here */);
+  // TODO: Initialize your root node.
+  var root = new MyNode(/* args */);
 
   // Launch the generic Branch-and-Bound search.
   // No modification is required here.
-  run_search(args, MyNode, myProblem);
+  run_search(args, root, myProblem);
 
   return 0;
 }
