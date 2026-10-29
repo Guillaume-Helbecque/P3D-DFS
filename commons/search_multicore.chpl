@@ -2,7 +2,7 @@ module search_multicore
 {
   use List;
   use Time;
-  use DistributedBag_DFS;
+  use DistributedBag_copy;
 
   use util;
   use Problem;
@@ -34,7 +34,7 @@ module search_multicore
     // INITIALIZATION
     // ===============
 
-    var bag = new distBag_DFS(Node);
+    var bag = new distBag(Node);
     var root = new Node(problem);
 
     if activeSet {

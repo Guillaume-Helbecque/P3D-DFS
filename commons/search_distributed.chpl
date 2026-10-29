@@ -3,7 +3,7 @@ module search_distributed
   use List;
   use Time;
   use PrivateDist;
-  use DistributedBag_DFS;
+  use DistributedBag_copy;
   use AllLocalesBarriers;
 
   use util;
@@ -35,7 +35,7 @@ module search_distributed
     // INITIALIZATION
     // ===============
 
-    var bag = new distBag_DFS(Node, targetLocales = Locales);
+    var bag = new distBag(Node, targetLocales = Locales);
     var root = new Node(problem);
 
     if activeSet {

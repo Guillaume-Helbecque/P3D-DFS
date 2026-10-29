@@ -81,7 +81,7 @@
 
   To use :record:`distBag`, the initializer must be invoked explicitly to
   properly initialize the data structure. By default, one bag instance is
-  initialized per locale, and one segment per task.
+  initialized per target locale, and one segment per task.
 
   .. code-block:: chapel
 
@@ -134,7 +134,7 @@
   _______
 */
 
-module DistributedBag_DFS
+module DistributedBag_copy
 {
   public use Collection;
   private use IO;
@@ -202,7 +202,7 @@ module DistributedBag_DFS
   config const distributedBagWorkStealingMemCap: real = 1.0;
 
   /*
-    Reference counter for DistributedBag_DFS.
+    Reference counter for DistributedBag.
   */
   @chpldoc.nodoc
   class DistributedBagRC
@@ -228,10 +228,10 @@ module DistributedBag_DFS
     instance of the data structure for maximized performance.
   */
   pragma "always RVF"
-  record distBag_DFS : serializable
+  record distBag : serializable
   {
     /*
-      The type of the elements contained in this distBag_DFS.
+      The type of the elements contained in this distBag.
     */
     type eltType;
 
@@ -261,22 +261,22 @@ module DistributedBag_DFS
     @chpldoc.nodoc
     inline proc _value
     {
-      if (_pid == -1) then halt("distBag_DFS is uninitialized.");
+      if (_pid == -1) then halt("distBag is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
-      compilerError("Reading a distBag_DFS is not supported");
+      compilerError("Reading a distBag is not supported");
     }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader(?), ref deserializer) {
       this.init(eltType);
-      compilerError("Deserializing a distBag_DFS is not yet supported");
+      compilerError("Deserializing a distBag is not yet supported");
     }
 
-    // Write the contents of this distBag_DFS to a channel.
+    // Write the contents of this distBag to a channel.
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writer.write("[");
@@ -289,7 +289,7 @@ module DistributedBag_DFS
     }
 
     forwarding _value;
-  } // end 'distBag_DFS' record
+  } // end 'distBag' record
 
   class DistributedBagImpl : CollectionImpl(?)
   {
@@ -312,7 +312,7 @@ module DistributedBag_DFS
     var bag: unmanaged Bag(eltType)?;
 
     /*
-      Initialize an empty distBag_DFS.
+      Initialize an empty distBag.
     */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
@@ -374,7 +374,18 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert an element in the calling task's segment of this node's bag.
+      Insert an element in segment ``taskId``. The ordering is guaranteed to be
+      preserved. If :const:`distributedBagMaxSegmentCap` is reached, the insertion
+      fails and returns `false`.
+
+      :arg elt: The element to insert.
+      :type elt: `eltType`
+
+      :arg taskId: The index of the segment into which the element is inserted.
+      :type taskId: `int`
+
+      :return: `true` if ``elt`` is successfully inserted in segment ``taskId``.
+      :rtype: `bool`
     */
     proc add(elt: eltType, taskId: int): bool
     {
@@ -382,9 +393,17 @@ module DistributedBag_DFS
     }
 
     /*
-      Insert elements in bulk in the calling thread's segment of this node's bag.
-      If the node's bag rejects an element, we cease to offer more. We return the
-      number of elements successfully added to this data structure.
+      Insert elements in bulk in segment ``taskId``. If the bag instance rejects
+      an element (e.g., when :const:`distributedBagMaxSegmentCap` is reached), we
+      cease to offer more. We return the number of elements successfully inserted.
+
+      :arg elts: The elements to insert.
+
+      :arg taskId: The index of the segment into which the element is inserted.
+      :type taskId: `int`
+
+      :return: The number of elements successfully inserted in segment ``taskId``.
+      :rtype: `int`
     */
     proc addBulk(elts, taskId: int): int
     {
@@ -410,9 +429,9 @@ module DistributedBag_DFS
     // TODO: implement 'removeBulk'.
 
     /*
-      Obtain the number of elements held in this distBag_DFS.
+      Obtain the number of elements held in this distBag.
 
-      :return: The current number of elements contained in this distBag_DFS.
+      :return: The current number of elements contained in this distBag.
       :rtype: `int`
 
       .. warning::
@@ -435,12 +454,12 @@ module DistributedBag_DFS
 
     /*
       Perform a lookup to determine if the requested element exists in this
-      distBag_DFS.
+      distBag.
 
       :arg elt: An element to search for.
       :type elt: `eltType`
 
-      :return: `true` if this distBag_DFS contains ``elt``.
+      :return: `true` if this distBag contains ``elt``.
       :rtype: `bool`
 
       .. warning::
@@ -460,7 +479,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Clear this distBag_DFS.
+      Clear this distBag.
 
       .. warning::
 
@@ -502,13 +521,13 @@ module DistributedBag_DFS
     */
 
     /*
-      Iterate over the elements of this distBag_DFS. To avoid holding onto locks,
+      Iterate over the elements of this distBag. To avoid holding onto locks,
       we take a snapshot approach, increasing memory consumption but also
       increasing parallelism. This allows other concurrent, even mutating,
       operations while iterating, but opens the possibility to iterating over
       duplicates or missing elements from concurrent operations.
 
-      :yields: A reference to one of the elements contained in this distBag_DFS.
+      :yields: A reference to one of the elements contained in this distBag.
 
       .. warning::
 
@@ -607,7 +626,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation.
+      Insert an element in segment ``taskId``. The ordering is guaranteed to be
+      preserved. If :const:`distributedBagMaxSegmentCap` is reached, the insertion
+      fails and returns `false`.
     */
     proc add(elt: eltType, const taskId: int): bool
     {
@@ -615,7 +636,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation in bulk.
+      Insert elements in bulk in segment ``taskId``. If the bag instance rejects
+      an element (e.g., if :const:distributedBagMaxSegmentCap is reached), we
+      cease to offer more. We return the number of elements successfully inserted.
     */
     proc addBulk(elts, const taskId: int): int
     {
@@ -658,7 +681,7 @@ module DistributedBag_DFS
             id += 1;
           }
         }
-        otherwise halt("DistributedBag_DFS internal error: Unknown victim choice policy");
+        otherwise halt("DistributedBag internal error: Unknown victim choice policy");
       }
     }
     /*
@@ -852,12 +875,12 @@ module DistributedBag_DFS
             }
           }
 
-          otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
+          otherwise do halt("DistributedBag Internal Error: Invalid phase #", phase);
         }
         currentTask.yieldExecution();
       }
 
-      halt("DistributedBag_DFS Internal Error: DEADCODE.");
+      halt("DistributedBag Internal Error: DEADCODE.");
     }
   } // end 'Bag' class
 
@@ -927,7 +950,9 @@ module DistributedBag_DFS
     }
 
     /*
-      Insertion operation, only executed by the segment's owner.
+      Insert an element. The ordering is guaranteed to be preserved. If
+      :const:`distributedBagMaxSegmentCap` is reached, the insertion fails and
+      returns `false`.
     */
     inline proc ref addElement(elt: eltType): bool
     {
@@ -963,6 +988,11 @@ module DistributedBag_DFS
       return true;
     }
 
+    /*
+      Insert elements in bulk. If the segment rejects an element (e.g., if
+      distributedBagMaxSegmentCap is reached), we cease to offer more. We return
+      the number of elements successfully inserted.
+    */
     inline proc ref addElements(elts): int
     {
       var size = elts.size;
@@ -1053,7 +1083,7 @@ module DistributedBag_DFS
         lock.writeEF(true); // set unlocked (full)
         return false;
       }
-      halt("DistributedBag_DFS Internal Error: DEADCODE");
+      halt("DistributedBag Internal Error: DEADCODE");
     }
 
     /*
@@ -1078,7 +1108,7 @@ module DistributedBag_DFS
         // try to move the pointers
         if simCAS(head, split, h, s, h+1, s) {
           lock_n.readFE();
-          // get an element from the head of the private portion
+          // get an element from the head of the shared portion
           var elt = block.popHead();
           nElts_shared.sub(1);
           lock_n.writeEF(true);
