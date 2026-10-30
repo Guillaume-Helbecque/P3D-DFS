@@ -400,12 +400,6 @@ module Problem_PFSP
       writeln("=================================================\n");
     }
 
-    override proc output_filepath(): string
-    {
-      return "./chpl_pfsp_" + splitExt(this.name)[0] + "_" + this.lb_name +
-              "_" + this.branching + ".txt";
-    }
-
     override proc help_message(): void
     {
       writeln("\n  PFSP Benchmark Parameters:\n");

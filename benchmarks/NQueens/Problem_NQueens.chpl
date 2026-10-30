@@ -102,11 +102,6 @@ module Problem_NQueens
       writeln("=================================================\n");
     }
 
-    override proc output_filepath(): string
-    {
-      return "./chpl_nqueens_" + this.N:string + ".txt";
-    }
-
     override proc help_message(): void
     {
       writeln("\n  N-Queens Benchmark Parameter:\n");

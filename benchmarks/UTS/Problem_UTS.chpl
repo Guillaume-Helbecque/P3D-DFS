@@ -175,23 +175,6 @@ module Problem_UTS
       writeln("=================================\n");
     }
 
-    override proc output_filepath(): string
-    {
-      var path = "./chpl_uts_" + uts_trees_str[this.treeType]:string +
-                  "_b" + this.b_0:int:string + "_r" + this.rootId:string;
-
-      if (this.treeType == BIN || this.treeType == HYBRID) then
-        path += "_m" + this.nonLeafBF:string + "_q" + this.nonLeafProb:string;
-      if (this.treeType == GEO || this.treeType == HYBRID) then
-        path += "_a" + this.shape_fn:string + "_d" + this.gen_mx:string;
-      if (this.treeType == HYBRID) then
-        path += "_f" + this.shiftDepth:string;
-      if (this.treeType == BALANCED) then
-        path += "_d" + this.gen_mx:string;
-
-      return path + "_g" + this.computeGranularity:string + ".txt";
-    }
-
     override proc help_message(): void
     {
       writeln("\n  UTS Benchmark Parameters:\n");

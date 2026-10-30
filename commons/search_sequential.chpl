@@ -57,11 +57,6 @@ module search_sequential
 
     writeln("\nExploration terminated.");
 
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(1, globalTimer.elapsed(), path);
-    }
-
     problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
   }

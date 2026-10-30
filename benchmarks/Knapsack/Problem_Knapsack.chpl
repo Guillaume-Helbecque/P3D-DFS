@@ -334,11 +334,6 @@ module Problem_Knapsack
       writeln("=================================================\n");
     }
 
-    override proc output_filepath(): string
-    {
-      return "./chpl_knapsack_" + splitExt(this.name)[0] + "_" + this.ub_name + ".txt";
-    }
-
     override proc help_message(): void
     {
       writeln("\n  Knapsack Benchmark Parameters:\n");

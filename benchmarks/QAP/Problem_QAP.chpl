@@ -987,11 +987,6 @@ module Problem_QAP
       return this.initUB;
     }
 
-    override proc output_filepath(): string
-    {
-      return "./chpl_qap.txt";
-    }
-
     override proc help_message(): void
     {
       writeln("\n  Quadratic Assignment Problem Parameters:\n");
