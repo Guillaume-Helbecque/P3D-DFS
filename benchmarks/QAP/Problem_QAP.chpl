@@ -932,6 +932,11 @@ module Problem_QAP
       }
     }
 
+    override proc getInitBound(): int
+    {
+      return this.initUB;
+    }
+
     override proc print_settings(): void
     {
       writeln("\n=================================================");
@@ -954,37 +959,17 @@ module Problem_QAP
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const nodesExplored, const nbSol, const maxDepth,
+      const best: int, const elapsedTime: real): void
     {
-      var treeSize, nbSol: int;
-
-      if (isArray(subNodeExplored) && isArray(subSolExplored)) {
-        treeSize = (+ reduce subNodeExplored);
-        nbSol = (+ reduce subSolExplored);
-      } else { // if not array, then int
-        treeSize = subNodeExplored;
-        nbSol = subSolExplored;
-      }
-
-      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
-
       writeln("\n=================================================");
-      writeln("Size of the explored tree: ", treeSize);
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
-      }
+      writeln("Size of the explored tree: ", nodesExplored);
       writeln("Number of optimal solutions: ", nbSol);
       const is_better = if (best < this.initUB) then " (improved)"
                                                 else " (not improved)";
       writeln("Optimal allocation: ", best, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
-    }
-
-    override proc getInitBound(): int
-    {
-      return this.initUB;
     }
 
     override proc output_filepath(): string

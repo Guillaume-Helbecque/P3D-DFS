@@ -57,23 +57,23 @@ module search_distributed
         ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
 
         var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        var tree: int;
+        var num: int;
+        var maxd: int;
 
         var parent: nodeType;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(nodeType, parent, tree, num,
-            max, best, lockBest, best_task);
+            maxd, best, lockBest, best_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
 
         tree_loc += tree;
         num_sol += num;
-        max_depth += max;
+        max_depth = max(max_depth, maxd);
       }
 
       // Static distribution of the set
@@ -124,7 +124,7 @@ module search_distributed
         // Task variables
         var best_task: int = best; //_locale;
         var taskState, locState: bool = BUSY;
-        var counter: int = 0;
+        /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
         ref max_depth = eachLocalMaxDepth[taskId];
@@ -202,6 +202,10 @@ module search_distributed
 
     globalTimer.stop();
 
+    const exploredTree = (+ reduce eachExploredTree);
+    const exploredSol = (+ reduce eachExploredSol);
+    const maxDepth = (max reduce eachMaxDepth);
+
     // ========
     // OUTPUTS
     // ========
@@ -213,8 +217,10 @@ module search_distributed
       save_time(numLocales, globalTimer.elapsed(), path);
     }
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
-  }
 
+    // NOTE: only for debugging
+    /* writeln("% of the explored tree per locales: ", 100 * eachExploredTree:real / exploredTree:real); */
+  }
 }
