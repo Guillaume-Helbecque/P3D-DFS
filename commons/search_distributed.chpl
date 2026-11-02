@@ -11,7 +11,7 @@ module search_distributed
 
   config param activeSetSize: int = 1;
 
-  proc search_distributed(const rootNode, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(const rootNode, problem, const activeSet: bool): void
   {
     type nodeType = rootNode.type;
 

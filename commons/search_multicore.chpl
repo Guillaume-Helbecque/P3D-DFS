@@ -9,7 +9,7 @@ module search_multicore
 
   config param activeSetSize: int = 1;
 
-  proc search_multicore(const rootNode, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(const rootNode, problem, const activeSet: bool): void
   {
     type nodeType = rootNode.type;
     const numTasks = here.maxTaskPar;

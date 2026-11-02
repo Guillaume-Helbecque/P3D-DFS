@@ -6,7 +6,7 @@ module search_sequential
   use util;
   use Problem;
 
-  proc search_sequential(const rootNode, problem, const saveTime: bool): void
+  proc search_sequential(const rootNode, problem): void
   {
     type nodeType = rootNode.type;
 
