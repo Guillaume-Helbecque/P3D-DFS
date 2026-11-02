@@ -167,11 +167,6 @@ module search_multicore
 
     writeln("\nExploration terminated.");
 
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(numTasks, globalTimer.elapsed(), path);
-    }
-
     problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
 

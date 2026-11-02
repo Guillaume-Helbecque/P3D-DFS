@@ -33,12 +33,6 @@ module Problem
       compilerWarning("Problem.print_results() not implemented");
     }
 
-    proc output_filepath(): string
-    {
-      compilerWarning("Problem.output_filepath() not implemented");
-      return "";
-    }
-
     proc help_message(): void
     {
       compilerWarning("Problem.help_message() not implemented");

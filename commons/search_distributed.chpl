@@ -212,11 +212,6 @@ module search_distributed
 
     writeln("\nExploration terminated.");
 
-    if saveTime {
-      const path = problem.output_filepath();
-      save_time(numLocales, globalTimer.elapsed(), path);
-    }
-
     problem.print_results(exploredTree, exploredSol, maxDepth, best,
       globalTimer.elapsed());
 

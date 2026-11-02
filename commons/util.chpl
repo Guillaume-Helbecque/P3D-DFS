@@ -1,6 +1,5 @@
 module util
 {
-  use IO;
   use List;
 
   param BUSY: bool = false;
@@ -40,17 +39,6 @@ module util
     }
     else {
       return check_and_set(arr, flag);
-    }
-  }
-
-  proc save_time(const numTasks: int, const time: real, const path: string): void
-  {
-    try! {
-      var f: file = open(path, ioMode.a);
-      var channel = f.writer(locking=false);
-      channel.writeln(numTasks, " ", time);
-      channel.close();
-      f.close();
     }
   }
 

@@ -32,8 +32,6 @@ where the available options are:
 
 - **`--activeSet`**: compute and distribute an initial set of elements
 
-- **`--saveTime`**: save execution time in a file
-
 - **`-nl`**: number of Chapel's locales
   - any positive integer, typically the number of compute nodes
 

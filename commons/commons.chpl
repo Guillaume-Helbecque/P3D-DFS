@@ -9,7 +9,6 @@ module commons
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const findAll: bool   = false;
   config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   proc common_help_message(executable): void
   {
@@ -43,13 +42,13 @@ module commons
     select mode {
       when "sequential" {
         if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(rootNode, problem, saveTime);
+        search_sequential(rootNode, problem);
       }
       when "multicore" {
-        search_multicore(rootNode, problem, saveTime, activeSet);
+        search_multicore(rootNode, problem, activeSet);
       }
       when "distributed" {
-        search_distributed(rootNode, problem, saveTime, activeSet);
+        search_distributed(rootNode, problem, activeSet);
       }
       otherwise {
         halt("unknown execution mode");
