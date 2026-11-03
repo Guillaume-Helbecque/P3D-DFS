@@ -29,5 +29,4 @@ module Node_NQueens
       this.depth = other.depth;
     }
   }
-
 }

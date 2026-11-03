@@ -15,8 +15,8 @@ module search_multicore
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
-    var best: int = problem.getInitBound();
-    var lockBest: sync bool = true;
+    var bestCost: int = problem.getInitBound();
+    var lockBestCost: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
@@ -48,9 +48,9 @@ module search_multicore
       var lockList: sync bool = false;
 
       coforall taskId in 0..<numTasks with (ref eachExploredTree, ref eachExploredSol,
-        ref eachMaxDepth, ref initList, ref lockList, ref best) {
+        ref eachMaxDepth, ref initList, ref lockList, ref bestCost) {
 
-        var best_task: int = best;
+        var bestCost_task: int = bestCost;
         ref tree_loc = eachExploredTree[taskId];
         ref num_sol = eachExploredSol[taskId];
         ref max_depth = eachMaxDepth[taskId];
@@ -60,7 +60,7 @@ module search_multicore
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+            max_depth, bestCost, lockBestCost, bestCost_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
@@ -93,10 +93,10 @@ module search_multicore
     // =====================
 
     coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
-      ref eachMaxDepth, ref eachTaskState, ref best) {
+      ref eachMaxDepth, ref eachTaskState, ref bestCost) {
 
       // Task variables
-      var best_task: int = best;
+      var bestCost_task: int = bestCost;
       var taskState: bool = BUSY;
       /* var counter: int = 0; */
       ref tree_loc = eachExploredTree[taskId];
@@ -141,7 +141,7 @@ module search_multicore
 
         // Decompose an element
         var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
-          max_depth, best, lockBest, best_task);
+          max_depth, bestCost, lockBestCost, bestCost_task);
 
         bag.addBulk(children, taskId);
 
@@ -152,7 +152,7 @@ module search_multicore
         } */
       }
 
-      if best_task != best then num_sol = 0;
+      if bestCost_task != bestCost then num_sol = 0;
     }
 
     globalTimer.stop();
@@ -167,7 +167,7 @@ module search_multicore
 
     writeln("\nExploration terminated.");
 
-    problem.print_results(exploredTree, exploredSol, maxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed());
 
     // NOTE: only for debugging

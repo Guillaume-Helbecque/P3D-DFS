@@ -126,7 +126,7 @@ module Problem_Knapsack
     }
 
     proc decompose_dantzig(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -147,26 +147,26 @@ module Problem_Knapsack
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
-            if (best_task < child.profit) {
-              best_task = child.profit;
+            if (bestCost_task < child.profit) {
+              bestCost_task = child.profit;
               lock.readFE();
-              if (best <= child.profit) {
-                best = child.profit;
+              if (bestCost <= child.profit) {
+                bestCost = child.profit;
                 num_sol = 1;
               }
               else {
-                best_task = best;
+                bestCost_task = bestCost;
                 num_sol = 0;
               }
               lock.writeEF(true);
             }
-            else if (best_task == child.profit) {
+            else if (bestCost_task == child.profit) {
               num_sol += 1;
             }
           }
           else {
             const lb = bound_dantzig(Node, child);
-            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+            const isBetter = if findAll then (bestCost_task <= lb) else (bestCost_task < lb);
 
             if isBetter { // bounding and pruning
               children.pushBack(child);
@@ -211,7 +211,7 @@ module Problem_Knapsack
     }
 
     proc decompose_martello(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -232,26 +232,26 @@ module Problem_Knapsack
 
         if (child.weight <= this.W) {
           if (child.depth == this.N) { // leaf
-            if (best_task < child.profit) {
-              best_task = child.profit;
+            if (bestCost_task < child.profit) {
+              bestCost_task = child.profit;
               lock.readFE();
-              if (best <= child.profit) {
-                best = child.profit;
+              if (bestCost <= child.profit) {
+                bestCost = child.profit;
                 num_sol = 1;
               }
               else {
-                best_task = best;
+                bestCost_task = bestCost;
                 num_sol = 0;
               }
               lock.writeEF(true);
             }
-            else if (best_task == child.profit) {
+            else if (bestCost_task == child.profit) {
               num_sol += 1;
             }
           }
           else {
             const lb = bound_martello(Node, child);
-            const isBetter = if findAll then (best_task <= lb) else (best_task < lb);
+            const isBetter = if findAll then (bestCost_task <= lb) else (bestCost_task < lb);
 
             if isBetter { // bounding and pruning
               children.pushBack(child);
@@ -265,14 +265,14 @@ module Problem_Knapsack
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       select this.ub_name {
         when "dantzig" {
-          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_dantzig(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         when "martello" {
-          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_martello(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");
@@ -307,12 +307,12 @@ module Problem_Knapsack
     }
 
     override proc print_results(const nodesExplored, const nbSol, const maxDepth,
-      const best: int, const elapsedTime: real): void
+      const bestCost: int, const elapsedTime: real): void
     {
       writeln("\n=================================================");
-      const is_better = if (best > this.initLB) then " (improved)"
-                                                else " (not improved)";
-      writeln("Optimum found: ", best, is_better);
+      const is_better = if (bestCost > this.initLB) then " (improved)"
+                                                    else " (not improved)";
+      writeln("Optimum found: ", bestCost, is_better);
       writeln("Size of the explored tree: ", nodesExplored);
       writeln("Number of optimal solutions: ", nbSol);
       writeln("Elapsed time: ", elapsedTime, " [s]");
@@ -334,7 +334,6 @@ module Problem_Knapsack
       writeln("    --id     int       instance index");
       writeln("    --s      int       number of tests in series\n");
     }
-
   } // end class
 
   /*

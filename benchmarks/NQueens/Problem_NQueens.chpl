@@ -36,7 +36,7 @@ module Problem_NQueens
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -76,7 +76,7 @@ module Problem_NQueens
     }
 
     override proc print_results(const nodesExplored, const nbSol, const maxDepth,
-      const best: int, const elapsedTime: real): void
+      const bestCost: int, const elapsedTime: real): void
     {
       writeln("\n=================================================");
       writeln("Size of the explored tree: ", nodesExplored);
@@ -90,7 +90,5 @@ module Problem_NQueens
       writeln("\n  N-Queens Benchmark Parameter:\n");
       writeln("   --N   int   problem size (number of queens)\n");
     }
-
   } // end class
-
 } // end module

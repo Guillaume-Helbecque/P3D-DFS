@@ -82,7 +82,7 @@ module Problem_UTS
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): [] Node
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): [] Node
     {
       const numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
         this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
@@ -146,7 +146,7 @@ module Problem_UTS
     }
 
     override proc print_results(const nodesExplored, const nbSol, const maxDepth,
-      const best: int, const elapsedTime: real): void
+      const bestCost: int, const elapsedTime: real): void
     {
       writeln("\n=================================");
       writeln("Size of the explored tree: ", nodesExplored+1); // +1 for root
@@ -169,7 +169,5 @@ module Problem_UTS
       writeln("   --f   double   HYBRID: fraction of depth for GEO -> BIN transition");
       writeln("   --g   int      granularity: number of rng_spawns per node");
     }
-
   } // end class
-
 } // end module

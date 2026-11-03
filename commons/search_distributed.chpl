@@ -16,8 +16,8 @@ module search_distributed
     type nodeType = rootNode.type;
 
     // Global variables (best solution found and termination)
-    var best: int = problem.getInitBound();
-    var lockBest: sync bool = true;
+    var bestCost: int = problem.getInitBound();
+    var lockBestCost: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
@@ -54,9 +54,9 @@ module search_distributed
       ref max_depth = eachMaxDepth[0];
 
       coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref bestCost) {
 
-        var best_task: int = best;
+        var bestCost_task: int = bestCost;
         var tree: int;
         var num: int;
         var maxd: int;
@@ -66,7 +66,7 @@ module search_distributed
           if !popBackSafe(initList, lockList, parent) then continue;
 
           var children = problem.decompose(nodeType, parent, tree, num,
-            maxd, best, lockBest, best_task);
+            maxd, bestCost, lockBestCost, bestCost_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
@@ -103,7 +103,7 @@ module search_distributed
     // =====================
 
     coforall loc in Locales with (const ref problem, ref eachLocaleState, ref eachExploredTree,
-      ref eachExploredSol, ref eachMaxDepth, ref best) do on loc {
+      ref eachExploredSol, ref eachMaxDepth, ref bestCost) do on loc {
 
       const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
@@ -119,10 +119,10 @@ module search_distributed
       var eachLocalMaxDepth: [0..#numTasks] int;
 
       coforall taskId in 0..#numTasks with (ref eachLocalExploredTree, ref eachLocalExploredSol,
-        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref best/*, ref best_locale*/) {
+        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref bestCost/*, ref best_locale*/) {
 
         // Task variables
-        var best_task: int = best; //_locale;
+        var bestCost_task: int = bestCost; //_locale;
         var taskState, locState: bool = BUSY;
         /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
@@ -179,7 +179,7 @@ module search_distributed
 
           // Decompose an element
           var children = problem_loc.decompose(nodeType, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+            max_depth, bestCost, lockBestCost, bestCost_task);
 
           bag.addBulk(children, taskId);
 
@@ -192,7 +192,7 @@ module search_distributed
           best_task = best_locale; */
         }
 
-        if best_task != best then num_sol = 0;
+        if bestCost_task != bestCost then num_sol = 0;
       } // end coforall tasks
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
@@ -212,7 +212,7 @@ module search_distributed
 
     writeln("\nExploration terminated.");
 
-    problem.print_results(exploredTree, exploredSol, maxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed());
 
     // NOTE: only for debugging
