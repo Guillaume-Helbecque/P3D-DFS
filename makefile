@@ -13,7 +13,7 @@ CHPL_COMMON_OPTS = --fast -M $(CHPL_COMMONS_DIR)
 # Build Chapel codes
 # ==========================
 
-MAIN_FILES = $(wildcard main_*.chpl)
+MAIN_FILES = $(filter-out main_template.chpl,$(wildcard main_*.chpl))
 EXECUTABLES = $(MAIN_FILES:.chpl=.out)
 
 all: $(EXECUTABLES)
