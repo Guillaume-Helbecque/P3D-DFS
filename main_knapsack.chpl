@@ -19,16 +19,10 @@ module main_knapsack
   config const saveTime: bool  = false;
 
   // Problem-specific option
-  config const inst: string = "";
+  config const inst: string = "knapPI_1_100_10000_1";
   config const ub: string   = "dantzig"; // dantzig, martello
   config const lb: string   = "heuristic"; // opt, heuristic
   config const mb: int      = 1; // multi-variable branching factor
-
-  config const n: c_int  = 100;
-  config const r: c_int  = 10000;
-  config const t: c_int  = 1;
-  config const id: c_int = 1;
-  config const s: c_int  = 100;
 
   proc main(args: [] string): int
   {

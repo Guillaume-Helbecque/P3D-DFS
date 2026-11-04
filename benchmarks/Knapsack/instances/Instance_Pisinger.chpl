@@ -7,6 +7,8 @@ require "../c_sources/pisinger_genhard.c", "../c_headers/pisinger_genhard.h";
 extern proc generator(n: c_int, pp: c_ptr(c_int), ww: c_ptr(c_int), typ: c_int,
   r: c_int, v: c_int, tests: c_int): c_longlong;
 
+param S: c_int = 100; // Number of instances in series
+
 class Instance_Pisinger : Instance
 {
   var nb_items: c_int;
@@ -31,7 +33,7 @@ class Instance_Pisinger : Instance
 
     init this;
 
-    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, 100);
+    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, S);
   }
 
   proc deinit()
