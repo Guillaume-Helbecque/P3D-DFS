@@ -29,20 +29,19 @@ module Problem_Knapsack
     var initLB: int;
 
     // initialisation
-    proc init(const fileName: string, const n, const r, const t, const id, const s,
-      const ub: string, const lb: string): void
+    proc init(const fileName: string, const ub: string, const lb: string): void
     {
       // TODO: Is id > s allowed?
 
       var inst = new Instance();
-      if (fileName == "") then inst = new Instance_Pisinger(n, r, t, id, s);
+      if (fileName[0..5] == "knapPI") then inst = new Instance_Pisinger(fileName);
       else inst = new Instance_user(fileName);
 
       this.name = inst.name;
       this.N = inst.get_nb_items();
       this.W = inst.get_capacity();
-      this.profits = allocate(c_int, n);
-      this.weights = allocate(c_int, n);
+      this.profits = allocate(c_int, this.N);
+      this.weights = allocate(c_int, this.N);
       inst.get_profits(this.profits);
       inst.get_weights(this.weights);
 
@@ -86,20 +85,6 @@ module Problem_Knapsack
       }
     }
 
-    // copy initialisation
-    proc init(const file_name: string, const n, const w, const pr: c_ptr(c_int),
-      const we: c_ptr(c_int), const ub: string, const lb: string, const init_lb: int): void
-    {
-      this.name    = file_name;
-      this.N       = n;
-      this.W       = w;
-      this.profits = pr;
-      this.weights = we;
-      this.ub_name = ub;
-      this.lb_init = lb;
-      this.initLB  = init_lb;
-    }
-
     proc deinit()
     {
       deallocate(this.profits);
@@ -108,8 +93,7 @@ module Problem_Knapsack
 
     override proc copy()
     {
-      return new Problem_Knapsack(this.name, this.N, this.W, this.profits, this.weights,
-        this.ub_name, this.lb_init, this.initLB);
+      return new Problem_Knapsack(this.name, this.ub_name, this.lb_init);
     }
 
     // Bound from Dantzig (1957)

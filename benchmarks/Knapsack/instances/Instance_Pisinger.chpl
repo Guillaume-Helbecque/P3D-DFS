@@ -15,17 +15,23 @@ class Instance_Pisinger : Instance
   var weights: c_ptr(c_int);
   var capacity: c_longlong;
 
-  proc init(const n: c_int, const r: c_int, const t: c_int, const id: c_int, const s: c_int)
+  proc init(const instName: string)
   {
-    this.name = "knapPI_" + t:string + "_" + n:string + "_" + r:string + "_" + id:string;
+    this.name = instName;
+    const options = instName.split("_");
+    const t = options[1]:c_int;
+    const n = options[2]:c_int;
+    const r = options[3]:c_int;
+    const id = options[4]:c_int;
+
     this.nb_items = n;
     this.typ = t;
-    this.profits = allocate(c_int, n);
-    this.weights = allocate(c_int, n);
+    this.profits = allocate(c_int, this.nb_items);
+    this.weights = allocate(c_int, this.nb_items);
 
     init this;
 
-    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, s);
+    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, 100);
   }
 
   proc deinit()

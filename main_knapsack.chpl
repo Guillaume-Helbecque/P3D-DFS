@@ -33,7 +33,7 @@ module main_knapsack
   proc main(args: [] string): int
   {
     // Initialization of the problem
-    var knapsack = new Problem_Knapsack(inst, n, r, t, id, s, ub, lb);
+    var knapsack = new Problem_Knapsack(inst, ub, lb);
 
     // Helper
     for a in args[1..] {
