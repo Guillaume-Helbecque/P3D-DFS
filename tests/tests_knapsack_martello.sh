@@ -38,7 +38,7 @@ for key in "${tests[@]}"; do
     echo "Testing $key ($args)$mb_info"
 
     # Run solver
-    if ! output=$(timeout 60s ./main_knapsack.out --mode sequential --ub martello --lb $lb $args --mb $MB); then
+    if ! output=$(timeout 60s ./main_knapsack.out --mode sequential --ub martello --lb $lb --inst $args --mb $MB); then
       echo "FAIL (timeout or crash)"
       exit 1
     fi

@@ -4,31 +4,31 @@
 
 declare -A instances=(
   # uncorrelated
-  ["KP1"]="--t 1 --n 50 --r 10000 --id 72"
+  ["KP1"]="knapPI_1_50_10000_72"
   # weakly correlated
-  ["KP2"]="--t 2 --n 100 --r 1000 --id 74"
+  ["KP2"]="knapPI_2_100_1000_74"
   # strongly correlated
-  ["KP3"]="--t 3 --n 100 --r 1000 --id 83"
+  ["KP3"]="knapPI_3_100_1000_83"
   # inverse strongly correlated
-  ["KP4"]="--t 4 --n 100 --r 1000 --id 12"
+  ["KP4"]="knapPI_4_100_1000_12"
   # almost strongly correlated
-  ["KP5"]="--t 5 --n 100 --r 10000000 --id 84"
+  ["KP5"]="knapPI_5_100_10000000_84"
   # subset sum
-  ["KP6"]="--t 6 --n 50 --r 100000 --id 9"
+  ["KP6"]="knapPI_6_50_100000_9"
   # uncorrelated with similar weights
-  ["KP7"]="--t 9 --n 100 --r 100000 --id 13"
+  ["KP7"]="knapPI_9_100_100000_13"
   # uncorrelated spanner, span(2,10)
-  ["KP8"]="--t 11 --n 100 --r 1000 --id 22"
+  ["KP8"]="knapPI_11_100_1000_22"
   # weakly correlated spanner, span(2,10)
-  ["KP9"]="--t 12 --n 100 --r 1000 --id 3"
+  ["KP9"]="knapPI_12_100_1000_3"
   # strongly correlated spanner, span(2,10)
-  ["KP10"]="--t 13 --n 100 --r 1000 --id 3"
+  ["KP10"]="knapPI_13_100_1000_3"
   # multiple strongly correlated, mstr(3R/10,2R/10,6)
-  ["KP11"]="--t 14 --n 100 --r 1000 --id 78"
+  ["KP11"]="knapPI_14_100_1000_78"
   # profit ceiling, pceil(3)
-  ["KP12"]="--t 15 --n 100 --r 1000 --id 15"
+  ["KP12"]="knapPI_15_100_1000_15"
   # circle, circle(2/3)
-  ["KP13"]="--t 16 --n 100 --r 1000 --id 53"
+  ["KP13"]="knapPI_16_100_1000_53"
 )
 
 declare -A instances_optimum=(
