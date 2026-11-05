@@ -2,7 +2,7 @@
 
 ### Formulation
 
-Given a set of $n$ items, where each item $i$ has a profit $p_i$ and weight $w_i$ associated with it. A binary decision variable $x_i$ is used to determine whether the item is selected or not. The goal is to choose a subset of items that maximizes the total profit, while ensuring the total weight of the selected items does not exceed a specified maximum weight $W$. Typically, the coefficients are scaled to integer values and are assumed to be positive. Formally, it is defined as:
+Given a set of $n$ items, where each item $i$ has a profit $p_i$ and weight $w_i$ associated with it. A binary decision variable $x_i$ is used to determine whether the item is selected or not. The goal is to choose a subset of items that maximizes the total profit, while ensuring the total weight of the selected items does not exceed a specified capacity $W$. Typically, the coefficients are scaled to integer values and are assumed to be positive. Formally, it is defined as:
 
 $$\text{maximize}\quad \sum_{i=1}^{n}p_{i}x_{i}$$
 $$\text{subject to }\quad \sum_{i=1}^{n}w_{i}x_{i}\leq W,$$
@@ -14,53 +14,50 @@ $$\text{with }\quad x_{i}\in \\\{0,1\\\}, \forall i \in \\\{1,\ldots,n\\\}.$$
 ./main_knapsack.out {...}
 ```
 where the available options are:
-- **`--inst`**: file containing the data
-  - must be placed in the `./instances` folder and formatted as follows:
-  ```
-  n W
-  list of profits (delimited with spaces)
-  list of weights (delimited with spaces)
-  ```
+- **`--inst`**: instance input. Two types of instances are supported:
+    - **User-defined instances:** the option must reference a file located in the `./instances` directory. The file must follow the format below:
+    ```
+    n W
+    list of profits (delimited with spaces)
+    list of weights (delimited with spaces)
+    ```
+
+    - **Pisinger's instances [3]:** these instances are generated directly from their parameters rather than loaded from a file. The identifier must follow the naming convention `knapPI_${t}_${n}_${r}_${id}` where:
+      - **`t`**: type of instance
+        - `1`: uncorrelated (default)
+        - `2`: weakly correlated
+        - `3`: strongly correlated
+        - `4`: inverse strongly correlated
+        - `5`: almost strongly correlated
+        - `6`: subset sum
+        - `9`: uncorrelated with similar weights
+        - `11`: uncorrelated spanner, span(2,10)
+        - `12`: weakly correlated spanner, span(2,10)
+        - `13`: strongly correlated spanner, span(2,10)
+        - `14`: multiple strongly correlated, mstr(3R/10,2R/10,6)
+        - `15`: profit ceiling, pceil(3)
+        - `16`: circle, circle(2/3)
+
+      - **`n`**: number of items
+        - any positive integer (`100` by default)
+
+      - **`r`**: coefficient range
+        - any positive integer (`10000` by default)
+
+      - **`id`**: instance index
+        - any positive integer (`1` by default)
 
 - **`--ub`**: upper-bound function
   - `dantzig`: implementation of Dantzig's bound [1] (default)
   - `martello`: implementation of Martello and Toth's bound [2]
 
 - **`--lb`**: initial lower bound (LB)
-  - `opt`: initialize the LB to the best solution known
+  - `opt`: initialize the LB to the best-known solution
   - `heuristic`: initialize the LB using a greedy fill heuristic up to capacity (default)
   - `{NUM}`: initialize the LB to the given number
 
 - **`--mb`**: multi-variable branching factor
   - any positive integer (`1` by default)
-
-Specifically for targeting hard Pisinger's instances [3], the following parameters can be used (and `--inst` omitted):
-- **`--n`**: number of items
-  - any positive integer (`100` by default)
-
-- **`--r`**: range of coefficients
-  - any positive integer (`10000` by default)
-
-- **`--t`**: type of instance
-  - `1`: uncorrelated (default)
-  - `2`: weakly correlated
-  - `3`: strongly correlated
-  - `4`: inverse strongly correlated
-  - `5`: almost strongly correlated
-  - `6`: subset sum
-  - `9`: uncorrelated with similar weights
-  - `11`: uncorrelated spanner, span(2,10)
-  - `12`: weakly correlated spanner, span(2,10)
-  - `13`: strongly correlated spanner, span(2,10)
-  - `14`: multiple strongly correlated, mstr(3R/10,2R/10,6)
-  - `15`: profit ceiling, pceil(3)
-  - `16`: circle, circle(2/3)
-
-- **`--id`**: index of the instance
-  - any positive integer (`1` by default)
-
-- **`--s`**: number of instances in series
-  - any positive integer (`100` by default)
 
 ### References
 

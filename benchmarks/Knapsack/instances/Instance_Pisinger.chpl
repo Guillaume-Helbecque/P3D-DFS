@@ -7,6 +7,8 @@ require "../c_sources/pisinger_genhard.c", "../c_headers/pisinger_genhard.h";
 extern proc generator(n: c_int, pp: c_ptr(c_int), ww: c_ptr(c_int), typ: c_int,
   r: c_int, v: c_int, tests: c_int): c_longlong;
 
+param S: c_int = 100; // Number of instances in series
+
 class Instance_Pisinger : Instance
 {
   var nb_items: c_int;
@@ -15,17 +17,23 @@ class Instance_Pisinger : Instance
   var weights: c_ptr(c_int);
   var capacity: c_longlong;
 
-  proc init(const n: c_int, const r: c_int, const t: c_int, const id: c_int, const s: c_int)
+  proc init(const instName: string)
   {
-    this.name = "knapPI_" + t:string + "_" + n:string + "_" + r:string + "_" + id:string;
+    this.name = instName;
+    const options = instName.split("_");
+    const t = options[1]:c_int;
+    const n = options[2]:c_int;
+    const r = options[3]:c_int;
+    const id = options[4]:c_int;
+
     this.nb_items = n;
     this.typ = t;
-    this.profits = allocate(c_int, n);
-    this.weights = allocate(c_int, n);
+    this.profits = allocate(c_int, this.nb_items);
+    this.weights = allocate(c_int, this.nb_items);
 
     init this;
 
-    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, s);
+    this.capacity = generator(this.nb_items, this.profits, this.weights, this.typ, r, id, S);
   }
 
   proc deinit()
