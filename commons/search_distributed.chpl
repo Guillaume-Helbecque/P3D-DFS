@@ -9,9 +9,9 @@ module search_distributed
   use util;
   use Problem;
 
-  config param activeSetSize: int = 1;
+  config param preSearchSize: int = 1;
 
-  proc search_distributed(const rootNode, problem, const activeSet: bool): void
+  proc search_distributed(const rootNode, problem, const preSearch: bool): void
   {
     type nodeType = rootNode.type;
 
@@ -39,12 +39,12 @@ module search_distributed
 
     var bag = new distBag(nodeType, targetLocales = Locales);
 
-    if activeSet {
+    if preSearch {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least `activeSetSize` elements per task.
+        We require at least `preSearchSize` elements per task.
       */
-      var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
+      var initSize: int = preSearchSize * here.maxTaskPar * numLocales;
       var initList: list(nodeType);
       initList.pushBack(rootNode);
       var lockList: sync bool = false;

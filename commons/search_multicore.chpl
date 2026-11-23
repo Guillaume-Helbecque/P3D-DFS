@@ -7,9 +7,9 @@ module search_multicore
   use util;
   use Problem;
 
-  config param activeSetSize: int = 1;
+  config param preSearchSize: int = 1;
 
-  proc search_multicore(const rootNode, problem, const activeSet: bool): void
+  proc search_multicore(const rootNode, problem, const preSearch: bool): void
   {
     type nodeType = rootNode.type;
     const numTasks = here.maxTaskPar;
@@ -37,12 +37,12 @@ module search_multicore
 
     var bag = new distBag(nodeType);
 
-    if activeSet {
+    if preSearch {
       /*
         An initial set is sequentially computed and distributed across tasks.
-        We require at least `activeSetSize` elements per task.
+        We require at least `preSearchSize` elements per task.
       */
-      var initSize: int = activeSetSize * numTasks;
+      var initSize: int = preSearchSize * numTasks;
       var initList: list(nodeType);
       initList.pushBack(rootNode);
       var lockList: sync bool = false;

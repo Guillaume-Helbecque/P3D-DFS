@@ -30,7 +30,7 @@ where the available options are:
 
 - **`--findAll`**: find all optimal solutions
 
-- **`--activeSet`**: compute and distribute an initial set of elements
+- **`--preSearch`**: compute and distribute an initial set of elements
 
 - **`-nl`**: number of Chapel's locales
   - any positive integer, typically the number of compute nodes

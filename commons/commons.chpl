@@ -8,7 +8,7 @@ module commons
   // Common options
   config const mode: string    = "multicore"; // sequential, multicore, distributed
   config const findAll: bool   = false;
-  config const activeSet: bool = false;
+  config const preSearch: bool = false;
 
   proc common_help_message(executable): void
   {
@@ -16,7 +16,7 @@ module commons
     writeln("\n  General Parameters:\n");
     writeln("   --mode           str    parallel execution mode (sequential, multicore, distributed)");
     writeln("   --findAll        bool   find all optimal solutions");
-    writeln("   --activeSet      bool   compute and distribute an initial set of elements");
+    writeln("   --preSearch      bool   compute and distribute an initial set of elements");
     writeln("   --help (or -h)          print this message");
   }
 
@@ -40,14 +40,14 @@ module commons
     // Search
     select mode {
       when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
+        if preSearch then warning("`preSearch` is ignored in sequential mode");
         search_sequential(rootNode, problem);
       }
       when "multicore" {
-        search_multicore(rootNode, problem, activeSet);
+        search_multicore(rootNode, problem, preSearch);
       }
       when "distributed" {
-        search_distributed(rootNode, problem, activeSet);
+        search_distributed(rootNode, problem, preSearch);
       }
       otherwise {
         halt("unknown execution mode");
