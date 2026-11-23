@@ -1,20 +1,10 @@
 module main_qap
 {
-  // Common modules
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_QAP;
   use Problem_QAP;
-
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const findAll: bool   = false;
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
 
   // Problem-specific option
   config const inst           = "10_sqn,16_melbourne";
@@ -24,35 +14,13 @@ module main_qap
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var qap = new Problem_QAP(inst, itmax, lb, ub);
+    // initialize root node
+    var root = new Node_QAP(qap);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        qap.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_QAP, qap, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_QAP, qap, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_QAP, qap, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    // launch B&B search
+    run_search(args, root, qap);
 
     return 0;
   }

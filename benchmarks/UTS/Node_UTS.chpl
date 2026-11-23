@@ -9,15 +9,15 @@ module Node_UTS
   {
     var numChildren: c_int;
 
-    // default-initializer
+    // default initializer
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
+    // root initializer
+    proc init(const treeType: c_int, const rootId: c_int)
     {
       init this;
-      uts_initRoot(this, problem.treeType, problem.rootId);
+      uts_initRoot(this, treeType, rootId);
     }
   }
 }

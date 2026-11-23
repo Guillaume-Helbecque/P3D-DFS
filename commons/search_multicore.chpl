@@ -7,15 +7,16 @@ module search_multicore
   use util;
   use Problem;
 
-  config param activeSetSize: int = 1;
+  config param preSearchSize: int = 1;
 
-  proc search_multicore(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_multicore(const rootNode, problem, const preSearch: bool): void
   {
+    type nodeType = rootNode.type;
     const numTasks = here.maxTaskPar;
 
     // Global variables (best solution found and termination)
-    var best: int = problem.getInitBound();
-    var lockBest: sync bool = true;
+    var bestCost: int = problem.getInitBound();
+    var lockBestCost: sync bool = true;
     var allTasksIdleFlag: atomic bool = false;
     var eachTaskState: [0..#numTasks] atomic bool = BUSY;
 
@@ -34,44 +35,35 @@ module search_multicore
     // INITIALIZATION
     // ===============
 
-    var bag = new distBag(Node);
-    var root = new Node(problem);
+    var bag = new distBag(nodeType);
 
-    if activeSet {
+    if preSearch {
       /*
         An initial set is sequentially computed and distributed across tasks.
-        We require at least `activeSetSize` elements per task.
+        We require at least `preSearchSize` elements per task.
       */
-      var initSize: int = activeSetSize * numTasks;
-      var initList: list(Node);
-      initList.pushBack(root);
+      var initSize: int = preSearchSize * numTasks;
+      var initList: list(nodeType);
+      initList.pushBack(rootNode);
       var lockList: sync bool = false;
 
-      ref tree_loc = eachExploredTree[0];
-      ref num_sol = eachExploredSol[0];
-      ref max_depth = eachMaxDepth[0];
+      coforall taskId in 0..<numTasks with (ref eachExploredTree, ref eachExploredSol,
+        ref eachMaxDepth, ref initList, ref lockList, ref bestCost) {
 
-      coforall taskId in 0..<numTasks with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+        var bestCost_task: int = bestCost;
+        ref tree_loc = eachExploredTree[taskId];
+        ref num_sol = eachExploredSol[taskId];
+        ref max_depth = eachMaxDepth[taskId];
 
-        var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
-
-        var parent: Node;
+        var parent: nodeType;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
-          var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+          var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
+            max_depth, bestCost, lockBestCost, bestCost_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
-
-        tree_loc += tree;
-        num_sol += num;
-        max_depth += max;
       }
 
       // Static distribution of the set
@@ -93,7 +85,7 @@ module search_multicore
       /*
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
-      bag.add(root, 0);
+      bag.add(rootNode, 0);
     }
 
     // =====================
@@ -101,12 +93,12 @@ module search_multicore
     // =====================
 
     coforall taskId in 0..#numTasks with (ref eachExploredTree, ref eachExploredSol,
-      ref eachMaxDepth, ref eachTaskState, ref best) {
+      ref eachMaxDepth, ref eachTaskState, ref bestCost) {
 
       // Task variables
-      var best_task: int = best;
+      var bestCost_task: int = bestCost;
       var taskState: bool = BUSY;
-      var counter: int = 0;
+      /* var counter: int = 0; */
       ref tree_loc = eachExploredTree[taskId];
       ref num_sol = eachExploredSol[taskId];
       ref max_depth = eachMaxDepth[taskId];
@@ -115,7 +107,7 @@ module search_multicore
       while true do {
 
         // Try to remove an element
-        var (hasWork, parent): (int, Node) = bag.remove(taskId);
+        var (hasWork, parent): (int, nodeType) = bag.remove(taskId);
 
         /*
           Check (or not) the termination condition regarding the value of 'hasWork':
@@ -148,8 +140,8 @@ module search_multicore
         }
 
         // Decompose an element
-        var children = problem.decompose(Node, parent, tree_loc, num_sol,
-          max_depth, best, lockBest, best_task);
+        var children = problem.decompose(nodeType, parent, tree_loc, num_sol,
+          max_depth, bestCost, lockBestCost, bestCost_task);
 
         bag.addBulk(children, taskId);
 
@@ -160,10 +152,14 @@ module search_multicore
         } */
       }
 
-      if best_task != best then num_sol = 0;
+      if bestCost_task != bestCost then num_sol = 0;
     }
 
     globalTimer.stop();
+
+    const exploredTree = (+ reduce eachExploredTree);
+    const exploredSol = (+ reduce eachExploredSol);
+    const maxDepth = (max reduce eachMaxDepth);
 
     // ========
     // OUTPUTS
@@ -171,7 +167,10 @@ module search_multicore
 
     writeln("\nExploration terminated.");
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed());
+
+    // NOTE: only for debugging
+    /* writeln("% of the explored tree per tasks: ", 100 * eachExploredTree:real / exploredTree:real); */
   }
 }

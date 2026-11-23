@@ -8,7 +8,7 @@ module Problem
     }
 
     proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int)
     {
       compilerError("Problem.decompose() not implemented");
     }
@@ -27,8 +27,8 @@ module Problem
       compilerWarning("Problem.print_settings() not implemented");
     }
 
-    proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    proc print_results(const nodesExplored, const nbSol, const maxDepth,
+      const bestCost: int, const elapsedTime: real): void
     {
       compilerWarning("Problem.print_results() not implemented");
     }

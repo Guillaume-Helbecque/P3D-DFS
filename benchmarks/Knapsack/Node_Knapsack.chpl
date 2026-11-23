@@ -9,17 +9,11 @@ module Node_Knapsack
     var weight: int;
     var profit: int;
 
-    // default-initializer
+    // default initializer
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
-    {
-      init this;
-    }
-
-    // copy-initializer
+    // copy initializer
     proc init(other: Node_Knapsack)
     {
       this.depth = other.depth;

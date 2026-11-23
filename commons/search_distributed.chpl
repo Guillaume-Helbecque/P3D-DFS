@@ -9,13 +9,15 @@ module search_distributed
   use util;
   use Problem;
 
-  config param activeSetSize: int = 1;
+  config param preSearchSize: int = 1;
 
-  proc search_distributed(type Node, problem, const saveTime: bool, const activeSet: bool): void
+  proc search_distributed(const rootNode, problem, const preSearch: bool): void
   {
+    type nodeType = rootNode.type;
+
     // Global variables (best solution found and termination)
-    var best: int = problem.getInitBound();
-    var lockBest: sync bool = true;
+    var bestCost: int = problem.getInitBound();
+    var lockBestCost: sync bool = true;
     var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
     var allLocalesIdleFlag: atomic bool = false;
     allLocalesBarrier.reset(here.maxTaskPar); // configuration of the global barrier
@@ -35,17 +37,16 @@ module search_distributed
     // INITIALIZATION
     // ===============
 
-    var bag = new distBag(Node, targetLocales = Locales);
-    var root = new Node(problem);
+    var bag = new distBag(nodeType, targetLocales = Locales);
 
-    if activeSet {
+    if preSearch {
       /*
         An initial set is sequentially computed and distributed across locales.
-        We require at least `activeSetSize` elements per task.
+        We require at least `preSearchSize` elements per task.
       */
-      var initSize: int = activeSetSize * here.maxTaskPar * numLocales;
-      var initList: list(Node);
-      initList.pushBack(root);
+      var initSize: int = preSearchSize * here.maxTaskPar * numLocales;
+      var initList: list(nodeType);
+      initList.pushBack(rootNode);
       var lockList: sync bool = false;
 
       ref tree_loc = eachExploredTree[0];
@@ -53,26 +54,26 @@ module search_distributed
       ref max_depth = eachMaxDepth[0];
 
       coforall taskId in 0..<here.maxTaskPar with (ref tree_loc,
-        ref num_sol, ref max_depth, ref initList, ref lockList, ref best) {
+        ref num_sol, ref max_depth, ref initList, ref lockList, ref bestCost) {
 
-        var best_task: int = best;
-        var tree = tree_loc;
-        var num = num_sol;
-        var max = max_depth;
+        var bestCost_task: int = bestCost;
+        var tree: int;
+        var num: int;
+        var maxd: int;
 
-        var parent: Node;
+        var parent: nodeType;
         while (initList.size < initSize) {
           if !popBackSafe(initList, lockList, parent) then continue;
 
-          var children = problem.decompose(Node, parent, tree, num,
-            max, best, lockBest, best_task);
+          var children = problem.decompose(nodeType, parent, tree, num,
+            maxd, bestCost, lockBestCost, bestCost_task);
 
           for elt in children do pushFrontSafe(initList, lockList, elt);
         }
 
         tree_loc += tree;
         num_sol += num;
-        max_depth += max;
+        max_depth = max(max_depth, maxd);
       }
 
       // Static distribution of the set
@@ -94,7 +95,7 @@ module search_distributed
       /*
         In that case, there is only one node in the bag (task 0 of locale 0).
       */
-      bag.add(root, 0);
+      bag.add(rootNode, 0);
     }
 
     // =====================
@@ -102,7 +103,7 @@ module search_distributed
     // =====================
 
     coforall loc in Locales with (const ref problem, ref eachLocaleState, ref eachExploredTree,
-      ref eachExploredSol, ref eachMaxDepth, ref best) do on loc {
+      ref eachExploredSol, ref eachMaxDepth, ref bestCost) do on loc {
 
       const numTasks = here.maxTaskPar;
       var problem_loc = problem.copy();
@@ -118,12 +119,12 @@ module search_distributed
       var eachLocalMaxDepth: [0..#numTasks] int;
 
       coforall taskId in 0..#numTasks with (ref eachLocalExploredTree, ref eachLocalExploredSol,
-        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref best/*, ref best_locale*/) {
+        ref eachLocalMaxDepth, ref eachTaskState, ref eachLocaleState, ref bestCost/*, ref best_locale*/) {
 
         // Task variables
-        var best_task: int = best; //_locale;
+        var bestCost_task: int = bestCost; //_locale;
         var taskState, locState: bool = BUSY;
-        var counter: int = 0;
+        /* var counter: int = 0; */
         ref tree_loc = eachLocalExploredTree[taskId];
         ref num_sol = eachLocalExploredSol[taskId];
         ref max_depth = eachLocalMaxDepth[taskId];
@@ -134,7 +135,7 @@ module search_distributed
         while true do {
 
           // Try to remove an element
-          var (hasWork, parent): (int, Node) = bag.remove(taskId);
+          var (hasWork, parent): (int, nodeType) = bag.remove(taskId);
 
           /*
             Check (or not) the termination condition regarding the value of 'hasWork':
@@ -177,8 +178,8 @@ module search_distributed
           }
 
           // Decompose an element
-          var children = problem_loc.decompose(Node, parent, tree_loc, num_sol,
-            max_depth, best, lockBest, best_task);
+          var children = problem_loc.decompose(nodeType, parent, tree_loc, num_sol,
+            max_depth, bestCost, lockBestCost, bestCost_task);
 
           bag.addBulk(children, taskId);
 
@@ -191,7 +192,7 @@ module search_distributed
           best_task = best_locale; */
         }
 
-        if best_task != best then num_sol = 0;
+        if bestCost_task != bestCost then num_sol = 0;
       } // end coforall tasks
 
       eachExploredTree[here.id] += (+ reduce eachLocalExploredTree);
@@ -201,14 +202,20 @@ module search_distributed
 
     globalTimer.stop();
 
+    const exploredTree = (+ reduce eachExploredTree);
+    const exploredSol = (+ reduce eachExploredSol);
+    const maxDepth = (max reduce eachMaxDepth);
+
     // ========
     // OUTPUTS
     // ========
 
     writeln("\nExploration terminated.");
 
-    problem.print_results(eachExploredTree, eachExploredSol, eachMaxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed());
-  }
 
+    // NOTE: only for debugging
+    /* writeln("% of the explored tree per locales: ", 100 * eachExploredTree:real / exploredTree:real); */
+  }
 }

@@ -1,23 +1,13 @@
 module main_uts
 {
-  // Common modules
-  use CTypes;
-
-  use util;
-  use search_sequential;
-  use search_multicore;
-  use search_distributed;
+  use commons;
 
   // Problem-specific modules
   use Node_UTS;
   use Problem_UTS;
 
-  // Common options
-  config const mode: string    = "multicore"; // sequential, multicore, distributed
-  config const activeSet: bool = false;
-  config const saveTime: bool  = false;
-
   // Problem-specific options
+  use CTypes;
   config const t: c_int    = 0; // BIN
   config const b: c_double = 2000.0;
   config const r: c_int    = 30;
@@ -30,35 +20,13 @@ module main_uts
 
   proc main(args: [] string): int
   {
-    // Initialization of the problem
+    // initialize problem instance
     var uts = new Problem_UTS(t, b, r, m, q, d, a, f, g);
+    // initialize root node
+    var root = new Node_UTS(t, r);
 
-    // Helper
-    for a in args[1..] {
-      if (a == "-h" || a == "--help") {
-        common_help_message(args[0]);
-        uts.help_message();
-
-        return 1;
-      }
-    }
-
-    // Search
-    select mode {
-      when "sequential" {
-        if activeSet then warning("`activeSet` is ignored in sequential mode");
-        search_sequential(Node_UTS, uts, saveTime);
-      }
-      when "multicore" {
-        search_multicore(Node_UTS, uts, saveTime, activeSet);
-      }
-      when "distributed" {
-        search_distributed(Node_UTS, uts, saveTime, activeSet);
-      }
-      otherwise {
-        halt("unknown execution mode");
-      }
-    }
+    // launch B&B search
+    run_search(args, root, uts);
 
     return 0;
   }

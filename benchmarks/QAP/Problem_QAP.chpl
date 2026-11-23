@@ -9,7 +9,7 @@ module Problem_QAP
 
   const allowedLowerBounds = ["glb", "hhb"];
 
-  import main_qap.findAll as findAll;
+  import commons.findAll as findAll;
 
   class Problem_QAP : Problem
   {
@@ -489,7 +489,7 @@ module Problem_QAP
       return child;
     }
 
-    proc bound_HHB(ref node, best)
+    proc bound_HHB(ref node, bestCost)
     {
       ref lb = node.lower_bound;
       ref C = node.costs;
@@ -500,7 +500,7 @@ module Problem_QAP
 
       var it = 0;
 
-      while (it < this.it_max && lb <= best) {
+      while (it < this.it_max && lb <= bestCost) {
         it += 1;
 
         distributeLeader(C, L, m);
@@ -528,7 +528,7 @@ module Problem_QAP
     }
 
     proc decompose_HHB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -537,20 +537,20 @@ module Problem_QAP
       if (depth == this.n) {
         const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
-        if (eval < best_task) {
-          best_task = eval;
+        if (eval < bestCost_task) {
+          bestCost_task = eval;
           lock.readFE();
-          if (eval <= best) {
-            best = eval;
+          if (eval <= bestCost) {
+            bestCost = eval;
             num_sol = 1;
           }
           else {
-            best_task = best;
+            bestCost_task = bestCost;
             num_sol = 0;
           }
           lock.writeEF(true);
         }
-        else if (eval == best_task) {
+        else if (eval == bestCost_task) {
           num_sol += 1;
         }
         else {
@@ -577,15 +577,15 @@ module Problem_QAP
             const lb_new = parent.lower_bound + incre;
 
             // prune
-            if (lb_new > best_task) {
+            if (lb_new > bestCost_task) {
               continue;
             }
 
             var child = reduceNode(Node, parent, i, j, k, l, lb_new);
 
             if (child.depth < this.n) {
-              const lb = bound_HHB(child, best_task);
-              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+              const lb = bound_HHB(child, bestCost_task);
+              const isBetter = if findAll then (lb <= bestCost_task) else (lb < bestCost_task);
 
               if isBetter {
                 children.pushBack(child);
@@ -853,7 +853,7 @@ module Problem_QAP
     }
 
     proc decompose_GLB(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -862,20 +862,20 @@ module Problem_QAP
       if (depth == this.n) {
         const eval = ObjectiveFunction(parent.mapping, this.D, this.F, this.n);
 
-        if (eval < best_task) {
-          best_task = eval;
+        if (eval < bestCost_task) {
+          bestCost_task = eval;
           lock.readFE();
-          if (eval <= best) {
-            best = eval;
+          if (eval <= bestCost) {
+            bestCost = eval;
             num_sol = 1;
           }
           else {
-            best_task = best;
+            bestCost_task = bestCost;
             num_sol = 0;
           }
           lock.writeEF(true);
         }
-        else if (eval == best_task) {
+        else if (eval == bestCost_task) {
           num_sol += 1;
         }
         else {
@@ -898,7 +898,7 @@ module Problem_QAP
 
             if (child.depth < this.n) {
               const lb = bound_GLB(child);
-              const isBetter = if findAll then (lb <= best_task) else (lb < best_task);
+              const isBetter = if findAll then (lb <= bestCost_task) else (lb < bestCost_task);
 
               if isBetter {
                 children.pushBack(child);
@@ -917,19 +917,24 @@ module Problem_QAP
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       select this.lb_name {
         when "hhb" {
-          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_HHB(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         when "glb" {
-          return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, best, lock, best_task);
+          return decompose_GLB(Node, parent, tree_loc, num_sol, max_depth, bestCost, lock, bestCost_task);
         }
         otherwise {
           halt("DEADCODE");
         }
       }
+    }
+
+    override proc getInitBound(): int
+    {
+      return this.initUB;
     }
 
     override proc print_settings(): void
@@ -954,37 +959,17 @@ module Problem_QAP
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const nodesExplored, const nbSol, const maxDepth,
+      const bestCost: int, const elapsedTime: real): void
     {
-      var treeSize, nbSol: int;
-
-      if (isArray(subNodeExplored) && isArray(subSolExplored)) {
-        treeSize = (+ reduce subNodeExplored);
-        nbSol = (+ reduce subSolExplored);
-      } else { // if not array, then int
-        treeSize = subNodeExplored;
-        nbSol = subSolExplored;
-      }
-
-      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
-
       writeln("\n=================================================");
-      writeln("Size of the explored tree: ", treeSize);
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
-      }
+      writeln("Size of the explored tree: ", nodesExplored);
       writeln("Number of optimal solutions: ", nbSol);
-      const is_better = if (best < this.initUB) then " (improved)"
-                                                else " (not improved)";
-      writeln("Optimal allocation: ", best, is_better);
+      const is_better = if (bestCost < this.initUB) then " (improved)"
+                                                    else " (not improved)";
+      writeln("Optimal allocation: ", bestCost, is_better);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
-    }
-
-    override proc getInitBound(): int
-    {
-      return this.initUB;
     }
 
     override proc help_message(): void
@@ -995,6 +980,5 @@ module Problem_QAP
       writeln("   --lb      str       lower bound function ('glb' or 'hhb')");
       writeln("   --ub      str/int   upper bound initialization ('heuristic' or any integer)\n");
     }
-
   } // end class
 }

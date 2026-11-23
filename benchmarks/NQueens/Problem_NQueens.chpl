@@ -36,7 +36,7 @@ module Problem_NQueens
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): list(?)
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): list(?)
     {
       var children: list(Node);
 
@@ -75,29 +75,12 @@ module Problem_NQueens
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const nodesExplored, const nbSol, const maxDepth,
+      const bestCost: int, const elapsedTime: real): void
     {
-      var treeSize, nbSol: int;
-
-      if (isArray(subNodeExplored) && isArray(subSolExplored)) {
-        treeSize = (+ reduce subNodeExplored);
-        nbSol = (+ reduce subSolExplored);
-      } else { // if not array, then int
-        treeSize = subNodeExplored;
-        nbSol = subSolExplored;
-      }
-
-      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
-
       writeln("\n=================================================");
-      writeln("Size of the explored tree: ", treeSize);
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
-      }
+      writeln("Size of the explored tree: ", nodesExplored);
       writeln("Number of explored solutions: ", nbSol);
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================================\n");
     }
@@ -107,7 +90,5 @@ module Problem_NQueens
       writeln("\n  N-Queens Benchmark Parameter:\n");
       writeln("   --N   int   problem size (number of queens)\n");
     }
-
   } // end class
-
 } // end module

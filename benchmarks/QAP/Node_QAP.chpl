@@ -17,12 +17,12 @@ module Node_QAP
     var leader: [domLeader] int;
     var size: int(32);
 
-    // default-initializer
+    // default initializer
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
+    // root initializer
+    proc init(const problem)
     {
       init this;
       for i in 0..<problem.n do this.mapping[i] = -1;
@@ -36,7 +36,7 @@ module Node_QAP
       }
     }
 
-    // copy-initializer
+    // copy initializer
     proc init(other: Node_QAP)
     {
       this.mapping = other.mapping;

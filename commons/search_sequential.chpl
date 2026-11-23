@@ -6,11 +6,13 @@ module search_sequential
   use util;
   use Problem;
 
-  proc search_sequential(type Node, problem, const saveTime: bool): void
+  proc search_sequential(const rootNode, problem): void
   {
-    var best: int = problem.getInitBound();
+    type nodeType = rootNode.type;
+
+    var bestCost: int = problem.getInitBound();
     /* Not needed in sequential mode, but we use it only to match the generic template. */
-    var lockBest: sync bool = true;
+    var lockBestCost: sync bool = true;
 
     // Statistics
     var exploredTree: int;
@@ -27,10 +29,9 @@ module search_sequential
     // INITIALIZATION
     // ===============
 
-    var pool: list(Node);
-    var root = new Node(problem);
+    var pool: list(nodeType);
 
-    pool.pushBack(root);
+    pool.pushBack(rootNode);
 
     // ============
     // EXPLORATION
@@ -40,11 +41,11 @@ module search_sequential
     while !pool.isEmpty() do {
 
       // Remove an element
-      var parent: Node = pool.popBack();
+      var parent: nodeType = pool.popBack();
 
       // Decompose the element
-      var children = problem.decompose(Node, parent, exploredTree, exploredSol,
-        maxDepth, best, lockBest, best);
+      var children = problem.decompose(nodeType, parent, exploredTree, exploredSol,
+        maxDepth, bestCost, lockBestCost, bestCost);
 
       pool.pushBack(children);
     }
@@ -57,7 +58,7 @@ module search_sequential
 
     writeln("\nExploration terminated.");
 
-    problem.print_results(exploredTree, exploredSol, maxDepth, best,
+    problem.print_results(exploredTree, exploredSol, maxDepth, bestCost,
       globalTimer.elapsed());
   }
 }

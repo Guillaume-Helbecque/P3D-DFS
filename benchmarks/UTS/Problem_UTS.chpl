@@ -82,7 +82,7 @@ module Problem_UTS
     }
 
     override proc decompose(type Node, const parent: Node, ref tree_loc: int, ref num_sol: int,
-      ref max_depth: int, ref best: int, lock: sync bool, ref best_task: int): [] Node
+      ref max_depth: int, ref bestCost: int, lock: sync bool, ref bestCost_task: int): [] Node
     {
       const numChildren = uts_numChildren(parent, this.treeType, this.nonLeafBF, this.nonLeafProb,
         this.b_0, this.shape_fn, this.gen_mx, this.shiftDepth);
@@ -145,31 +145,12 @@ module Problem_UTS
       writeln("=================================================");
     }
 
-    override proc print_results(const subNodeExplored, const subSolExplored,
-      const subDepthReached, const best: int, const elapsedTime: real): void
+    override proc print_results(const nodesExplored, const nbSol, const maxDepth,
+      const bestCost: int, const elapsedTime: real): void
     {
-      var treeSize, nbLeaf, maxDepth: int;
-
-      if (isArray(subNodeExplored) && isArray(subSolExplored) && isArray(subDepthReached)) {
-        treeSize = (+ reduce subNodeExplored);
-        nbLeaf = (+ reduce subSolExplored);
-        maxDepth = (max reduce subDepthReached);
-      } else { // if not array, then int
-        treeSize = subNodeExplored;
-        nbLeaf = subSolExplored;
-        maxDepth = subDepthReached;
-      }
-
-      const par_mode: string = if (numLocales == 1) then "tasks" else "locales";
-
       writeln("\n=================================");
-      writeln("Size of the explored tree: ", treeSize+1); // +1 for root
-      /* writeln("Size of the explored tree per locale: ", sizePerLocale); */
-      if isArray(subNodeExplored) {
-        writeln("% of the explored tree per ", par_mode, ": ", 100 * subNodeExplored:real / treeSize:real);
-      }
-      writeln("Number of leaves explored: ", nbLeaf, " (", 100 * nbLeaf:real / treeSize:real, "%)");
-      /* writeln("Number of explored solutions per locale: ", numSolPerLocale); */
+      writeln("Size of the explored tree: ", nodesExplored+1); // +1 for root
+      writeln("Number of leaves explored: ", nbSol, " (", 100 * nbSol:real / nodesExplored:real, "%)");
       writeln("Tree depth: ", maxDepth);
       writeln("Elapsed time: ", elapsedTime, " [s]");
       writeln("=================================\n");
@@ -188,7 +169,5 @@ module Problem_UTS
       writeln("   --f   double   HYBRID: fraction of depth for GEO -> BIN transition");
       writeln("   --g   int      granularity: number of rng_spawns per node");
     }
-
   } // end class
-
 } // end module

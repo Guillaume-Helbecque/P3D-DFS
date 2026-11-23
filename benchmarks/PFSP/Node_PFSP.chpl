@@ -12,20 +12,20 @@ module Node_PFSP
     var limit2: int; // left limit
     var prmu: c_array(c_int, JobsMax);
 
-    // default-initializer
+    // default initializer
     proc init()
     {}
 
-    // root-initializer
-    proc init(problem)
+    // root initializer
+    proc init(const nJobs)
     {
       this.limit1 = -1;
-      this.limit2 = problem.jobs;
+      this.limit2 = nJobs;
       init this;
-      for i in 0..#problem.jobs do this.prmu[i] = i:c_int;
+      for i in 0..#nJobs do this.prmu[i] = i:c_int;
     }
 
-    // copy-initializer
+    // copy initializer
     proc init(other: Node_PFSP)
     {
       this.depth  = other.depth;
