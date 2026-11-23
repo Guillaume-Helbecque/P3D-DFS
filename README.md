@@ -14,12 +14,12 @@ The [chpl_config](./chpl_config) directory contains predefined shell scripts for
 
 ### Compilation and configuration options
 
-- **Step 1:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the target system, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
+- **Setup:** [Set up your Chapel environment](https://chapel-lang.org/docs/usingchapel/chplenv.html) according to the target system, and [build Chapel](https://chapel-lang.org/docs/usingchapel/building.html).
 
-- **Step 2:** Compile with `make` and execute with:
+- **Build and run:** Compile with `make main_<problem>.out` and execute with:
 
 ```
-./main.out {...}
+./main_<problem>.out {...}
 ```
 
 where the available options are:
@@ -58,47 +58,36 @@ The integration mainly consists of three steps:
 
 **Step 1: Implement your problem-specific components.**
 
-Start by copying `main_template.chpl` and adapting the following components:
+Copy `main_template.chpl` to `main_<myproblem>.chpl` and fill in:
 
-- **`MyNode`**: a Chapel record representing a node in the search tree. It must provide three initializers:
-  - A default initializer.
-  - A root initializer, taking the problem instance as an argument.
-  - A copy initializer, taking another node as an argument.
-- **`MyProblem`**: a class inheriting from the generic `Problem` class, implementing the problem-specific logic required by the B&B algorithm.
-- **Problem-specific procedures**: implement the required operations, such as branching, bounding, and solution evaluation, following the interfaces illustrated in the existing benchmarks.
+- **`MyNode`**: a record representing a node of the search tree. It must provide three initializers: a default one, a root one (taking the arguments needed to build the root node), and a copy one.
+- **`MyProblem`**: a class inheriting from the generic `Problem` class, which stores the instance data and implements:
+  - `copy`: returns a deep copy of the problem instance;
+  - `decompose`: branches a node, prunes its children using the bounds, and updates the search statistics and the best cost;
+  - `getInitBound`: returns the initial bound (best known cost);
+  - `print_settings`, `print_results`, `help_message`: display the settings, the results, and the problem-specific options.
 
 These modules must follow the interfaces expected by the generic B&B skeleton.
 
-**Step 2: Create your main program.**
+**Step 2: Adapt the main program.**
 
-The template already provides a generic entry point:
+In the `main` procedure of the template, create your problem instance and your root node, then leave the call to `run_search` unchanged:
 
 ```chapel
-proc main(args: [] string): int
-{
-  // TODO: Initialize your problem instance.
-  var myProblem = new MyProblem(/* problem-specific options here */);
-  // TODO: Initialize your root node.
-  var root = new MyNode(/* args */);
+var myProblem = new MyProblem(/* problem-specific options here */);
+var root = new MyNode(/* args */);
 
-  // Launch the generic Branch-and-Bound search.
-  // No modification is required here.
-  run_search(args, root, myProblem);
-
-  return 0;
-}
+run_search(args, root, myProblem);
 ```
 
-Adapt the initialization of `MyProblem` to include any problem-specific configuration options.
-
-The `run_search` procedure connects your implementation to the generic B&B skeleton and handles the selected execution mode, allowing you to focus on the optimization problem rather than the underlying parallelization mechanisms.
+`run_search` handles the selected execution mode (`sequential`, `multicore`, or `distributed`) and connects your implementation to the generic B&B skeleton. Problem-specific options can be declared with `config const` above `main` and set from the command line (e.g., `--myOption=3`).
 
 **Step 3: Compile and execute.**
 
-The provided `Makefile` provides a generic compilation rule for all `main_*.chpl` files. Simply ensure that your implementation follows this naming convention (e.g., `main_myproblem.chpl`), then compile using:
+The provided `makefile` includes a generic compilation rule for all `main_*.chpl` files. Simply ensure that your implementation follows this naming convention (e.g., `main_myproblem.chpl`), then compile using:
 
 ```bash
-make main_template.out
+make main_myproblem.out
 ```
 
 Once compiled, execute your problem using any of the supported options:
@@ -112,6 +101,6 @@ Additional problem-specific configuration options can be passed through the comm
 ### Related publications
 
 1. J.-P. Valois, G. Helbecque, N. Melab. Efficient and scalable branch-and-bound algorithm for exact qubit allocation. *Future Generation Computer Systems*, 179:108342, 2026. DOI: [10.1016/j.future.2025.108342](https://doi.org/10.1016/j.future.2025.108342).
-2. G. Helbecque. *PGAS-based Parallel Branch-and-Bound for Ultra-Scale GPU-powered Supercomputers*. Ph.D. thesis. Université de Lille, Université du Luxembourg. 2025. URL: https://theses.fr/2025ULILB003.
+2. G. Helbecque. *PGAS-based Parallel Branch-and-Bound for Ultra-Scale GPU-powered Supercomputers*. Ph.D. thesis. Université de Lille, Université du Luxembourg. 2025. DOI: [10.70675/a177f456zf937z4b1dzb63bz7e8a77d8f332](https://doi.org/10.70675/a177f456zf937z4b1dzb63bz7e8a77d8f332).
 3. G. Helbecque, T. Carneiro, N. Melab, J. Gmys, P. Bouvry. PGAS Data Structure for Unbalanced Tree-Based Algorithms at Scale. *Computational Science – ICCS 2024 (ICCS)*. vol 14834, 2024. DOI: [10.1007/978-3-031-63759-9_13](https://doi.org/10.1007/978-3-031-63759-9_13).
 4. G. Helbecque, J. Gmys, N. Melab, T. Carneiro, P. Bouvry. Parallel distributed productivity-aware tree search using Chapel. *Concurrency Computation Practice Experience*, 35(27):e7874, 2023. DOI: [10.1002/cpe.7874](https://onlinelibrary.wiley.com/doi/10.1002/cpe.7874).
